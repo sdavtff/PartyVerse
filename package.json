@@ -1,0 +1,30 @@
+{
+  "name": "partyverse",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "npm run build -w @partyverse/shared && concurrently -n server,web -c magenta,cyan \"npm run dev -w @partyverse/server\" \"npm run dev -w @partyverse/web\"",
+    "build": "npm run build -w @partyverse/shared && npm run build -w @partyverse/server && npm run build -w @partyverse/web",
+    "start": "npm run start -w @partyverse/server",
+    "test": "npm run build -w @partyverse/shared && npm run test -w @partyverse/server",
+    "typecheck": "npm run build -w @partyverse/shared && npm run typecheck -w @partyverse/server && npm run typecheck -w @partyverse/web",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "db:migrate": "npm run db:migrate -w @partyverse/server",
+    "db:seed": "npm run db:seed -w @partyverse/server"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.17.0",
+    "concurrently": "^9.1.2",
+    "eslint": "^9.17.0",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "prettier": "^3.4.2",
+    "typescript": "^5.7.2",
+    "typescript-eslint": "^8.18.2"
+  },
+  "type": "module"
+}

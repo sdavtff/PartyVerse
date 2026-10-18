@@ -1,0 +1,77 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+  moduleFormat = "esm"
+  importFileExtension = "js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  nickname     String
+  avatar       String   @default("blob-1")
+  preferences  Json     @default("{}")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  stats        UserStats?
+  participants MatchParticipant[]
+  moderation   ModerationLog[]    @relation("target")
+}
+
+model UserStats {
+  userId       String   @id
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  matchesPlayed Int     @default(0)
+  wins          Int     @default(0)
+  totalScore    Int     @default(0)
+  bestScore     Int     @default(0)
+  updatedAt     DateTime @updatedAt
+}
+
+model Match {
+  id         String   @id @default(cuid())
+  gameId     String
+  roomCode   String
+  rounds     Int
+  startedAt  DateTime
+  endedAt    DateTime
+  summary    Json     @default("{}")
+
+  participants MatchParticipant[]
+
+  @@index([gameId, endedAt])
+}
+
+model MatchParticipant {
+  id        String  @id @default(cuid())
+  matchId   String
+  match     Match   @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  userId    String?
+  user      User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+  nickname  String
+  score     Int
+  place     Int
+  isGuest   Boolean @default(false)
+
+  @@index([userId])
+  @@index([matchId])
+}
+
+model ModerationLog {
+  id        String   @id @default(cuid())
+  roomCode  String
+  action    String   // kick | report
+  targetId  String?
+  target    User?    @relation("target", fields: [targetId], references: [id], onDelete: SetNull)
+  actorName String
+  reason    String?
+  createdAt DateTime @default(now())
+
+  @@index([roomCode])
+}

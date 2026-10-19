@@ -1,6 +1,7 @@
 import {
   EVENTS,
   type ChatMessage,
+  type Highlights,
   type MatchResult,
   type PresenceStatus,
   type PublicRoom,
@@ -30,7 +31,13 @@ export interface RoomTransport {
 }
 
 export interface RoomHooks {
-  onMatchEnd(room: Room, result: MatchResult, startedAt: number, rounds: number): void;
+  onMatchEnd(
+    room: Room,
+    result: MatchResult,
+    startedAt: number,
+    rounds: number,
+    highlights: Highlights,
+  ): void;
   onEmpty(room: Room): void;
 }
 
@@ -538,7 +545,29 @@ export class Room {
     this.phase = 'results';
     this.syncGame();
     this.transport.toRoom(this.code, EVENTS.GAME_RESULT, result);
-    this.hooks.onMatchEnd(this, result, this.matchStartedAt, mod.finalize(state).rounds);
+    let highlights: Highlights = {};
+    try {
+      highlights = mod.highlights?.(state) ?? {};
+    } catch {
+      /* destaques são opcionais */
+    }
+    this.hooks.onMatchEnd(
+      this,
+      result,
+      this.matchStartedAt,
+      mod.finalize(state).rounds,
+      highlights,
+    );
+  }
+
+  /** Evento direto para um jogador (se estiver conectado). */
+  sendToPlayer(playerId: string, event: string, payload: unknown) {
+    const sid = this.players.get(playerId)?.socketId;
+    if (sid) this.transport.toPlayer(sid, event, payload);
+  }
+
+  nicknameOf(id: string) {
+    return this.players.get(id)?.nickname ?? this.known.get(id)?.nickname ?? 'Alguém';
   }
 
   isGuestPlayer(id: string) {

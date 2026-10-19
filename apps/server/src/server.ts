@@ -7,6 +7,12 @@ import { attachGateway, createTransport } from './realtime/gateway.js';
 import type { GoogleAuth } from './modules/auth/google.js';
 import { TokenService } from './modules/auth/token.js';
 import {
+  MemoryProgressRepository,
+  PrismaProgressRepository,
+  type ProgressRepository,
+} from './modules/progress/progress.repository.js';
+import { ProgressService } from './modules/progress/progress.service.js';
+import {
   MemoryMatchRepository,
   PrismaMatchRepository,
   type MatchRepository,
@@ -15,6 +21,7 @@ import { PrismaUserRepository, type UserRepository } from './modules/users/users
 import { RoomManager } from './rooms/RoomManager.js';
 
 export interface BuildOptions {
+  progress?: ProgressRepository;
   users?: UserRepository | null;
   matches?: MatchRepository;
   google?: GoogleAuth;
@@ -28,6 +35,17 @@ export function buildServer(env: Env, opts: BuildOptions = {}) {
   const matches =
     opts.matches ?? (prisma ? new PrismaMatchRepository(prisma) : new MemoryMatchRepository());
   const tokens = new TokenService(env.JWT_SECRET);
+  // progresso (XP/conquistas) só existe com contas
+  const progressRepo: ProgressRepository | null =
+    opts.progress ??
+    (prisma
+      ? new PrismaProgressRepository(prisma)
+      : users
+        ? new MemoryProgressRepository(
+            matches instanceof MemoryMatchRepository ? matches : undefined,
+          )
+        : null);
+  const progress = progressRepo ? new ProgressService(progressRepo) : undefined;
 
   // o app precisa existir antes do Socket.IO: ele intercepta /socket.io e repassa o resto ao Express
   const ref: { app?: ReturnType<typeof createApp> } = {};
@@ -39,11 +57,24 @@ export function buildServer(env: Env, opts: BuildOptions = {}) {
     pingTimeout: 8_000,
     connectionStateRecovery: { maxDisconnectionDuration: 30_000 },
   });
-  const rooms = new RoomManager(createTransport(io), matches, {
-    idleTtlMs: env.ROOM_IDLE_TTL_MS,
-    reconnectGraceMs: env.RECONNECT_GRACE_MS,
-  });
-  const app = (ref.app = createApp({ env, tokens, users, matches, rooms, google: opts.google }));
+  const rooms = new RoomManager(
+    createTransport(io),
+    matches,
+    {
+      idleTtlMs: env.ROOM_IDLE_TTL_MS,
+      reconnectGraceMs: env.RECONNECT_GRACE_MS,
+    },
+    progress,
+  );
+  const app = (ref.app = createApp({
+    env,
+    tokens,
+    users,
+    matches,
+    rooms,
+    google: opts.google,
+    progress,
+  }));
   attachGateway(io, rooms, tokens);
 
   const close = async () => {
@@ -52,5 +83,5 @@ export function buildServer(env: Env, opts: BuildOptions = {}) {
     await new Promise<void>((r) => httpServer.close(() => r()));
     await prisma?.$disconnect();
   };
-  return { httpServer, io, rooms, tokens, app, close };
+  return { httpServer, io, rooms, tokens, app, close, progress };
 }

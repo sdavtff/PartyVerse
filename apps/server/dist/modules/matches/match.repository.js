@@ -37,7 +37,8 @@ export class PrismaMatchRepository {
             }
         });
     }
-    async leaderboard(gameId, limit) {
+    async leaderboard(gameId, limit, since) {
+        const from = since ?? new Date(0);
         const rows = await this.db.$queryRaw `
       SELECT p."userId" AS "userId", u.nickname, u.avatar,
              COUNT(*)::int AS matches,
@@ -47,6 +48,8 @@ export class PrismaMatchRepository {
       JOIN "Match" m ON m.id = p."matchId"
       JOIN "User" u ON u.id = p."userId"
       WHERE p."userId" IS NOT NULL AND (${gameId}::text IS NULL OR m."gameId" = ${gameId})
+        AND m."endedAt" >= ${from}
+        AND u.banned = false
       GROUP BY p."userId", u.nickname, u.avatar
       ORDER BY wins DESC, score DESC
       LIMIT ${limit}`;
@@ -70,10 +73,12 @@ export class PrismaMatchRepository {
     }
 }
 export class MemoryMatchRepository {
-    async leaderboard(gameId, limit) {
+    async leaderboard(gameId, limit, since) {
         const rows = new Map();
         for (const m of this.saved) {
             if (gameId && m.gameId !== gameId)
+                continue;
+            if (since && m.endedAt < since)
                 continue;
             for (const p of m.participants) {
                 if (!p.userId)

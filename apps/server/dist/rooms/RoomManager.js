@@ -1,3 +1,4 @@
+import { achievementByCode, EVENTS, } from '@partyverse/shared';
 import { AppError, notFound } from '../lib/errors.js';
 import { roomCode } from '../lib/ids.js';
 import { logger } from '../lib/logger.js';
@@ -11,12 +12,14 @@ export class RoomManager {
     transport;
     matches;
     opts;
+    progress;
     rooms = new Map();
     sweeper;
-    constructor(transport, matches, opts) {
+    constructor(transport, matches, opts, progress) {
         this.transport = transport;
         this.matches = matches;
         this.opts = opts;
+        this.progress = progress;
         this.sweeper = setInterval(() => this.sweepIdle(), Math.min(60_000, opts.idleTtlMs));
         this.sweeper.unref?.();
     }
@@ -33,7 +36,7 @@ export class RoomManager {
         }
         const room = new Room(code, settings, host, this.transport, {
             onEmpty: (r) => this.rooms.delete(r.code),
-            onMatchEnd: (r, result, startedAt, rounds) => this.persist(r, result, startedAt, rounds),
+            onMatchEnd: (r, result, startedAt, rounds, highlights) => void this.persist(r, result, startedAt, rounds, highlights),
         }, { reconnectGraceMs: this.opts.reconnectGraceMs });
         room.password = password.trim();
         this.rooms.set(code, room);
@@ -83,8 +86,8 @@ export class RoomManager {
             }
         }
     }
-    persist(room, result, startedAt, rounds) {
-        this.matches
+    async persist(room, result, startedAt, rounds, highlights) {
+        const saved = await this.matches
             .save({
             gameId: result.gameId,
             roomCode: room.code,
@@ -102,7 +105,32 @@ export class RoomManager {
                 };
             }),
         })
-            .catch((err) => logger.error({ err: String(err) }, 'falha ao salvar partida'));
+            .then(() => true)
+            .catch((err) => {
+            logger.error({ err: String(err) }, 'falha ao salvar partida');
+            return false;
+        });
+        if (!saved || !this.progress)
+            return;
+        const registered = result.ranking.filter((r) => !room.isGuestPlayer(r.playerId));
+        if (!registered.length)
+            return;
+        const rewards = await this.progress.award({
+            gameId: result.gameId,
+            players: result.ranking.length,
+            participants: registered.map((r) => ({ userId: r.playerId, place: r.place })),
+            highlights,
+        });
+        for (const [userId, reward] of rewards) {
+            room.sendToPlayer(userId, EVENTS.REWARD, reward);
+            for (const code of reward.achievements) {
+                const a = achievementByCode(code);
+                if (a)
+                    room.systemMessage(`🏆 ${room.nicknameOf(userId)} desbloqueou "${a.name}"`);
+            }
+            if (reward.leveledUp)
+                room.systemMessage(`⭐ ${room.nicknameOf(userId)} subiu para o nível ${reward.level}!`);
+        }
     }
     shutdown() {
         clearInterval(this.sweeper);

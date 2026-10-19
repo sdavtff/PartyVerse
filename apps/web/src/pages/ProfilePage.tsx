@@ -8,6 +8,8 @@ import { useToast } from '../components/Toast';
 import { api, type Identity } from '../lib/api';
 import { usePrefs } from '../lib/prefs';
 import { useSession } from '../lib/session';
+import { usePageTitle } from '../lib/usePageTitle';
+import { AchievementsGrid, LevelBar, type ProgressData } from '../components/Progress';
 
 interface Stats {
   matchesPlayed: number;
@@ -28,6 +30,8 @@ export function ProfilePage() {
   const { user, setUser } = useSession();
   const toast = useToast();
   const [stats, setStats] = useState<Stats | null>(null);
+  const [progress, setProgress] = useState<ProgressData | null>(null);
+  usePageTitle('Meu perfil');
   const { prefs, setPref } = usePrefs();
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [nick, setNick] = useState(user?.nickname ?? '');
@@ -35,8 +39,11 @@ export function ProfilePage() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    api<{ stats: Stats | null }>('/me/profile')
-      .then((r) => setStats(r.stats))
+    api<{ stats: Stats | null; progress?: ProgressData | null }>('/me/profile')
+      .then((r) => {
+        setStats(r.stats);
+        setProgress(r.progress ?? null);
+      })
       .catch(() => undefined);
     api<HistoryItem[]>('/me/history')
       .then(setHistory)
@@ -107,7 +114,7 @@ export function ProfilePage() {
           onChange={(e) => setNick(e.target.value)}
         />
         <p className="label mt-5">Crie seu avatar</p>
-        <AvatarEditor value={avatar} onChange={setAvatar} compact />
+        <AvatarEditor value={avatar} onChange={setAvatar} compact level={progress?.level ?? 1} />
         <Button className="mt-6 w-full" onClick={() => save()} disabled={saving}>
           {saving ? 'Salvando…' : 'Salvar perfil'}
         </Button>
@@ -122,6 +129,29 @@ export function ProfilePage() {
       </section>
 
       <div className="space-y-5">
+        {!user.isGuest && (
+          <section className="card space-y-4 p-6" aria-labelledby="lvl-title">
+            <div className="flex items-center justify-between gap-3">
+              <h2 id="lvl-title" className="text-xl font-extrabold">
+                Nível e conquistas
+              </h2>
+              <Link
+                to={`/jogador/${user.id}`}
+                className="text-sm font-bold text-lime-400 hover:underline"
+              >
+                Ver meu perfil público ›
+              </Link>
+            </div>
+            {progress ? (
+              <>
+                <LevelBar xp={progress.xp} />
+                <AchievementsGrid unlocked={progress.achievements} />
+              </>
+            ) : (
+              <p className="text-ink-400">Carregando…</p>
+            )}
+          </section>
+        )}
         <section className="card p-6" aria-labelledby="stats-title">
           <h2 id="stats-title" className="text-xl font-extrabold">
             Estatísticas

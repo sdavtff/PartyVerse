@@ -36,6 +36,7 @@ export interface QuizState {
   gained: Record<string, number>;
   totals: Record<string, number>;
   streaks: Record<string, number>;
+  maxStreaks: Record<string, number>;
 }
 
 const shuffle = <T>(xs: T[]): T[] => {
@@ -84,6 +85,7 @@ function reveal(s: QuizState, ctx: GameContext) {
     const a = s.answers[p];
     if (a && a.option === q.correct) {
       s.streaks[p] = (s.streaks[p] ?? 0) + 1;
+      s.maxStreaks[p] = Math.max(s.maxStreaks[p] ?? 0, s.streaks[p]!);
       const bonus = s.streaks[p]! >= 3 ? QUIZ_POINTS.streak : 0;
       s.gained[p] = speedPoints(a.at - s.questionStartedAt, limit) + bonus;
     } else {
@@ -116,6 +118,7 @@ export const quizGame: GameModule<QuizState, QuizSettings, QuizAction> = {
       gained: {},
       totals: Object.fromEntries(players.map((p) => [p.id, 0])),
       streaks: Object.fromEntries(players.map((p) => [p.id, 0])),
+      maxStreaks: {},
     };
   },
 
@@ -174,6 +177,9 @@ export const quizGame: GameModule<QuizState, QuizSettings, QuizAction> = {
   },
 
   finalize: (s) => ({ rounds: Math.max(0, s.index + 1) }),
+
+  highlights: (s) =>
+    Object.fromEntries(s.players.map((p) => [p, { maxStreak: s.maxStreaks[p] ?? 0 }])),
 
   isParticipant: (s, playerId) => s.players.includes(playerId),
 

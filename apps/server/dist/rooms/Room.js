@@ -482,7 +482,23 @@ export class Room {
         this.phase = 'results';
         this.syncGame();
         this.transport.toRoom(this.code, EVENTS.GAME_RESULT, result);
-        this.hooks.onMatchEnd(this, result, this.matchStartedAt, mod.finalize(state).rounds);
+        let highlights = {};
+        try {
+            highlights = mod.highlights?.(state) ?? {};
+        }
+        catch {
+            /* destaques são opcionais */
+        }
+        this.hooks.onMatchEnd(this, result, this.matchStartedAt, mod.finalize(state).rounds, highlights);
+    }
+    /** Evento direto para um jogador (se estiver conectado). */
+    sendToPlayer(playerId, event, payload) {
+        const sid = this.players.get(playerId)?.socketId;
+        if (sid)
+            this.transport.toPlayer(sid, event, payload);
+    }
+    nicknameOf(id) {
+        return this.players.get(id)?.nickname ?? this.known.get(id)?.nickname ?? 'Alguém';
     }
     isGuestPlayer(id) {
         return this.known.get(id)?.isGuest ?? true;

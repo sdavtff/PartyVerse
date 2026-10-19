@@ -43,8 +43,11 @@ function goToRoundResults(state, ctx) {
     });
     state.roundScores = res.scores;
     state.statuses = res.statuses;
-    for (const p of state.players)
+    for (const p of state.players) {
         state.totals[p] = (state.totals[p] ?? 0) + (res.totals[p] ?? 0);
+        const u = Object.values(res.statuses[p] ?? {}).filter((x) => x === 'unique').length;
+        state.uniques[p] = (state.uniques[p] ?? 0) + u;
+    }
     state.phase = 'round-results';
     state.ready = [];
     state.deadline = ctx.now() + ROUND_RESULTS_SECONDS * 1000;
@@ -92,6 +95,7 @@ export const stopGame = {
             roundScores: null,
             statuses: null,
             totals: Object.fromEntries(players.map((p) => [p.id, 0])),
+            uniques: {},
         };
     },
     startRound(state, ctx) {
@@ -219,6 +223,7 @@ export const stopGame = {
         return state.players.filter((p) => (state.totals[p] ?? 0) === max);
     },
     finalize: (state) => ({ rounds: state.round }),
+    highlights: (state) => Object.fromEntries(state.players.map((p) => [p, { uniqueAnswers: state.uniques[p] ?? 0 }])),
     isParticipant: (state, playerId) => state.players.includes(playerId),
     onPlayerLeft(state, playerId, ctx) {
         // quem saiu deixa de bloquear o "todos prontos"

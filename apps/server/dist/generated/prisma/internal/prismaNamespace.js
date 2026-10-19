@@ -68,6 +68,10 @@ export const JsonNull = runtime.JsonNull;
 export const AnyNull = runtime.AnyNull;
 export const ModelName = {
     User: 'User',
+    UserAchievement: 'UserAchievement',
+    Friendship: 'Friendship',
+    PasswordReset: 'PasswordReset',
+    DailyResult: 'DailyResult',
     UserStats: 'UserStats',
     Match: 'Match',
     MatchParticipant: 'MatchParticipant',
@@ -90,8 +94,40 @@ export const UserScalarFieldEnum = {
     nickname: 'nickname',
     avatar: 'avatar',
     preferences: 'preferences',
+    xp: 'xp',
+    banned: 'banned',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt'
+};
+export const UserAchievementScalarFieldEnum = {
+    id: 'id',
+    userId: 'userId',
+    code: 'code',
+    unlockedAt: 'unlockedAt'
+};
+export const FriendshipScalarFieldEnum = {
+    id: 'id',
+    requesterId: 'requesterId',
+    addresseeId: 'addresseeId',
+    status: 'status',
+    createdAt: 'createdAt'
+};
+export const PasswordResetScalarFieldEnum = {
+    id: 'id',
+    userId: 'userId',
+    tokenHash: 'tokenHash',
+    expiresAt: 'expiresAt',
+    usedAt: 'usedAt',
+    createdAt: 'createdAt'
+};
+export const DailyResultScalarFieldEnum = {
+    id: 'id',
+    userId: 'userId',
+    day: 'day',
+    game: 'game',
+    score: 'score',
+    data: 'data',
+    createdAt: 'createdAt'
 };
 export const UserStatsScalarFieldEnum = {
     userId: 'userId',

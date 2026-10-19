@@ -197,6 +197,10 @@ export declare const EVENTS: {
     readonly CHAT_HISTORY: "chat:history";
     readonly GAME_STATE: "game:state";
     readonly GAME_EVENT: "game:event";
+    readonly REWARD: "player:reward";
+    readonly INVITE: "player:invite";
+    readonly REACTION: "room:reaction";
+    readonly PRESENCE: "friends:presence";
     readonly GAME_RESULT: "game:result";
     readonly NOTICE: "notice";
 };

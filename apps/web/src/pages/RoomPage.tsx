@@ -6,6 +6,7 @@ import {
   type ImpostorSettings,
   type ImpostorView,
   type MatchResult,
+  type MatchReward,
   type PublicRoom,
   type QuizSettings,
   type QuizView,
@@ -19,6 +20,7 @@ import { Button } from '../components/Button';
 import { ChatPanel } from '../components/ChatPanel';
 import { AnimatedNumber } from '../components/AnimatedNumber';
 import { Confetti } from '../components/Confetti';
+import { RewardCard } from '../components/RewardCard';
 import { GameIcon } from '../components/GameIcon';
 import { NicknameGate } from '../components/NicknameGate';
 import { PlayerList } from '../components/PlayerList';
@@ -48,7 +50,8 @@ export function RoomPage() {
 function RoomInner({ code }: { code: string }) {
   const { user } = useSession();
   const nav = useNavigate();
-  const { room, chat, game, result, status, error, rejoin, leave, onGameEvent } = useRoom(code);
+  const { room, chat, game, result, reward, status, error, rejoin, leave, onGameEvent } =
+    useRoom(code);
   const myId = user!.id;
   const playerCount = room?.players.length ?? 0;
   const prevCount = useRef(playerCount);
@@ -114,7 +117,7 @@ function RoomInner({ code }: { code: string }) {
         <div className="min-w-0 space-y-5">
           {room.phase === 'lobby' && <Lobby room={room} amHost={amHost} />}
           {room.phase === 'results' && result && (
-            <Results result={result} amHost={amHost} myId={myId} />
+            <Results result={result} reward={reward} amHost={amHost} myId={myId} />
           )}
           {room.phase !== 'lobby' && game !== null && (
             <GameScreen
@@ -504,7 +507,18 @@ function Podium({ ranking, myId }: { ranking: MatchResult['ranking']; myId: stri
   );
 }
 
-function Results({ result, amHost, myId }: { result: MatchResult; amHost: boolean; myId: string }) {
+function Results({
+  result,
+  reward,
+  amHost,
+  myId,
+}: {
+  result: MatchResult;
+  reward: MatchReward | null;
+  amHost: boolean;
+  myId: string;
+}) {
+  const { user } = useSession();
   const toast = useToast();
   const me = result.ranking.find((r) => r.playerId === myId);
   const won = me?.place === 1;
@@ -547,6 +561,15 @@ function Results({ result, amHost, myId }: { result: MatchResult; amHost: boolea
             </li>
           ))}
         </ol>
+      )}
+      {reward && <RewardCard reward={reward} />}
+      {!reward && user?.isGuest && me && (
+        <p className="rounded-2xl bg-ink-900 p-3 text-center text-sm text-ink-400">
+          Com uma conta você ganharia XP, subiria de nível e liberaria conquistas.{' '}
+          <Link to="/entrar?modo=cadastro" className="font-bold text-lime-400 hover:underline">
+            Criar conta grátis
+          </Link>
+        </p>
       )}
       {amHost ? (
         <div className="flex flex-wrap justify-center gap-3">

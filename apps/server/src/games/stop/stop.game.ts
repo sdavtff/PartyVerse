@@ -32,6 +32,7 @@ export interface StopState {
   roundScores: Record<string, Record<string, number>> | null;
   statuses: Record<string, Record<string, StopAnswerStatus>> | null;
   totals: Record<string, number>;
+  uniques: Record<string, number>;
 }
 
 function drawLetter(used: string[]): string {
@@ -78,7 +79,11 @@ function goToRoundResults(state: StopState, ctx: GameContext) {
   });
   state.roundScores = res.scores;
   state.statuses = res.statuses;
-  for (const p of state.players) state.totals[p] = (state.totals[p] ?? 0) + (res.totals[p] ?? 0);
+  for (const p of state.players) {
+    state.totals[p] = (state.totals[p] ?? 0) + (res.totals[p] ?? 0);
+    const u = Object.values(res.statuses[p] ?? {}).filter((x) => x === 'unique').length;
+    state.uniques[p] = (state.uniques[p] ?? 0) + u;
+  }
   state.phase = 'round-results';
   state.ready = [];
   state.deadline = ctx.now() + ROUND_RESULTS_SECONDS * 1000;
@@ -129,6 +134,7 @@ export const stopGame: GameModule<StopState, StopSettings, StopAction> = {
       roundScores: null,
       statuses: null,
       totals: Object.fromEntries(players.map((p) => [p.id, 0])),
+      uniques: {},
     };
   },
 
@@ -259,6 +265,9 @@ export const stopGame: GameModule<StopState, StopSettings, StopAction> = {
   },
 
   finalize: (state) => ({ rounds: state.round }),
+
+  highlights: (state) =>
+    Object.fromEntries(state.players.map((p) => [p, { uniqueAnswers: state.uniques[p] ?? 0 }])),
 
   isParticipant: (state, playerId) => state.players.includes(playerId),
 

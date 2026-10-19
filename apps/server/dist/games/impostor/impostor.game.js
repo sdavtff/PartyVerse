@@ -62,8 +62,10 @@ function endRound(s, ctx, reason, guess = null) {
     if (reason === 'caught')
         for (const c of citizens)
             scores[c] += P.caughtCitizen;
-    if (reason === 'escaped' || reason === 'guessed')
+    if (reason === 'escaped' || reason === 'guessed') {
         scores[s.impostorId] = P.impostorWin;
+        s.impostorWins[s.impostorId] = (s.impostorWins[s.impostorId] ?? 0) + 1;
+    }
     if (reason === 'wrong-guess')
         for (const c of citizens)
             scores[c] += P.wrongGuessCitizen;
@@ -130,6 +132,7 @@ export const impostorGame = {
             votes: {},
             totals: Object.fromEntries(players.map((p) => [p.id, 0])),
             outcome: null,
+            impostorWins: {},
         };
     },
     startRound(s, ctx) {
@@ -241,6 +244,7 @@ export const impostorGame = {
         return s.players.filter((p) => (s.totals[p] ?? 0) === max);
     },
     finalize: (s) => ({ rounds: s.round }),
+    highlights: (s) => Object.fromEntries(s.players.map((p) => [p, { impostorWins: s.impostorWins[p] ?? 0 }])),
     isParticipant: (s, playerId) => s.players.includes(playerId),
     onPlayerLeft(s, _playerId, ctx) {
         // quem saiu ou caiu não bloqueia "todos prontos" nem "todos votaram"

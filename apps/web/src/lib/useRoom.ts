@@ -1,4 +1,10 @@
-import { EVENTS, type ChatMessage, type MatchResult, type PublicRoom } from '@partyverse/shared';
+import {
+  EVENTS,
+  type ChatMessage,
+  type MatchResult,
+  type MatchReward,
+  type PublicRoom,
+} from '@partyverse/shared';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { syncClock } from './clock';
 import { emitAck, getSocket } from './socket';
@@ -12,6 +18,7 @@ export function useRoom(code: string) {
   const [chat, setChat] = useState<ChatMessage[]>([]);
   const [game, setGame] = useState<unknown>(null);
   const [result, setResult] = useState<MatchResult | null>(null);
+  const [reward, setReward] = useState<MatchReward | null>(null);
   const [status, setStatus] = useState<ConnStatus>('connecting');
   const [error, setError] = useState<string | null>(null);
   const left = useRef(false);
@@ -66,7 +73,11 @@ export function useRoom(code: string) {
       setGame(g);
       if (g === null) setResult(null);
     };
-    const onResult = (r: MatchResult) => setResult(r);
+    const onResult = (r: MatchResult) => {
+      setResult(r);
+      setReward(null);
+    };
+    const onReward = (r: MatchReward) => setReward(r);
     const onKicked = () => {
       left.current = true;
       setStatus('kicked');
@@ -84,6 +95,7 @@ export function useRoom(code: string) {
     s.on(EVENTS.CHAT_HISTORY, onHistory);
     s.on(EVENTS.GAME_STATE, onGame);
     s.on(EVENTS.GAME_RESULT, onResult);
+    s.on(EVENTS.REWARD, onReward);
     s.on(EVENTS.ROOM_KICKED, onKicked);
     s.on(EVENTS.NOTICE, onNotice);
     s.on(EVENTS.GAME_EVENT, onGameEvent);
@@ -99,6 +111,7 @@ export function useRoom(code: string) {
       s.off(EVENTS.CHAT_HISTORY, onHistory);
       s.off(EVENTS.GAME_STATE, onGame);
       s.off(EVENTS.GAME_RESULT, onResult);
+      s.off(EVENTS.REWARD, onReward);
       s.off(EVENTS.ROOM_KICKED, onKicked);
       s.off(EVENTS.NOTICE, onNotice);
       s.off(EVENTS.GAME_EVENT, onGameEvent);
@@ -118,5 +131,5 @@ export function useRoom(code: string) {
     }
   }, [room?.phase]);
 
-  return { room, chat, game, result, status, error, rejoin: join, leave, onGameEvent };
+  return { room, chat, game, result, reward, status, error, rejoin: join, leave, onGameEvent };
 }

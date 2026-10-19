@@ -46,6 +46,7 @@ export interface ImpostorState {
   votes: Record<string, string>;
   totals: Record<string, number>;
   outcome: Outcome | null;
+  impostorWins: Record<string, number>;
 }
 
 const shuffle = <T>(xs: T[]): T[] => {
@@ -96,7 +97,10 @@ function endRound(
     for (const c of citizens) if (s.votes[c] === s.impostorId) scores[c]! += P.correctVote;
   }
   if (reason === 'caught') for (const c of citizens) scores[c]! += P.caughtCitizen;
-  if (reason === 'escaped' || reason === 'guessed') scores[s.impostorId] = P.impostorWin;
+  if (reason === 'escaped' || reason === 'guessed') {
+    scores[s.impostorId] = P.impostorWin;
+    s.impostorWins[s.impostorId] = (s.impostorWins[s.impostorId] ?? 0) + 1;
+  }
   if (reason === 'wrong-guess') for (const c of citizens) scores[c]! += P.wrongGuessCitizen;
   for (const p of s.players) s.totals[p] = (s.totals[p] ?? 0) + (scores[p] ?? 0);
 
@@ -164,6 +168,7 @@ export const impostorGame: GameModule<ImpostorState, ImpostorSettings, ImpostorA
       votes: {},
       totals: Object.fromEntries(players.map((p) => [p.id, 0])),
       outcome: null,
+      impostorWins: {},
     };
   },
 
@@ -282,6 +287,9 @@ export const impostorGame: GameModule<ImpostorState, ImpostorSettings, ImpostorA
   },
 
   finalize: (s) => ({ rounds: s.round }),
+
+  highlights: (s) =>
+    Object.fromEntries(s.players.map((p) => [p, { impostorWins: s.impostorWins[p] ?? 0 }])),
 
   isParticipant: (s, playerId) => s.players.includes(playerId),
 

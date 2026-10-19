@@ -47,6 +47,7 @@ function reveal(s, ctx) {
         const a = s.answers[p];
         if (a && a.option === q.correct) {
             s.streaks[p] = (s.streaks[p] ?? 0) + 1;
+            s.maxStreaks[p] = Math.max(s.maxStreaks[p] ?? 0, s.streaks[p]);
             const bonus = s.streaks[p] >= 3 ? QUIZ_POINTS.streak : 0;
             s.gained[p] = speedPoints(a.at - s.questionStartedAt, limit) + bonus;
         }
@@ -77,6 +78,7 @@ export const quizGame = {
             gained: {},
             totals: Object.fromEntries(players.map((p) => [p.id, 0])),
             streaks: Object.fromEntries(players.map((p) => [p.id, 0])),
+            maxStreaks: {},
         };
     },
     startRound(s, ctx) {
@@ -130,6 +132,7 @@ export const quizGame = {
         return s.players.filter((p) => (s.totals[p] ?? 0) === max);
     },
     finalize: (s) => ({ rounds: Math.max(0, s.index + 1) }),
+    highlights: (s) => Object.fromEntries(s.players.map((p) => [p, { maxStreak: s.maxStreaks[p] ?? 0 }])),
     isParticipant: (s, playerId) => s.players.includes(playerId),
     onPlayerLeft(s, _playerId, ctx) {
         if (s.phase !== 'question')

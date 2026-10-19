@@ -254,6 +254,10 @@ export const EVENTS = {
   CHAT_HISTORY: 'chat:history',
   GAME_STATE: 'game:state',
   GAME_EVENT: 'game:event',
+  REWARD: 'player:reward',
+  INVITE: 'player:invite',
+  REACTION: 'room:reaction',
+  PRESENCE: 'friends:presence',
   GAME_RESULT: 'game:result',
   NOTICE: 'notice',
 } as const;

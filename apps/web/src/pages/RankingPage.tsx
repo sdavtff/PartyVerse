@@ -21,14 +21,22 @@ export function RankingPage() {
   usePageTitle('Ranking');
   const { user } = useSession();
   const [game, setGame] = useState<GameId | 'all'>('all');
-  const [data, setData] = useState<{ enabled: boolean; rows: Row[] } | null>(null);
+  const [period, setPeriod] = useState<'temporada' | 'geral'>('temporada');
+  const [data, setData] = useState<{
+    enabled: boolean;
+    season?: string | null;
+    rows: Row[];
+  } | null>(null);
 
   useEffect(() => {
     setData(null);
-    api<{ enabled: boolean; rows: Row[] }>(`/leaderboard${game === 'all' ? '' : `?game=${game}`}`)
+    const q = new URLSearchParams();
+    if (game !== 'all') q.set('game', game);
+    if (period === 'temporada') q.set('periodo', 'temporada');
+    api<{ enabled: boolean; season?: string | null; rows: Row[] }>(`/leaderboard?${q}`)
       .then(setData)
       .catch(() => setData({ enabled: false, rows: [] }));
-  }, [game]);
+  }, [game, period]);
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-10">
@@ -43,7 +51,31 @@ export function RankingPage() {
           </Link>
         )}
       </p>
-      <div className="mt-6 flex flex-wrap gap-2" role="group" aria-label="Filtrar por jogo">
+      <div className="mt-6 inline-grid grid-cols-2 gap-1 rounded-2xl bg-ink-950 p-1" role="tablist">
+        {(
+          [
+            ['temporada', 'Temporada do mês'],
+            ['geral', 'Todos os tempos'],
+          ] as const
+        ).map(([id, label]) => (
+          <button
+            key={id}
+            type="button"
+            role="tab"
+            aria-selected={period === id}
+            onClick={() => setPeriod(id)}
+            className={`rounded-xl px-4 py-2 text-sm font-bold transition ${period === id ? 'bg-lime-400 text-ink-950' : 'text-ink-200 hover:text-white'}`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+      {period === 'temporada' && data?.season && (
+        <p className="mt-2 text-sm text-ink-400">
+          {data.season} · o ranking da temporada recomeça todo dia 1º.
+        </p>
+      )}
+      <div className="mt-4 flex flex-wrap gap-2" role="group" aria-label="Filtrar por jogo">
         {[{ id: 'all' as const, name: 'Geral' }, ...GAME_CATALOG].map((g) => (
           <button
             key={g.id}
@@ -67,7 +99,9 @@ export function RankingPage() {
         </p>
       ) : data.rows.length === 0 ? (
         <p className="card mt-6 p-6 text-ink-400">
-          Nenhuma partida registrada ainda. Seja o primeiro!
+          {period === 'temporada'
+            ? 'Ninguém pontuou nesta temporada ainda. Seja o primeiro!'
+            : 'Nenhuma partida registrada ainda. Seja o primeiro!'}
         </p>
       ) : (
         <ol className="mt-6 space-y-2">
@@ -84,10 +118,13 @@ export function RankingPage() {
               </span>
               <Avatar avatar={r.avatar} size={40} />
               <span className="min-w-0 flex-1">
-                <span className="block truncate font-bold text-white">
+                <Link
+                  to={`/jogador/${r.userId}`}
+                  className="block truncate font-bold text-white hover:underline"
+                >
                   {r.nickname}
                   {r.userId === user?.id && ' (você)'}
-                </span>
+                </Link>
                 <span className="text-xs text-ink-400">
                   {r.matches} {r.matches === 1 ? 'partida' : 'partidas'} · {r.score} pts
                 </span>

@@ -1,4 +1,4 @@
-import { GAME_CATALOG, guestSchema, loginSchema, profileUpdateSchema, registerSchema, } from '@partyverse/shared';
+import { avatarMinLevel, GAME_CATALOG, guestSchema, loginSchema, profileUpdateSchema, registerSchema, } from '@partyverse/shared';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import express from 'express';
@@ -15,7 +15,7 @@ import { AuthService, toIdentity } from '../modules/auth/auth.service.js';
 import { GoogleAuth, safeReturnPath } from '../modules/auth/google.js';
 import { TOKEN_COOKIE, TokenService } from '../modules/auth/token.js';
 const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res)).catch(next);
-export function createApp({ env, tokens, users, matches, rooms, google: googleDep }) {
+export function createApp({ env, tokens, users, matches, rooms, google: googleDep, progress, }) {
     const app = express();
     const auth = new AuthService(users);
     const google = googleDep ?? new GoogleAuth(env.GOOGLE_CLIENT_ID, env.GOOGLE_CLIENT_SECRET);
@@ -43,6 +43,15 @@ export function createApp({ env, tokens, users, matches, rooms, google: googleDe
             path: '/',
         });
     };
+    /** Itens de avatar travados por nível. */
+    const checkAvatar = (avatar, level) => {
+        if (!avatar)
+            return;
+        const need = avatarMinLevel(avatar);
+        if (need > level)
+            throw new AppError('VALIDATION', `Esse item do avatar libera no nível ${need}`, 400);
+    };
+    const levelOf = async (userId) => (progress ? (await progress.profile(userId)).level : 1);
     const requireAuth = (req, _res, next) => {
         const token = req.cookies?.[TOKEN_COOKIE] ?? req.header('authorization')?.replace(/^Bearer /, '');
         const id = token ? tokens.verify(token) : null;
@@ -68,13 +77,17 @@ export function createApp({ env, tokens, users, matches, rooms, google: googleDe
     api.get('/leaderboard', wrap(async (req, res) => {
         const game = typeof req.query.game === 'string' ? req.query.game : '';
         const gameId = GAME_CATALOG.some((g) => g.id === game) ? game : null;
-        const key = gameId ?? 'all';
+        const season = req.query.periodo === 'temporada';
+        const key = `${gameId ?? 'all'}:${season ? seasonStart().toISOString() : 'all'}`;
         const hit = boardCache.get(key);
         if (hit && Date.now() - hit.at < 30_000)
             return res.json(hit.data);
         const data = {
             enabled: Boolean(users),
-            rows: users ? await matches.leaderboard(gameId, 50) : [],
+            season: season ? seasonLabel() : null,
+            rows: users
+                ? await matches.leaderboard(gameId, 50, season ? seasonStart() : undefined)
+                : [],
         };
         boardCache.set(key, { at: Date.now(), data });
         res.json(data);
@@ -92,12 +105,14 @@ export function createApp({ env, tokens, users, matches, rooms, google: googleDe
     }));
     api.post('/auth/guest', authLimiter, wrap((req, res) => {
         const { nickname, avatar } = guestSchema.parse(req.body);
+        checkAvatar(avatar, 1);
         const id = auth.guest(nickname, avatar);
         setSession(res, id);
         res.json({ user: id });
     }));
     api.post('/auth/register', authLimiter, wrap(async (req, res) => {
         const { email, password, nickname, avatar } = registerSchema.parse(req.body);
+        checkAvatar(avatar, 1);
         const id = await auth.register(email, password, nickname, avatar);
         setSession(res, id);
         res.status(201).json({ user: id });
@@ -145,7 +160,8 @@ export function createApp({ env, tokens, users, matches, rooms, google: googleDe
             return backToLogin(res, 'A sessão de login expirou. Tente de novo.');
         try {
             const profile = await google.exchange(code, redirectUri(req));
-            const id = await auth.google(profile, saved.avatar || undefined);
+            const av = saved.avatar && avatarMinLevel(saved.avatar) <= 1 ? saved.avatar : undefined;
+            const id = await auth.google(profile, av);
             setSession(res, id);
             res.redirect(safeReturnPath(saved.back));
         }
@@ -170,11 +186,13 @@ export function createApp({ env, tokens, users, matches, rooms, google: googleDe
             email: u.email,
             stats: await users.stats(u.id),
             preferences: u.preferences,
+            progress: progress ? await progress.profile(u.id) : null,
         });
     }));
     api.patch('/me/profile', requireAuth, wrap(async (req, res) => {
         const data = profileUpdateSchema.parse(req.body);
         const id = req.identity;
+        checkAvatar(data.avatar, id.isGuest || !users ? 1 : await levelOf(id.id));
         if (id.isGuest || !users) {
             // convidado: atualiza só o token
             const next = {
@@ -195,6 +213,21 @@ export function createApp({ env, tokens, users, matches, rooms, google: googleDe
         });
         setSession(res, toIdentity(u));
         res.json({ user: toIdentity(u), preferences: u.preferences });
+    }));
+    // perfil público de um jogador
+    api.get('/users/:id', wrap(async (req, res) => {
+        if (!users)
+            throw new AppError('NOT_FOUND', 'Perfis indisponíveis', 404);
+        const u = await users.findById(String(req.params.id));
+        if (!u || u.banned)
+            throw new AppError('NOT_FOUND', 'Jogador não encontrado', 404);
+        res.json({
+            user: toIdentity(u),
+            createdAt: u.createdAt,
+            stats: await users.stats(u.id),
+            progress: progress ? await progress.profile(u.id) : null,
+            history: (await matches.historyFor(u.id, 8)).map((h) => ({ ...h, matchId: undefined })),
+        });
     }));
     api.get('/me/history', requireAuth, wrap(async (req, res) => {
         if (req.identity.isGuest)
@@ -226,4 +259,27 @@ export function createApp({ env, tokens, users, matches, rooms, google: googleDe
         res.status(status).json({ error: toServerError(err) });
     });
     return app;
+}
+/** Temporada = mês corrente no horário de Brasília (UTC-3). */
+export function seasonStart(now = new Date()) {
+    const br = new Date(now.getTime() - 3 * 3600_000);
+    return new Date(Date.UTC(br.getUTCFullYear(), br.getUTCMonth(), 1, 3, 0, 0));
+}
+const MONTHS = [
+    'janeiro',
+    'fevereiro',
+    'março',
+    'abril',
+    'maio',
+    'junho',
+    'julho',
+    'agosto',
+    'setembro',
+    'outubro',
+    'novembro',
+    'dezembro',
+];
+export function seasonLabel(now = new Date()) {
+    const br = new Date(now.getTime() - 3 * 3600_000);
+    return `Temporada de ${MONTHS[br.getUTCMonth()]} ${br.getUTCFullYear()}`;
 }

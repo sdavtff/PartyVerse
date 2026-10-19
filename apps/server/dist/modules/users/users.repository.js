@@ -1,6 +1,13 @@
 const toRecord = (u) => ({
-    ...u,
+    id: u.id,
+    email: u.email,
+    passwordHash: u.passwordHash,
+    googleId: u.googleId,
+    nickname: u.nickname,
+    avatar: u.avatar,
     preferences: (u.preferences ?? {}),
+    banned: u.banned ?? false,
+    createdAt: u.createdAt?.toISOString(),
 });
 export class PrismaUserRepository {
     db;

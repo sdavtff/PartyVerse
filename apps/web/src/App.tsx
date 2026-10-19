@@ -6,6 +6,7 @@ import { GamesPage } from './pages/GamesPage';
 import { HelpPage } from './pages/HelpPage';
 import { Home } from './pages/Home';
 import { ProfilePage } from './pages/ProfilePage';
+import { PublicProfilePage } from './pages/PublicProfilePage';
 import { RankingPage } from './pages/RankingPage';
 import { Notice, RoomPage } from './pages/RoomPage';
 import { RoomsPage } from './pages/RoomsPage';
@@ -22,6 +23,7 @@ export function App() {
         <Route path="ajuda" element={<HelpPage />} />
         <Route path="entrar" element={<AuthPage />} />
         <Route path="perfil" element={<ProfilePage />} />
+        <Route path="jogador/:id" element={<PublicProfilePage />} />
         <Route path="sala/:code" element={<RoomPage />} />
         <Route
           path="*"

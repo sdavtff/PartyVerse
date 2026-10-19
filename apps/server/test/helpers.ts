@@ -25,8 +25,8 @@ export async function startTestServer(
   const sockets: Socket[] = [];
 
   let n = 0;
-  const player = async (nickname = `Jogador${++n}`, id?: string) => {
-    const identity = { id: id ?? `g_test_${nickname}`, nickname, avatar: 'blob-1', isGuest: true };
+  const player = async (nickname = `Jogador${++n}`, id?: string, isGuest = true) => {
+    const identity = { id: id ?? `g_test_${nickname}`, nickname, avatar: 'blob-1', isGuest };
     const token = srv.tokens.sign(identity);
     const s = ioc(url, {
       auth: { token },

@@ -17,13 +17,39 @@ const SHAPES: Record<string, string> = {
 const INK = '#0f0b17';
 
 export const PARTS = {
-  bg: ['#c6f432', '#ff5fa2', '#5cc8ff', '#ffc23d', '#a98bff', '#ff7a6b', '#7be0c3', '#3d3257'],
+  bg: [
+    '#c6f432',
+    '#ff5fa2',
+    '#5cc8ff',
+    '#ffc23d',
+    '#a98bff',
+    '#ff7a6b',
+    '#7be0c3',
+    '#3d3257',
+    '#e8b923',
+    '#1b2550',
+  ],
   skin: ['#ffe0c7', '#f5c6a0', '#e0a676', '#b97a4f', '#8a5636', '#5b3a26'],
   hairColor: ['#2b1d16', '#6b4226', '#d9a441', '#e8e1d5', '#ff5fa2', '#5cc8ff'],
   hairStyle: ['Careca', 'Curto', 'Comprido', 'Cacheado', 'Moicano', 'Coque'],
   eyes: ['Pontinhos', 'Felizes', 'Grandes', 'Sonolentos', 'Piscando', 'Espantados'],
   mouth: ['Sorriso', 'Risada', 'Boca aberta', 'Sério', 'Língua', 'Ó'],
-  accessory: ['Nada', 'Óculos', 'Boné', 'Coroa', 'Fones', 'Laço', 'Chapéu de festa', 'Gorro'],
+  accessory: [
+    'Nada',
+    'Óculos',
+    'Boné',
+    'Coroa',
+    'Fones',
+    'Laço',
+    'Chapéu de festa',
+    'Gorro',
+    'Óculos escuros',
+    'Bandana',
+    'Cartola',
+    'Auréola',
+    'Chapéu de mago',
+    'Coroa de diamante',
+  ],
 } as const;
 
 export interface AvatarParts {
@@ -63,13 +89,13 @@ export function decodeAvatar(code: string): AvatarParts | null {
 export function randomAvatarParts(): AvatarParts {
   const r = (n: number) => Math.floor(Math.random() * n);
   return {
-    bg: r(PARTS.bg.length - 1),
+    bg: r(8),
     skin: r(PARTS.skin.length),
     hairStyle: r(PARTS.hairStyle.length),
     hairColor: r(PARTS.hairColor.length),
     eyes: r(PARTS.eyes.length),
     mouth: r(PARTS.mouth.length),
-    accessory: Math.random() < 0.4 ? 0 : r(PARTS.accessory.length),
+    accessory: Math.random() < 0.4 ? 0 : r(8),
   };
 }
 
@@ -186,6 +212,44 @@ function Character({ p }: { p: AvatarParts }) {
       <path d="M22 44Q22 15 50 15Q78 15 78 44Z" fill="#ff7a6b" />
       <rect x="20" y="38" width="60" height="9" rx="4" fill="#ff7a6b" />
       <circle cx="50" cy="12" r="6" fill="#fff" />
+    </g>,
+    <g key="8">
+      <rect x="29" y="48" width="18" height="12" rx="5" fill={INK} />
+      <rect x="53" y="48" width="18" height="12" rx="5" fill={INK} />
+      <path d="M47 52h6M29 51l-7-2M71 51l7-2" stroke={INK} strokeWidth="3" strokeLinecap="round" />
+      <path d="M32 51h5M56 51h5" stroke="#ffffff99" strokeWidth="2" strokeLinecap="round" />
+    </g>,
+    <g key="9" {...s}>
+      <path d="M22 44Q24 27 50 27Q76 27 78 44L78 46L22 46Z" fill="#e8302e" />
+      <path d="M76 42l12 4-10 6z" fill="#e8302e" />
+      <circle cx="40" cy="36" r="2" fill="#fff" stroke="none" />
+      <circle cx="58" cy="34" r="2" fill="#fff" stroke="none" />
+    </g>,
+    <g key="10" {...s}>
+      <rect x="34" y="6" width="32" height="26" rx="3" fill="#1b1b24" />
+      <rect x="34" y="24" width="32" height="5" fill="#e8302e" />
+      <path d="M22 34h56v5H22z" fill="#1b1b24" />
+    </g>,
+    <ellipse
+      key="11"
+      cx="50"
+      cy="16"
+      rx="20"
+      ry="5"
+      fill="none"
+      stroke="#ffd23f"
+      strokeWidth="4.5"
+    />,
+    <g key="12" {...s}>
+      <path d="M28 34L50 0L72 34Z" fill="#5b3fd6" />
+      <path d="M22 34h56v5H22z" fill="#5b3fd6" />
+      <path d="M48 14l2-5 2 5 5 1-4 3 1 5-4-3-4 3 1-5-4-3z" fill="#ffd23f" strokeWidth="1.5" />
+    </g>,
+    <g key="13" {...s}>
+      <path d="M28 33L32 11L41 22L50 6L59 22L68 11L72 33Z" fill="#9fe8ff" />
+      <path d="M50 14l4 6-4 6-4-6z" fill="#fff" strokeWidth="2" />
+      <circle cx="33" cy="12" r="2.5" fill="#ff5fa2" strokeWidth="1.5" />
+      <circle cx="67" cy="12" r="2.5" fill="#ff5fa2" strokeWidth="1.5" />
     </g>,
   ][p.accessory];
 

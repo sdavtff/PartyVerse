@@ -1,4 +1,4 @@
-import type { GameId } from '@partyverse/shared';
+import type { GameId, Highlights } from '@partyverse/shared';
 import type { ZodType } from 'zod';
 
 export interface GamePlayer {
@@ -53,6 +53,8 @@ export interface GameModule<State, Settings, Action> {
   calculateScores(state: State): Record<string, number>;
   /** Jogadores vencedores (empates possíveis). */
   determineWinners(state: State): string[];
+  /** Destaques por jogador para conquistas (opcional). */
+  highlights?(state: State): Highlights;
   /** Resumo final para persistência. */
   finalize(state: State): { rounds: number };
   /** Visão filtrada para um jogador (null = espectador). Nunca incluir segredos de outros. */

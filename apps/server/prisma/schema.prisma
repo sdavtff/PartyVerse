@@ -17,12 +17,66 @@ model User {
   nickname     String
   avatar       String   @default("blob-1")
   preferences  Json     @default("{}")
+  xp           Int      @default(0)
+  banned       Boolean  @default(false)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
   stats        UserStats?
   participants MatchParticipant[]
   moderation   ModerationLog[]    @relation("target")
+  achievements UserAchievement[]
+  sentFriends  Friendship[]       @relation("requester")
+  gotFriends   Friendship[]       @relation("addressee")
+  resets       PasswordReset[]
+  daily        DailyResult[]
+}
+
+model UserAchievement {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  code       String
+  unlockedAt DateTime @default(now())
+
+  @@unique([userId, code])
+}
+
+model Friendship {
+  id          String   @id @default(cuid())
+  requesterId String
+  requester   User     @relation("requester", fields: [requesterId], references: [id], onDelete: Cascade)
+  addresseeId String
+  addressee   User     @relation("addressee", fields: [addresseeId], references: [id], onDelete: Cascade)
+  status      String   @default("pending")
+  createdAt   DateTime @default(now())
+
+  @@unique([requesterId, addresseeId])
+  @@index([addresseeId])
+}
+
+model PasswordReset {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+}
+
+model DailyResult {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  day       String
+  game      String
+  score     Int
+  data      Json     @default("{}")
+  createdAt DateTime @default(now())
+
+  @@unique([userId, day, game])
+  @@index([day, game, score])
 }
 
 model UserStats {

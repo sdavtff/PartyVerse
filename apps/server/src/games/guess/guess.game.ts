@@ -63,6 +63,7 @@ export interface GuessState {
   items: DrawItem[];
   pointCount: number;
   clues: string[];
+  feats: Record<string, { firstGuesses: number; allGuessedTurns: number }>;
 }
 
 const shuffle = <T>(xs: T[]): T[] => {
@@ -225,6 +226,10 @@ export function createGuessGame(
       );
     for (const p of s.players) s.totals[p] = (s.totals[p] ?? 0) + (scores[p] ?? 0);
     s.turnScores = scores;
+    const feat = (id: string) => (s.feats[id] ??= { firstGuesses: 0, allGuessedTurns: 0 });
+    if (s.guessed[0]) feat(s.guessed[0].id).firstGuesses += 1;
+    if (s.currentId && s.guessed.length > 0 && s.guessed.length >= s.players.length - 1)
+      feat(s.currentId).allGuessedTurns += 1;
     ctx.notice(`A palavra era: ${s.word}`);
     setPhase(s, ctx, 'turn-end', TURN_END_SECONDS);
   }
@@ -310,6 +315,7 @@ export function createGuessGame(
         items: [],
         pointCount: 0,
         clues: [],
+        feats: {},
       };
     },
 
@@ -439,6 +445,8 @@ export function createGuessGame(
     },
 
     finalize: (s) => ({ rounds: s.round }),
+
+    highlights: (s) => Object.fromEntries(s.players.map((p) => [p, { ...(s.feats[p] ?? {}) }])),
 
     isParticipant: (s, playerId) => s.players.includes(playerId),
 

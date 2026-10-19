@@ -8,6 +8,8 @@ export interface UserRecord {
   nickname: string;
   avatar: string;
   preferences: Record<string, unknown>;
+  banned?: boolean;
+  createdAt?: string;
 }
 
 export interface UserStatsRecord {
@@ -44,9 +46,18 @@ const toRecord = (u: {
   nickname: string;
   avatar: string;
   preferences: unknown;
+  banned?: boolean;
+  createdAt?: Date;
 }): UserRecord => ({
-  ...u,
+  id: u.id,
+  email: u.email,
+  passwordHash: u.passwordHash,
+  googleId: u.googleId,
+  nickname: u.nickname,
+  avatar: u.avatar,
   preferences: (u.preferences ?? {}) as Record<string, unknown>,
+  banned: u.banned ?? false,
+  createdAt: u.createdAt?.toISOString(),
 });
 
 export class PrismaUserRepository implements UserRepository {

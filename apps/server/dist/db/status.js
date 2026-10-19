@@ -2,6 +2,8 @@ export const dbStatus = { state: 'off', error: null, hint: null, since: Date.now
 /** Traduz o erro de conexão para uma dica prática. */
 export function explainDbError(message, code, url) {
     const m = `${code ?? ''} ${message}`.toLowerCase();
+    if (/^https?:\/\//i.test(url ?? ''))
+        return 'O DATABASE_URL é o endereço do site/API (https://...), não o do banco. No Supabase clique em Connect e copie o da seção "Session pooler" (começa com postgresql://).';
     let host = '';
     let port = '';
     try {

@@ -36,6 +36,13 @@ httpServer.listen(env.PORT, () => {
 });
 
 async function prepareDatabase(url: string) {
+  if (/^https?:\/\//i.test(url)) {
+    // erro comum: colar a URL da API do Supabase; não adianta nem tentar conectar
+    const hint = explainDbError('', undefined, url);
+    console.error(`[PartyVerse] ERRO no banco: ${hint}`);
+    setDbState('error', 'DATABASE_URL com https://', hint);
+    return;
+  }
   console.log(`[PartyVerse] conectando ao banco em ${describeDb(url)}…`);
   setDbState('connecting');
   try {

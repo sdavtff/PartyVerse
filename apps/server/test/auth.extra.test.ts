@@ -161,6 +161,7 @@ describe('dica de erro do banco', () => {
     ).toMatch(/Direct connection/);
     expect(explainDbError('timeout expired', undefined, pooler)).toMatch(/expirou/);
     expect(explainDbError('x', undefined, 'isso não é url')).toMatch(/não é um endereço válido/);
+    expect(explainDbError('', undefined, 'https://abc.supabase.co')).toMatch(/Session pooler/);
     expect(
       explainDbError('x', undefined, 'postgresql://p:[YOUR-PASSWORD]@h:5432/postgres'),
     ).toMatch(/YOUR-PASSWORD/);

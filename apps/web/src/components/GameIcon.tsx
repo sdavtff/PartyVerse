@@ -7,6 +7,9 @@ const ACCENTS: Record<GameId, string> = {
   quiz: '#5cc8ff',
   secretword: '#a98bff',
   impostor: '#ff7a6b',
+  mostlikely: '#ff9a3d',
+  truthdare: '#3ee0c0',
+  twotruths: '#8f9bff',
 };
 export const gameAccent = (id: GameId) => ACCENTS[id];
 
@@ -66,6 +69,35 @@ const GLYPHS: Record<GameId, JSX.Element> = {
       <circle cx="24" cy="30" r="4" />
       <circle cx="40" cy="30" r="4" />
       <path d="M22 42h20" stroke="#0f0b17" strokeWidth="4" />
+    </g>
+  ),
+  mostlikely: (
+    <g fill="none" stroke="#0f0b17" strokeWidth="4" strokeLinecap="round">
+      <path d="M32 20v14" />
+      <path d="M22 44l10-10 10 10" />
+      <circle cx="32" cy="16" r="2" fill="#0f0b17" />
+    </g>
+  ),
+  truthdare: (
+    <g fill="none" stroke="#0f0b17" strokeWidth="4" strokeLinejoin="round">
+      <rect x="18" y="18" width="18" height="26" rx="4" transform="rotate(-10 27 31)" />
+      <rect
+        x="28"
+        y="20"
+        width="18"
+        height="26"
+        rx="4"
+        transform="rotate(10 37 33)"
+        fill="#3ee0c0"
+      />
+    </g>
+  ),
+  twotruths: (
+    <g fill="#0f0b17">
+      <rect x="16" y="20" width="32" height="5" rx="2.5" />
+      <rect x="16" y="30" width="32" height="5" rx="2.5" />
+      <path d="M16 42l6 6M22 42l-6 6" stroke="#0f0b17" strokeWidth="4" strokeLinecap="round" />
+      <rect x="28" y="42" width="20" height="5" rx="2.5" opacity=".4" />
     </g>
   ),
 };

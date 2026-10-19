@@ -181,6 +181,68 @@ export interface GuessView {
     clues: string[];
     maxClues: number;
 }
+export interface MostLikelyView {
+    phase: 'countdown' | 'vote' | 'reveal' | 'finished';
+    round: number;
+    totalRounds: number;
+    deadline: number | null;
+    participants: string[];
+    prompt: string | null;
+    myVote: string | null;
+    votedPlayers: string[];
+    totals: Record<string, number>;
+    /** preenchido em reveal */
+    reveal: {
+        votes: Record<string, string>;
+        counts: Record<string, number>;
+        chosen: string[];
+        gained: Record<string, number>;
+    } | null;
+}
+export interface TruthDareView {
+    phase: 'choose' | 'perform' | 'judge' | 'result' | 'finished';
+    turn: number;
+    totalTurns: number;
+    deadline: number | null;
+    participants: string[];
+    currentId: string | null;
+    pick: 'truth' | 'dare' | null;
+    card: string | null;
+    judgedPlayers: string[];
+    myJudge: boolean | null;
+    totals: Record<string, number>;
+    result: {
+        ok: boolean;
+        yes: number;
+        no: number;
+        gained: number;
+        skipped: boolean;
+    } | null;
+}
+export interface TwoTruthsView {
+    phase: 'write' | 'guess' | 'reveal' | 'finished';
+    round: number;
+    totalRounds: number;
+    deadline: number | null;
+    participants: string[];
+    submitted: string[];
+    mySubmission: {
+        statements: [string, string, string];
+        lie: number;
+    } | null;
+    authorId: string | null;
+    turn: number;
+    totalTurns: number;
+    statements: string[] | null;
+    myGuess: number | null;
+    guessedPlayers: string[];
+    totals: Record<string, number>;
+    reveal: {
+        lie: number;
+        guesses: Record<string, number>;
+        gained: Record<string, number>;
+    } | null;
+}
 export declare const EVENTS: {
     readonly ROOM_CREATE: "room:create";
     readonly ROOM_JOIN: "room:join";

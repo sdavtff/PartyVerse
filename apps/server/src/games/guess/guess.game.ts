@@ -190,13 +190,12 @@ export function createGuessGame(
     s.items = [];
     s.pointCount = 0;
     s.clues = [];
-    const pool = wordsFor(s.settings.category, variant).filter(
+    const pool = wordsFor(s.settings.category, variant, s.settings.customWords).filter(
       (w) => !s.usedWords.includes(w.word),
     );
-    s.choices = shuffle(pool.length >= 3 ? pool : wordsFor(s.settings.category, variant)).slice(
-      0,
-      3,
-    );
+    s.choices = shuffle(
+      pool.length >= 3 ? pool : wordsFor(s.settings.category, variant, s.settings.customWords),
+    ).slice(0, 3);
     ctx.notice(`Vez de ${ctx.nickname(s.currentId!)} escolher a palavra`);
     setPhase(s, ctx, 'choosing', CHOOSE_SECONDS);
   }
@@ -505,6 +504,7 @@ export const drawGame = createGuessGame('draw', 'draw', {
   category: 'misto',
   letterHints: true,
   maxClues: 5,
+  customWords: [],
 });
 
 export const charadesGame = createGuessGame('charades', 'charades', {
@@ -513,6 +513,7 @@ export const charadesGame = createGuessGame('charades', 'charades', {
   category: 'acoes',
   letterHints: true,
   maxClues: 5,
+  customWords: [],
 });
 
 export const secretWordGame = createGuessGame('secretword', 'secretword', {
@@ -521,4 +522,5 @@ export const secretWordGame = createGuessGame('secretword', 'secretword', {
   category: 'misto',
   letterHints: false,
   maxClues: 5,
+  customWords: [],
 });

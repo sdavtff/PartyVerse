@@ -1,4 +1,5 @@
 import { EVENTS, WORD_CATEGORIES, type GameId, type GuessSettings } from '@partyverse/shared';
+import { CustomListEditor, lines } from '../../components/CustomListEditor';
 import { useToast } from '../../components/Toast';
 import { emitAck } from '../../lib/socket';
 
@@ -10,7 +11,28 @@ const CAT_LABEL: Record<GuessSettings['category'], string> = {
   lugares: 'Lugares',
   profissoes: 'Profissões',
   acoes: 'Ações',
+  anime: 'Anime',
+  games: 'Games',
+  musica: 'Música',
+  futebol: 'Futebol',
+  personalizado: '✍️ Personalizado',
 };
+
+export function parseWords(text: string) {
+  const errors: string[] = [];
+  const items = [
+    ...new Set(
+      lines(text).filter((w, i) => {
+        if (w.length < 2 || w.length > 30) {
+          errors.push(`Linha ${i + 1}: use de 2 a 30 letras`);
+          return false;
+        }
+        return true;
+      }),
+    ),
+  ].slice(0, 200);
+  return { items, errors };
+}
 
 const HOW: Record<string, string[]> = {
   draw: [
@@ -74,6 +96,22 @@ export function GuessSettingsForm({
           })}
         </div>
       </div>
+      {settings.category === 'personalizado' && (
+        <CustomListEditor
+          id="words"
+          title="Suas palavras"
+          hint="Uma palavra ou expressão por linha (nomes da turma, piadas internas…). Com menos de 3, completamos com o tema misto."
+          placeholder={'tia Lurdes\nchurrasco de domingo\ncachorro do vizinho'}
+          savedCount={Number((settings as Record<string, unknown>).customWordsCount ?? 0)}
+          parse={parseWords}
+          editable={editable}
+          onSave={(items) =>
+            emitAck(EVENTS.ROOM_UPDATE_SETTINGS, { game: { customWords: items } })
+              .then(() => toast('Palavras salvas!', 'success'))
+              .catch((e) => toast((e as Error).message, 'error'))
+          }
+        />
+      )}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <label className="block">
           <span className="label">Rodadas</span>

@@ -1,5 +1,5 @@
 import type { GameId, Highlights } from '@partyverse/shared';
-import type { ZodType } from 'zod';
+import type { ZodType, ZodTypeDef } from 'zod';
 
 export interface GamePlayer {
   id: string;
@@ -37,7 +37,7 @@ export interface GameContext {
 export interface GameModule<State, Settings, Action> {
   id: GameId;
   minPlayers: number;
-  settingsSchema: ZodType<Settings>;
+  settingsSchema: ZodType<Settings, ZodTypeDef, unknown>;
   defaultSettings(): Settings;
   /** Cria o estado inicial a partir dos jogadores presentes no início. */
   createInitialState(players: GamePlayer[], settings: Settings): State;

@@ -53,6 +53,33 @@ export const GAME_CATALOG = [
         available: true,
         color: 'rose',
     },
+    {
+        id: 'mostlikely',
+        name: 'Quem é Mais Provável',
+        tagline: 'Uma frase, todo mundo vota em alguém da sala. Sem dó.',
+        minPlayers: 3,
+        maxPlayers: 30,
+        available: true,
+        color: 'orange',
+    },
+    {
+        id: 'truthdare',
+        name: 'Verdade ou Desafio',
+        tagline: 'Na sua vez: conte uma verdade ou encare um desafio leve.',
+        minPlayers: 2,
+        maxPlayers: 16,
+        available: true,
+        color: 'teal',
+    },
+    {
+        id: 'twotruths',
+        name: 'Duas Verdades e Uma Mentira',
+        tagline: 'Escreva três fatos sobre você. A galera caça a mentira.',
+        minPlayers: 3,
+        maxPlayers: 16,
+        available: true,
+        color: 'indigo',
+    },
 ];
 export const EVENTS = {
     // cliente -> servidor

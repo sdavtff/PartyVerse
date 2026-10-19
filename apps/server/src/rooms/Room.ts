@@ -438,7 +438,7 @@ export class Room {
       code: this.code,
       settings: this.settings,
       password: this.password || null,
-      gameSettings: this.gameSettings,
+      gameSettings: publicGameSettings(this.gameSettings),
       phase: this.phase,
       hostId: this.hostId,
       createdAt: this.createdAt,
@@ -621,4 +621,19 @@ export class Room {
     this.clearTimers();
     for (const p of this.players.values()) if (p.graceTimer) clearTimeout(p.graceTimer);
   }
+}
+
+/**
+ * Listas personalizadas (palavras, perguntas) não vão para todos: estragariam o jogo.
+ * No lugar, a sala informa só quantos itens existem (ex.: customWordsCount).
+ */
+export function publicGameSettings(gs: Record<string, unknown>) {
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(gs)) {
+    if (k.startsWith('custom') && Array.isArray(v)) {
+      out[k] = [];
+      out[`${k}Count`] = v.length;
+    } else out[k] = v;
+  }
+  return out;
 }

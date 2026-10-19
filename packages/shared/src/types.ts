@@ -110,6 +110,33 @@ export const GAME_CATALOG: GameMeta[] = [
     available: true,
     color: 'rose',
   },
+  {
+    id: 'mostlikely',
+    name: 'Quem é Mais Provável',
+    tagline: 'Uma frase, todo mundo vota em alguém da sala. Sem dó.',
+    minPlayers: 3,
+    maxPlayers: 30,
+    available: true,
+    color: 'orange',
+  },
+  {
+    id: 'truthdare',
+    name: 'Verdade ou Desafio',
+    tagline: 'Na sua vez: conte uma verdade ou encare um desafio leve.',
+    minPlayers: 2,
+    maxPlayers: 16,
+    available: true,
+    color: 'teal',
+  },
+  {
+    id: 'twotruths',
+    name: 'Duas Verdades e Uma Mentira',
+    tagline: 'Escreva três fatos sobre você. A galera caça a mentira.',
+    minPlayers: 3,
+    maxPlayers: 16,
+    available: true,
+    color: 'indigo',
+  },
 ];
 
 export interface ServerError {
@@ -234,6 +261,58 @@ export interface GuessView {
   /** só Palavra Secreta */
   clues: string[];
   maxClues: number;
+}
+
+export interface MostLikelyView {
+  phase: 'countdown' | 'vote' | 'reveal' | 'finished';
+  round: number;
+  totalRounds: number;
+  deadline: number | null;
+  participants: string[];
+  prompt: string | null;
+  myVote: string | null;
+  votedPlayers: string[];
+  totals: Record<string, number>;
+  /** preenchido em reveal */
+  reveal: {
+    votes: Record<string, string>;
+    counts: Record<string, number>;
+    chosen: string[];
+    gained: Record<string, number>;
+  } | null;
+}
+
+export interface TruthDareView {
+  phase: 'choose' | 'perform' | 'judge' | 'result' | 'finished';
+  turn: number;
+  totalTurns: number;
+  deadline: number | null;
+  participants: string[];
+  currentId: string | null;
+  pick: 'truth' | 'dare' | null;
+  card: string | null;
+  judgedPlayers: string[];
+  myJudge: boolean | null;
+  totals: Record<string, number>;
+  result: { ok: boolean; yes: number; no: number; gained: number; skipped: boolean } | null;
+}
+
+export interface TwoTruthsView {
+  phase: 'write' | 'guess' | 'reveal' | 'finished';
+  round: number;
+  totalRounds: number;
+  deadline: number | null;
+  participants: string[];
+  submitted: string[];
+  mySubmission: { statements: [string, string, string]; lie: number } | null;
+  authorId: string | null;
+  turn: number;
+  totalTurns: number;
+  statements: string[] | null;
+  myGuess: number | null;
+  guessedPlayers: string[];
+  totals: Record<string, number>;
+  reveal: { lie: number; guesses: Record<string, number>; gained: Record<string, number> } | null;
 }
 
 export const EVENTS = {

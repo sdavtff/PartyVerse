@@ -1,6 +1,6 @@
 import type { WordCategory } from '@partyverse/shared';
 
-type Cat = Exclude<WordCategory, 'misto'>;
+type Cat = Exclude<WordCategory, 'misto' | 'personalizado'>;
 
 export const WORD_CATEGORY_LABELS: Record<WordCategory, string> = {
   misto: 'Misto',
@@ -10,6 +10,11 @@ export const WORD_CATEGORY_LABELS: Record<WordCategory, string> = {
   lugares: 'Lugar',
   profissoes: 'Profissão',
   acoes: 'Ação',
+  anime: 'Anime',
+  games: 'Games',
+  musica: 'Música',
+  futebol: 'Futebol',
+  personalizado: 'Personalizado',
 };
 
 const LISTS: Record<Cat, string[]> = {
@@ -262,19 +267,117 @@ const LISTS: Record<Cat, string[]> = {
     'tricotar',
     'ordenhar vaca',
   ],
+  anime: [
+    'pikachu',
+    'goku',
+    'luffy',
+    'esfera do dragão',
+    'chapéu de palha',
+    'ninja',
+    'samurai',
+    'robô gigante',
+    'shuriken',
+    'katana',
+    'pokébola',
+    'kamehameha',
+    'titã',
+    'ramen',
+    'cerejeira',
+    'mangá',
+    'cosplay',
+    'raposa de nove caudas',
+    'espada de bambu',
+    'bandana ninja',
+  ],
+  games: [
+    'controle',
+    'joystick',
+    'fliperama',
+    'pac-man',
+    'tetris',
+    'creeper',
+    'mario',
+    'cogumelo',
+    'moeda',
+    'espada de diamante',
+    'headset',
+    'teclado',
+    'troféu',
+    'chefão',
+    'vida extra',
+    'game over',
+    'zumbi',
+    'baú do tesouro',
+    'picareta',
+    'fantasma',
+  ],
+  musica: [
+    'violão',
+    'pandeiro',
+    'cavaquinho',
+    'sanfona',
+    'bateria',
+    'microfone',
+    'berimbau',
+    'trio elétrico',
+    'carnaval',
+    'samba',
+    'forró',
+    'pagode',
+    'show',
+    'palco',
+    'fone de ouvido',
+    'karaokê',
+    'maestro',
+    'disco de vinil',
+    'guitarra',
+    'caixa de som',
+  ],
+  futebol: [
+    'gol',
+    'goleiro',
+    'pênalti',
+    'escanteio',
+    'bola',
+    'chuteira',
+    'apito',
+    'juiz',
+    'cartão vermelho',
+    'torcida',
+    'estádio',
+    'trave',
+    'bandeirinha',
+    'camisa 10',
+    'taça',
+    'bicicleta',
+    'drible',
+    'pelada',
+    'rede',
+    'vuvuzela',
+  ],
 };
 
 export interface WordEntry {
   word: string;
-  category: Cat;
+  category: Cat | 'personalizado';
 }
 
 export const ALL_WORDS: WordEntry[] = (Object.entries(LISTS) as [Cat, string[]][]).flatMap(
   ([category, words]) => words.map((word) => ({ word, category })),
 );
 
-export function wordsFor(category: WordCategory, variant: 'draw' | 'charades' | 'secretword') {
-  let pool = category === 'misto' ? ALL_WORDS : ALL_WORDS.filter((w) => w.category === category);
+export function wordsFor(
+  category: WordCategory,
+  variant: 'draw' | 'charades' | 'secretword',
+  custom: string[] = [],
+): WordEntry[] {
+  if (category === 'personalizado') {
+    const mine = custom.map((word) => ({ word, category: 'personalizado' as const }));
+    // com menos de 3 palavras próprias, completa com a lista mista
+    return mine.length >= 3 ? mine : [...mine, ...wordsFor('misto', variant)];
+  }
+  let pool: WordEntry[] =
+    category === 'misto' ? ALL_WORDS : ALL_WORDS.filter((w) => w.category === category);
   // ações são ótimas para mímica, mas difíceis de desenhar só com "misto"
   if (category === 'misto' && variant === 'draw') pool = pool.filter((w) => w.category !== 'acoes');
   return pool;

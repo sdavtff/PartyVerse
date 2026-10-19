@@ -2,6 +2,7 @@ import {
   quizActionSchema,
   quizSettingsSchema,
   type QuizAction,
+  type QuizCategory,
   type QuizSettings,
   type QuizView,
 } from '@partyverse/shared';
@@ -48,7 +49,7 @@ const shuffle = <T>(xs: T[]): T[] => {
   return a;
 };
 
-function prepare(q: QuizQuestion): Prepared {
+function prepare(q: Omit<QuizQuestion, 'c'> & { c: QuizCategory }): Prepared {
   const options = shuffle([q.a, ...q.w]);
   return {
     text: q.q,
@@ -60,6 +61,19 @@ function prepare(q: QuizQuestion): Prepared {
 }
 
 export function pickQuestions(settings: QuizSettings, bank = QUIZ_QUESTIONS): Prepared[] {
+  if (settings.category === 'personalizado') {
+    const mine = shuffle(settings.customQuestions ?? []).map((q) =>
+      prepare({ ...q, c: 'personalizado' }),
+    );
+    // completa com perguntas mistas se o anfitrião escreveu poucas
+    const extra =
+      mine.length >= settings.questions
+        ? []
+        : shuffle(bank)
+            .slice(0, settings.questions - mine.length)
+            .map(prepare);
+    return [...mine.slice(0, settings.questions), ...extra];
+  }
   const pool = settings.category === 'misto' ? bank : bank.filter((q) => q.c === settings.category);
   return shuffle(pool).slice(0, settings.questions).map(prepare);
 }
@@ -102,7 +116,12 @@ export const quizGame: GameModule<QuizState, QuizSettings, QuizAction> = {
   minPlayers: 2,
   settingsSchema: quizSettingsSchema,
 
-  defaultSettings: () => ({ questions: 10, secondsPerQuestion: 15, category: 'misto' }),
+  defaultSettings: () => ({
+    questions: 10,
+    secondsPerQuestion: 15,
+    category: 'misto',
+    customQuestions: [],
+  }),
 
   createInitialState(players: GamePlayer[], settings: QuizSettings): QuizState {
     const questions = pickQuestions(settings);

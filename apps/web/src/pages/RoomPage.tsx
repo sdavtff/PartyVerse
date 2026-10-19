@@ -7,6 +7,12 @@ import {
   type ImpostorView,
   type MatchResult,
   type MatchReward,
+  type MostLikelySettings,
+  type MostLikelyView,
+  type TruthDareSettings,
+  type TruthDareView,
+  type TwoTruthsSettings,
+  type TwoTruthsView,
   type PublicRoom,
   type QuizSettings,
   type QuizView,
@@ -31,6 +37,14 @@ import { GuessGame } from '../games/guess/GuessGame';
 import { GuessSettingsForm } from '../games/guess/GuessSettingsForm';
 import { ImpostorGame } from '../games/impostor/ImpostorGame';
 import { ImpostorSettingsForm } from '../games/impostor/ImpostorSettingsForm';
+import { MostLikelyGame } from '../games/party/MostLikelyGame';
+import {
+  MostLikelySettingsForm,
+  TruthDareSettingsForm,
+  TwoTruthsSettingsForm,
+} from '../games/party/PartySettingsForms';
+import { TruthDareGame } from '../games/party/TruthDareGame';
+import { TwoTruthsGame } from '../games/party/TwoTruthsGame';
 import { QuizGame } from '../games/quiz/QuizGame';
 import { QuizSettingsForm } from '../games/quiz/QuizSettingsForm';
 import { StopGame } from '../games/stop/StopGame';
@@ -117,7 +131,7 @@ function RoomInner({ code }: { code: string }) {
             {room.settings.isPublic ? 'pública' : 'privada'}
           </p>
         </div>
-        <div className="flex w-full items-center justify-between gap-2 sm:w-auto">
+        <div className="flex w-full flex-wrap items-center justify-between gap-2 sm:w-auto">
           <ShareCode
             code={room.code}
             gameName={GAME_CATALOG.find((g) => g.id === room.settings.gameId)?.name ?? ''}
@@ -204,6 +218,12 @@ function GameScreen({
       return <ImpostorGame view={game as ImpostorView} room={room} myId={myId} />;
     case 'quiz':
       return <QuizGame view={game as QuizView} room={room} myId={myId} />;
+    case 'mostlikely':
+      return <MostLikelyGame view={game as MostLikelyView} room={room} myId={myId} />;
+    case 'truthdare':
+      return <TruthDareGame view={game as TruthDareView} room={room} myId={myId} />;
+    case 'twotruths':
+      return <TwoTruthsGame view={game as TwoTruthsView} room={room} myId={myId} />;
     default:
       return null;
   }
@@ -369,6 +389,24 @@ function Lobby({ room, amHost }: { room: PublicRoom; amHost: boolean }) {
       {room.settings.gameId === 'stop' && (
         <StopSettingsForm
           settings={room.gameSettings as unknown as StopSettings}
+          editable={amHost}
+        />
+      )}
+      {room.settings.gameId === 'mostlikely' && (
+        <MostLikelySettingsForm
+          settings={room.gameSettings as unknown as MostLikelySettings}
+          editable={amHost}
+        />
+      )}
+      {room.settings.gameId === 'truthdare' && (
+        <TruthDareSettingsForm
+          settings={room.gameSettings as unknown as TruthDareSettings}
+          editable={amHost}
+        />
+      )}
+      {room.settings.gameId === 'twotruths' && (
+        <TwoTruthsSettingsForm
+          settings={room.gameSettings as unknown as TwoTruthsSettings}
           editable={amHost}
         />
       )}

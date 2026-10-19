@@ -121,7 +121,7 @@ export function Home() {
           </h1>
           <p className="mt-5 max-w-lg text-lg text-ink-200">
             Crie uma sala, mande o código para a galera e joguem juntos: adedonha, rabisco, mímica,
-            quiz, palavra secreta e impostor. Até 50 pessoas por sala, sem instalar nada.
+            quiz, impostor, verdade ou desafio e mais. Até 50 pessoas por sala, sem instalar nada.
           </p>
           <form onSubmit={join} className="mt-7 flex max-w-md gap-2">
             <label htmlFor="code" className="sr-only">

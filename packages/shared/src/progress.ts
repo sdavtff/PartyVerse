@@ -28,19 +28,74 @@ export interface AchievementDef {
 }
 
 export const ACHIEVEMENTS: AchievementDef[] = [
-  { code: 'first_match', name: 'Primeira partida', description: 'Jogue sua primeira partida.', icon: '🎮' },
+  {
+    code: 'first_match',
+    name: 'Primeira partida',
+    description: 'Jogue sua primeira partida.',
+    icon: '🎮',
+  },
   { code: 'first_win', name: 'Primeira vitória', description: 'Vença uma partida.', icon: '🏆' },
-  { code: 'wins_10', name: 'Colecionador de vitórias', description: 'Vença 10 partidas.', icon: '🥇' },
+  {
+    code: 'wins_10',
+    name: 'Colecionador de vitórias',
+    description: 'Vença 10 partidas.',
+    icon: '🥇',
+  },
   { code: 'matches_50', name: 'Veterano', description: 'Jogue 50 partidas.', icon: '🎖️' },
-  { code: 'all_games', name: 'Eclético', description: 'Jogue todos os jogos ao menos uma vez.', icon: '🌈' },
-  { code: 'big_room', name: 'Festa lotada', description: 'Jogue uma partida com 10 ou mais pessoas.', icon: '🎉' },
-  { code: 'quiz_streak_5', name: 'Cérebro em chamas', description: 'Acerte 5 perguntas seguidas no Quiz.', icon: '🔥' },
-  { code: 'quick_guesser', name: 'Olho de águia', description: 'Seja o primeiro a acertar 3 vezes numa partida de adivinhar.', icon: '🦅' },
-  { code: 'master_artist', name: 'Artista de mão cheia', description: 'Desenhe/encene algo que todo mundo acertou.', icon: '🎨' },
-  { code: 'impostor_escape', name: 'Mestre do disfarce', description: 'Escape ou adivinhe o local sendo o impostor.', icon: '🕵️' },
-  { code: 'stop_unique_10', name: 'Original', description: 'Faça 10 respostas únicas numa partida de Adedonha.', icon: '💡' },
-  { code: 'daily_done', name: 'Desafiante', description: 'Complete um desafio diário.', icon: '📅' },
-  { code: 'first_friend', name: 'Bom de papo', description: 'Faça sua primeira amizade.', icon: '🤝' },
+  {
+    code: 'all_games',
+    name: 'Eclético',
+    description: 'Jogue todos os jogos ao menos uma vez.',
+    icon: '🌈',
+  },
+  {
+    code: 'big_room',
+    name: 'Festa lotada',
+    description: 'Jogue uma partida com 10 ou mais pessoas.',
+    icon: '🎉',
+  },
+  {
+    code: 'quiz_streak_5',
+    name: 'Cérebro em chamas',
+    description: 'Acerte 5 perguntas seguidas no Quiz.',
+    icon: '🔥',
+  },
+  {
+    code: 'quick_guesser',
+    name: 'Olho de águia',
+    description: 'Seja o primeiro a acertar 3 vezes numa partida de adivinhar.',
+    icon: '🦅',
+  },
+  {
+    code: 'master_artist',
+    name: 'Artista de mão cheia',
+    description: 'Desenhe/encene algo que todo mundo acertou.',
+    icon: '🎨',
+  },
+  {
+    code: 'impostor_escape',
+    name: 'Mestre do disfarce',
+    description: 'Escape ou adivinhe o local sendo o impostor.',
+    icon: '🕵️',
+  },
+  {
+    code: 'stop_unique_10',
+    name: 'Original',
+    description: 'Faça 10 respostas únicas numa partida de Adedonha.',
+    icon: '💡',
+  },
+  {
+    code: 'daily_done',
+    name: 'Desafiante',
+    description: 'Complete um desafio diário.',
+    icon: '📅',
+  },
+  {
+    code: 'first_friend',
+    name: 'Bom de papo',
+    description: 'Faça sua primeira amizade.',
+    icon: '🤝',
+  },
   { code: 'level_5', name: 'Subindo de nível', description: 'Chegue ao nível 5.', icon: '⭐' },
   { code: 'level_10', name: 'Lenda da festa', description: 'Chegue ao nível 10.', icon: '👑' },
 ];
@@ -67,11 +122,7 @@ export function avatarMinLevel(avatar: string): number {
 /** Destaques que cada jogo informa ao fim da partida (por jogador). */
 export type Highlights = Record<string, Partial<Record<HighlightKey, number>>>;
 export type HighlightKey =
-  | 'maxStreak'
-  | 'firstGuesses'
-  | 'allGuessedTurns'
-  | 'impostorWins'
-  | 'uniqueAnswers';
+  'maxStreak' | 'firstGuesses' | 'allGuessedTurns' | 'impostorWins' | 'uniqueAnswers';
 
 export interface MatchReward {
   xpGained: number;

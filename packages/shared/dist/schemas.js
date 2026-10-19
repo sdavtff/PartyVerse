@@ -1,5 +1,15 @@
 import { z } from 'zod';
-export const GAME_IDS = ['stop', 'draw', 'charades', 'quiz', 'secretword', 'impostor'];
+export const GAME_IDS = [
+    'stop',
+    'draw',
+    'charades',
+    'quiz',
+    'secretword',
+    'impostor',
+    'mostlikely',
+    'truthdare',
+    'twotruths',
+];
 export const nicknameSchema = z
     .string()
     .trim()
@@ -107,11 +117,33 @@ export const QUIZ_CATEGORIES = [
     'historia',
     'esportes',
     'entretenimento',
+    'anime',
+    'games',
+    'musica',
+    'futebol',
+    'personalizado',
 ];
+export const customQuestionSchema = z.object({
+    q: z.string().trim().min(3).max(160),
+    a: z.string().trim().min(1).max(60),
+    w: z.tuple([
+        z.string().trim().min(1).max(60),
+        z.string().trim().min(1).max(60),
+        z.string().trim().min(1).max(60),
+    ]),
+});
+/** Lista de textos personalizados (palavras, frases), sem repetidos. */
+export const customListSchema = (max, len) => z
+    .array(z.string().trim().min(2).max(len))
+    .max(max)
+    .default([])
+    .transform((xs) => [...new Set(xs)]);
 export const quizSettingsSchema = z.object({
     questions: z.number().int().min(5).max(20),
     secondsPerQuestion: z.number().int().min(8).max(30),
     category: z.enum(QUIZ_CATEGORIES),
+    /** perguntas criadas pelo anfitrião (tema personalizado) */
+    customQuestions: z.array(customQuestionSchema).max(60).default([]),
 });
 export const quizActionSchema = z.discriminatedUnion('type', [
     z.object({ type: z.literal('answer'), option: z.number().int().min(0).max(3) }),
@@ -125,6 +157,11 @@ export const WORD_CATEGORIES = [
     'lugares',
     'profissoes',
     'acoes',
+    'anime',
+    'games',
+    'musica',
+    'futebol',
+    'personalizado',
 ];
 export const guessSettingsSchema = z.object({
     rounds: z.number().int().min(1).max(5),
@@ -134,6 +171,8 @@ export const guessSettingsSchema = z.object({
     letterHints: z.boolean(),
     /** só Palavra Secreta: máximo de dicas por vez */
     maxClues: z.number().int().min(1).max(10),
+    /** palavras do anfitrião (tema personalizado) */
+    customWords: customListSchema(200, 30),
 });
 /** Coordenadas do desenho: canvas lógico de 800×600, inteiros. */
 const coord = z.number().int().min(-50).max(850);
@@ -202,3 +241,43 @@ export const profileUpdateSchema = z.object({
         .partial()
         .optional(),
 });
+// ---------- Quem é mais provável ----------
+export const mostLikelySettingsSchema = z.object({
+    rounds: z.number().int().min(3).max(20),
+    voteSeconds: z.number().int().min(10).max(60),
+    customPrompts: customListSchema(100, 100),
+    onlyCustom: z.boolean().default(false),
+});
+export const mostLikelyActionSchema = z.object({
+    type: z.literal('vote'),
+    targetId: z.string().min(1).max(64),
+});
+// ---------- Verdade ou Desafio ----------
+export const truthDareSettingsSchema = z.object({
+    turnsPerPlayer: z.number().int().min(1).max(3),
+    performSeconds: z.number().int().min(30).max(180),
+    customTruths: customListSchema(100, 140),
+    customDares: customListSchema(100, 140),
+    onlyCustom: z.boolean().default(false),
+});
+export const truthDareActionSchema = z.discriminatedUnion('type', [
+    z.object({ type: z.literal('choose'), pick: z.enum(['truth', 'dare']) }),
+    z.object({ type: z.literal('done') }),
+    z.object({ type: z.literal('skip') }),
+    z.object({ type: z.literal('judge'), ok: z.boolean() }),
+]);
+// ---------- Duas verdades e uma mentira ----------
+export const twoTruthsSettingsSchema = z.object({
+    rounds: z.number().int().min(1).max(3),
+    writeSeconds: z.number().int().min(60).max(300),
+    guessSeconds: z.number().int().min(10).max(60),
+});
+const statement = z.string().trim().min(3).max(90);
+export const twoTruthsActionSchema = z.discriminatedUnion('type', [
+    z.object({
+        type: z.literal('submit'),
+        statements: z.tuple([statement, statement, statement]),
+        lie: z.number().int().min(0).max(2),
+    }),
+    z.object({ type: z.literal('guess'), index: z.number().int().min(0).max(2) }),
+]);

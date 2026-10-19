@@ -1,4 +1,10 @@
-import { EVENTS, QUIZ_CATEGORIES, type QuizSettings } from '@partyverse/shared';
+import {
+  EVENTS,
+  QUIZ_CATEGORIES,
+  type CustomQuestion,
+  type QuizSettings,
+} from '@partyverse/shared';
+import { CustomListEditor, lines } from '../../components/CustomListEditor';
 import { useToast } from '../../components/Toast';
 import { emitAck } from '../../lib/socket';
 
@@ -10,7 +16,32 @@ const LABELS: Record<QuizSettings['category'], string> = {
   historia: 'História',
   esportes: 'Esportes',
   entretenimento: 'Entretenimento',
+  anime: 'Anime',
+  games: 'Games',
+  musica: 'Música BR',
+  futebol: 'Futebol',
+  personalizado: '✍️ Personalizado',
 };
+
+/** "pergunta | certa | errada | errada | errada" por linha */
+export function parseQuestions(text: string) {
+  const items: CustomQuestion[] = [];
+  const errors: string[] = [];
+  lines(text).forEach((l, i) => {
+    const parts = l.split('|').map((p) => p.trim());
+    if (parts.length !== 5 || parts.some((p) => !p)) {
+      errors.push(`Linha ${i + 1}: use 5 partes separadas por |`);
+      return;
+    }
+    const [q, a, w1, w2, w3] = parts as [string, string, string, string, string];
+    if (q.length < 3 || q.length > 160)
+      return void errors.push(`Linha ${i + 1}: pergunta muito curta ou longa`);
+    if ([a, w1, w2, w3].some((x) => x.length > 60))
+      return void errors.push(`Linha ${i + 1}: resposta com mais de 60 letras`);
+    items.push({ q, a, w: [w1, w2, w3] });
+  });
+  return { items: items.slice(0, 60), errors };
+}
 
 export function QuizSettingsForm({
   settings,
@@ -45,6 +76,22 @@ export function QuizSettingsForm({
           })}
         </div>
       </div>
+      {settings.category === 'personalizado' && (
+        <CustomListEditor
+          id="quiz"
+          title="Suas perguntas"
+          hint="Uma por linha: pergunta | resposta certa | errada | errada | errada. Se faltar pergunta, completamos com o tema misto."
+          placeholder={'Qual é a cor favorita da Ana? | Roxo | Azul | Verde | Preto'}
+          savedCount={Number((settings as Record<string, unknown>).customQuestionsCount ?? 0)}
+          parse={parseQuestions}
+          editable={editable}
+          onSave={(items) =>
+            emitAck(EVENTS.ROOM_UPDATE_SETTINGS, { game: { customQuestions: items } })
+              .then(() => toast('Perguntas salvas!', 'success'))
+              .catch((e) => toast((e as Error).message, 'error'))
+          }
+        />
+      )}
       <div className="grid grid-cols-2 gap-3">
         <label className="block">
           <span className="label">Perguntas</span>

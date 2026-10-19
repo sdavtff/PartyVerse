@@ -41,6 +41,7 @@ export function PlayerList({
   useEffect(() => {
     if (!showScores) {
       prevScores.current = {};
+      setGains({});
       return;
     }
     const next: Record<string, { n: number; key: number }> = {};
@@ -52,7 +53,8 @@ export function PlayerList({
     }
     if (Object.keys(next).length) {
       setGains((g) => ({ ...g, ...next }));
-      const t = setTimeout(
+      // sem cancelar na limpeza: novas atualizações da sala não podem deixar o "+pontos" preso
+      setTimeout(
         () =>
           setGains((g) => {
             const c = { ...g };
@@ -61,7 +63,6 @@ export function PlayerList({
           }),
         1800,
       );
-      return () => clearTimeout(t);
     }
   }, [room.players, showScores]);
 

@@ -20,6 +20,9 @@ export default {
           amber: '#ffc23d',
           violet: '#a98bff',
           rose: '#ff7a6b',
+          teal: '#3ee0c0',
+          orange: '#ff9a3d',
+          indigo: '#8f9bff',
         },
       },
       fontFamily: {

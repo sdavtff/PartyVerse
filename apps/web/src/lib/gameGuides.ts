@@ -135,6 +135,65 @@ export const GAME_GUIDES: GameGuide[] = [
     ],
     bestWith: '4 a 12 pessoas',
   },
+  {
+    id: 'mostlikely',
+    slug: 'quem-e-mais-provavel',
+    intro:
+      'Aparece uma frase — "Quem é mais provável de dormir no cinema?" — e todo mundo vota em alguém da sala. Risada garantida.',
+    steps: [
+      'A cada rodada aparece uma frase nova.',
+      'Toque em quem você acha mais provável (pode votar em você mesmo!). Dá para trocar o voto até o tempo acabar.',
+      'No fim, o mais votado é revelado com o gráfico de votos.',
+      'O anfitrião pode escrever frases próprias — sobre a turma, piadas internas, o que quiser.',
+    ],
+    scoring: [
+      'Votou na pessoa mais votada: +100.',
+      'Ser a pessoa mais votada: +50.',
+      'Empate: todos os mais votados contam.',
+    ],
+    tips: ['Ótimo para aquecer a festa antes de jogos mais disputados.'],
+    bestWith: '4 a 20 pessoas',
+  },
+  {
+    id: 'truthdare',
+    slug: 'verdade-ou-desafio',
+    intro:
+      'O clássico, em versão leve: na sua vez, escolha responder uma verdade ou cumprir um desafio. A turma decide se valeu.',
+    steps: [
+      'Uma pessoa por vez escolhe: Verdade ou Desafio (se demorar, o jogo sorteia).',
+      'Aparece a carta. Responda em voz alta, na chamada de vídeo ou no chat.',
+      'Toque em "Pronto!" — os outros votam 👍 cumpriu ou 👎 não valeu.',
+      'Não quer? Dá para passar a vez, mas sem pontos.',
+    ],
+    scoring: [
+      'Verdade aceita pela maioria: +100.',
+      'Desafio aceito pela maioria: +150.',
+      'Empate nos votos conta como cumprido.',
+    ],
+    tips: [
+      'As cartas são pensadas para qualquer turma e funcionam por vídeo.',
+      'O anfitrião pode adicionar verdades e desafios próprios — mantenha leve e respeitoso!',
+    ],
+    bestWith: '3 a 10 pessoas, em chamada de vídeo',
+  },
+  {
+    id: 'twotruths',
+    slug: 'duas-verdades-e-uma-mentira',
+    intro:
+      'Cada um escreve três frases sobre si: duas verdadeiras e uma mentira. Depois, a turma tenta descobrir qual é a mentira de cada um.',
+    steps: [
+      'Todos escrevem as três frases ao mesmo tempo e marcam qual é a mentira.',
+      'Uma pessoa por vez tem as frases mostradas (em ordem embaralhada).',
+      'Os outros escolhem qual acham que é a mentira.',
+      'A mentira é revelada junto com quem caiu nela.',
+    ],
+    scoring: ['Achou a mentira: +100.', 'Autor: +50 por cada pessoa enganada.'],
+    tips: [
+      'Verdades surpreendentes enganam mais que mentiras mirabolantes.',
+      'Ótimo para grupos que estão se conhecendo.',
+    ],
+    bestWith: '3 a 12 pessoas',
+  },
 ];
 
 export const guideBySlug = (slug: string) => GAME_GUIDES.find((g) => g.slug === slug);

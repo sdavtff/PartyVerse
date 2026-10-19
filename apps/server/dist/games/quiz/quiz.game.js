@@ -25,6 +25,16 @@ function prepare(q) {
     };
 }
 export function pickQuestions(settings, bank = QUIZ_QUESTIONS) {
+    if (settings.category === 'personalizado') {
+        const mine = shuffle(settings.customQuestions ?? []).map((q) => prepare({ ...q, c: 'personalizado' }));
+        // completa com perguntas mistas se o anfitrião escreveu poucas
+        const extra = mine.length >= settings.questions
+            ? []
+            : shuffle(bank)
+                .slice(0, settings.questions - mine.length)
+                .map(prepare);
+        return [...mine.slice(0, settings.questions), ...extra];
+    }
     const pool = settings.category === 'misto' ? bank : bank.filter((q) => q.c === settings.category);
     return shuffle(pool).slice(0, settings.questions).map(prepare);
 }
@@ -63,7 +73,12 @@ export const quizGame = {
     id: 'quiz',
     minPlayers: 2,
     settingsSchema: quizSettingsSchema,
-    defaultSettings: () => ({ questions: 10, secondsPerQuestion: 15, category: 'misto' }),
+    defaultSettings: () => ({
+        questions: 10,
+        secondsPerQuestion: 15,
+        category: 'misto',
+        customQuestions: [],
+    }),
     createInitialState(players, settings) {
         const questions = pickQuestions(settings);
         return {

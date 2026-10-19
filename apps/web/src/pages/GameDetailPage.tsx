@@ -41,7 +41,7 @@ export function GameDetailPage() {
           </div>
           <Link
             to={`/?jogo=${guide.slug}#criar`}
-            className="rounded-2xl bg-lime-400 px-6 py-3.5 text-lg font-bold text-ink-950 shadow-chunky transition hover:bg-lime-300 active:translate-y-0.5 active:shadow-none"
+            className="rounded-2xl bg-lime-400 px-6 py-3.5 text-lg font-bold text-night shadow-chunky transition hover:bg-lime-300 active:translate-y-0.5 active:shadow-none"
           >
             Criar sala de {meta.name}
           </Link>
@@ -58,7 +58,7 @@ export function GameDetailPage() {
             {guide.steps.map((s, i) => (
               <li key={i} className="flex gap-3">
                 <span
-                  className="grid h-8 w-8 shrink-0 place-items-center rounded-full font-display font-extrabold text-ink-950"
+                  className="grid h-8 w-8 shrink-0 place-items-center rounded-full font-display font-extrabold text-night"
                   style={{ background: accent }}
                 >
                   {i + 1}

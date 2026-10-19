@@ -40,10 +40,25 @@ export interface MatchRepository {
   historyFor(userId: string, limit: number): Promise<MatchHistoryItem[]>;
   /** Ranking de contas registradas (vitórias, depois pontos), opcionalmente de um jogo. */
   leaderboard(gameId: string | null, limit: number, since?: Date): Promise<LeaderboardRow[]>;
+  /** Total de partidas e quantas desde `since` (painel de administração). */
+  counts?(since: Date): Promise<{ total: number; recent: number; byGame: Record<string, number> }>;
 }
 
 export class PrismaMatchRepository implements MatchRepository {
   constructor(private db: PrismaClient) {}
+
+  async counts(since: Date) {
+    const [total, recent, groups] = await Promise.all([
+      this.db.match.count(),
+      this.db.match.count({ where: { endedAt: { gte: since } } }),
+      this.db.match.groupBy({ by: ['gameId'], where: { endedAt: { gte: since } }, _count: true }),
+    ]);
+    return {
+      total,
+      recent,
+      byGame: Object.fromEntries(groups.map((g) => [g.gameId, g._count])),
+    };
+  }
 
   async save(m: MatchInput) {
     const registered = m.participants.filter((p) => p.userId);
@@ -118,6 +133,12 @@ export class PrismaMatchRepository implements MatchRepository {
 }
 
 export class MemoryMatchRepository implements MatchRepository {
+  async counts(since: Date) {
+    const recent = this.saved.filter((m) => m.endedAt >= since);
+    const byGame: Record<string, number> = {};
+    for (const m of recent) byGame[m.gameId] = (byGame[m.gameId] ?? 0) + 1;
+    return { total: this.saved.length, recent: recent.length, byGame };
+  }
   async leaderboard(gameId: string | null, limit: number, since?: Date) {
     const rows = new Map<string, LeaderboardRow>();
     for (const m of this.saved) {

@@ -74,7 +74,7 @@ export function AvatarEditor({
               aria-label={`${label} ${i + 1}${locked ? ` (nível ${need})` : ''}`}
               title={locked ? `Libera no nível ${need}` : undefined}
               onClick={() => choose(key, i)}
-              className={`relative h-6 w-6 rounded-full border-2 transition ${parts[key] === i ? 'scale-110 border-white ring-2 ring-lime-400' : 'border-ink-950'}`}
+              className={`relative h-6 w-6 rounded-full border-2 transition ${parts[key] === i ? 'scale-110 border-white ring-2 ring-lime-400' : 'border-night'}`}
               style={{ background: c }}
             >
               {locked && (

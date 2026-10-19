@@ -4,6 +4,8 @@ import { resetSocket } from './socket';
 
 interface SessionCtx {
   user: Identity | null;
+  /** pode abrir o painel /admin */
+  admin: boolean;
   loading: boolean;
   setUser: (u: Identity | null) => void;
   guest: (nickname: string, avatar?: string) => Promise<Identity>;
@@ -22,6 +24,15 @@ const Ctx = createContext<SessionCtx | null>(null);
 export function SessionProvider({ children }: { children: ReactNode }) {
   const [user, setUserState] = useState<Identity | null>(null);
   const [loading, setLoading] = useState(true);
+  const [admin, setAdmin] = useState(false);
+
+  useEffect(() => {
+    setAdmin(false);
+    if (!user || user.isGuest) return;
+    api<{ admin?: boolean }>('/auth/me')
+      .then((r) => setAdmin(Boolean(r.admin)))
+      .catch(() => undefined);
+  }, [user]);
 
   useEffect(() => {
     api<{ user: Identity }>('/auth/me')
@@ -43,6 +54,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   const value: SessionCtx = {
     user,
+    admin,
     loading,
     setUser,
     guest: (nickname, avatar) =>

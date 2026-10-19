@@ -5,7 +5,10 @@ import { App } from './App';
 import { ToastProvider } from './components/Toast';
 import './index.css';
 import { PrefsProvider } from './lib/prefs';
+import { setupPwa } from './lib/pwa';
 import { SessionProvider } from './lib/session';
+
+setupPwa();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

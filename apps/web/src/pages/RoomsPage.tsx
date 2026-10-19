@@ -24,7 +24,7 @@ export function RoomsPage() {
         </div>
         <Link
           to="/#criar"
-          className="rounded-2xl bg-lime-400 px-5 py-3 font-bold text-ink-950 shadow-chunky hover:bg-lime-300"
+          className="rounded-2xl bg-lime-400 px-5 py-3 font-bold text-night shadow-chunky hover:bg-lime-300"
         >
           Criar minha sala
         </Link>
@@ -40,7 +40,7 @@ export function RoomsPage() {
             type="button"
             aria-pressed={filter === g.id}
             onClick={() => setFilter(g.id)}
-            className={`rounded-full border-2 px-3 py-1 text-sm font-bold transition ${filter === g.id ? 'border-lime-400 bg-lime-400 text-ink-950' : 'border-ink-600 text-ink-200 hover:border-ink-400'}`}
+            className={`rounded-full border-2 px-3 py-1 text-sm font-bold transition ${filter === g.id ? 'border-lime-400 bg-lime-400 text-night' : 'border-ink-600 text-ink-200 hover:border-ink-400'}`}
           >
             {g.name}
           </button>

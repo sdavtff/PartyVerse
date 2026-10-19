@@ -83,7 +83,7 @@ export function QuizGame({ view, room, myId }: { view: QuizView; room: PublicRoo
         </div>
         {view.phase === 'question' && (
           <div
-            className={`rounded-2xl px-4 py-2 font-display text-3xl font-extrabold tabular-nums ${left <= 5 ? 'animate-pulse bg-pop-rose text-ink-950' : 'bg-ink-700 text-white'}`}
+            className={`rounded-2xl px-4 py-2 font-display text-3xl font-extrabold tabular-nums ${left <= 5 ? 'animate-pulse bg-pop-rose text-night' : 'bg-ink-700 text-white'}`}
             role="timer"
             aria-label={`${left} segundos restantes`}
           >
@@ -116,7 +116,7 @@ export function QuizGame({ view, room, myId }: { view: QuizView; room: PublicRoo
               type="button"
               disabled={!isPlayer || view.phase !== 'question' || chosen !== null}
               onClick={() => answer(i)}
-              className={`relative flex min-h-[4.5rem] animate-rise items-center gap-3 rounded-2xl border-4 border-ink-950 px-4 py-3 text-left font-bold text-ink-950 shadow-chunky transition enabled:hover:-translate-y-0.5 enabled:active:translate-y-0.5 enabled:active:shadow-none disabled:cursor-default ${s.bg} ${faded ? 'opacity-40 saturate-50' : ''} ${isMine ? `ring-4 ring-white ring-offset-2 ring-offset-ink-800` : ''} ${reveal && isMine && !isCorrect ? 'shake' : ''}`}
+              className={`relative flex min-h-[4.5rem] animate-rise items-center gap-3 rounded-2xl border-4 border-night px-4 py-3 text-left font-bold text-night shadow-chunky transition enabled:hover:-translate-y-0.5 enabled:active:translate-y-0.5 enabled:active:shadow-none disabled:cursor-default ${s.bg} ${faded ? 'opacity-40 saturate-50' : ''} ${isMine ? `ring-4 ring-white ring-offset-2 ring-offset-ink-800` : ''} ${reveal && isMine && !isCorrect ? 'shake' : ''}`}
               style={{ animationDelay: `${i * 60}ms` }}
               aria-pressed={isMine}
             >

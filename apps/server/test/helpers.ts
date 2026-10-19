@@ -5,10 +5,11 @@ import { MemoryMatchRepository } from '../src/modules/matches/match.repository.j
 import { MemoryUserRepository } from '../src/modules/users/users.repository.js';
 import { buildServer } from '../src/server.js';
 import type { GoogleAuth } from '../src/modules/auth/google.js';
+import { MemoryMailer, type Mailer } from '../src/modules/mail/mailer.js';
 
 export async function startTestServer(
   overrides: Record<string, unknown> = {},
-  opts: { google?: GoogleAuth } = {},
+  opts: { google?: GoogleAuth; mailer?: Mailer } = {},
 ) {
   const env = loadEnv({
     NODE_ENV: 'test',
@@ -19,7 +20,8 @@ export async function startTestServer(
   });
   const users = new MemoryUserRepository();
   const matches = new MemoryMatchRepository();
-  const srv = buildServer(env, { users, matches, google: opts.google });
+  const mailer = opts.mailer ?? new MemoryMailer();
+  const srv = buildServer(env, { users, matches, google: opts.google, mailer });
   await new Promise<void>((r) => srv.httpServer.listen(0, r));
   const url = `http://localhost:${(srv.httpServer.address() as AddressInfo).port}`;
   const sockets: Socket[] = [];
@@ -46,7 +48,7 @@ export async function startTestServer(
     for (const s of sockets) s.disconnect();
     await srv.close();
   };
-  return { ...srv, url, users, matches, player, close };
+  return { ...srv, url, users, matches, player, close, mailer: mailer as MemoryMailer };
 }
 
 export function emit<T = unknown>(

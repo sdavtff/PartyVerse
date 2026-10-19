@@ -1,0 +1,18 @@
+{
+  "name": "PartyVerse — jogos com os amigos",
+  "short_name": "PartyVerse",
+  "description": "Adedonha, Impostor, Quiz, Rabisco e mais: jogue com a galera pelo navegador.",
+  "lang": "pt-BR",
+  "start_url": "/?origem=app",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#16121f",
+  "theme_color": "#16121f",
+  "categories": ["games", "entertainment"],
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}

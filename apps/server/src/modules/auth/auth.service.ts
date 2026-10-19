@@ -17,6 +17,11 @@ export const toIdentity = (u: UserRecord): Identity => ({
   isGuest: false,
 });
 
+export const notBanned = (u: UserRecord) => {
+  if (u.banned) throw new AppError('FORBIDDEN', 'Esta conta foi suspensa.', 403);
+  return u;
+};
+
 export class AuthService {
   constructor(private users: UserRepository | null) {}
 
@@ -91,11 +96,11 @@ export class AuthService {
   private async doGoogle(profile: GoogleProfile, avatar?: string): Promise<Identity> {
     const repo = this.repo();
     const byGoogle = await repo.findByGoogleId(profile.sub);
-    if (byGoogle) return toIdentity(byGoogle);
+    if (byGoogle) return toIdentity(notBanned(byGoogle));
     if (!profile.emailVerified)
       throw new AppError('UNAUTHORIZED', 'Seu e-mail do Google não está verificado', 401);
     const byEmail = await repo.findByEmail(profile.email);
-    if (byEmail) return toIdentity(await repo.linkGoogle(byEmail.id, profile.sub));
+    if (byEmail) return toIdentity(await repo.linkGoogle(notBanned(byEmail).id, profile.sub));
     // conta só-Google: senha aleatória que ninguém conhece (dá para entrar sempre pelo Google)
     const passwordHash = await bcrypt.hash(randomBytes(24).toString('base64url'), 10);
     return toIdentity(
@@ -117,6 +122,6 @@ export class AuthService {
       u?.passwordHash ?? '$2a$12$invalidinvalidinvalidinvalidinvalidinvalidinvalidinv',
     );
     if (!u || !ok) throw new AppError('UNAUTHORIZED', 'E-mail ou senha incorretos', 401);
-    return toIdentity(u);
+    return toIdentity(notBanned(u));
   }
 }

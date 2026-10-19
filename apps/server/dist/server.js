@@ -13,6 +13,9 @@ import { MemoryFriendsRepository, PrismaFriendsRepository, } from './modules/soc
 import { Presence } from './modules/social/presence.js';
 import { MemoryDailyRepository, PrismaDailyRepository, } from './modules/daily/daily.repository.js';
 import { DailyService } from './modules/daily/daily.service.js';
+import { BanList } from './modules/admin/bans.js';
+import { SmtpMailer } from './modules/mail/mailer.js';
+import { MemoryResetRepository, PrismaResetRepository, } from './modules/auth/reset.repository.js';
 import { RoomManager } from './rooms/RoomManager.js';
 /** Monta HTTP + Socket.IO. Separado de index.ts para ser usado nos testes. */
 export function buildServer(env, opts = {}) {
@@ -33,6 +36,18 @@ export function buildServer(env, opts = {}) {
         ? new PrismaDailyRepository(prisma)
         : new MemoryDailyRepository((id) => users instanceof MemoryUserRepository ? users.users.get(id) : undefined);
     const daily = new DailyService(dailyRepo);
+    const mailer = opts.mailer ?? new SmtpMailer(env);
+    const resets = prisma
+        ? new PrismaResetRepository(prisma)
+        : new MemoryResetRepository();
+    const bans = new BanList();
+    const loadBans = () => users
+        ?.bannedIds()
+        .then((ids) => bans.load(ids))
+        .catch(() => undefined);
+    void loadBans();
+    const banTimer = setInterval(loadBans, 5 * 60_000);
+    banTimer.unref?.();
     const friends = opts.friends ??
         (prisma
             ? new PrismaFriendsRepository(prisma)
@@ -64,13 +79,21 @@ export function buildServer(env, opts = {}) {
         presence,
         friends,
         daily,
+        bans,
+        mailer,
+        resets,
+        disconnectUser: (userId) => {
+            for (const sid of presence.socketsOf(userId))
+                io.sockets.sockets.get(sid)?.disconnect(true);
+        },
     }));
-    attachGateway(io, rooms, tokens, presence);
+    attachGateway(io, rooms, tokens, presence, bans);
     const close = async () => {
+        clearInterval(banTimer);
         rooms.shutdown();
         io.close();
         await new Promise((r) => httpServer.close(() => r()));
         await prisma?.$disconnect();
     };
-    return { httpServer, io, rooms, tokens, app, close, progress, presence, friends };
+    return { httpServer, io, rooms, tokens, app, close, progress, presence, friends, bans, mailer };
 }

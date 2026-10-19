@@ -5,14 +5,20 @@ export default {
     extend: {
       colors: {
         ink: {
-          950: '#0f0b17',
-          900: '#16121f',
-          800: '#211a2e',
-          700: '#2d2440',
-          600: '#3d3257',
-          400: '#8c80a8',
-          200: '#d6cfe6',
+          950: 'rgb(var(--ink-950) / <alpha-value>)',
+          900: 'rgb(var(--ink-900) / <alpha-value>)',
+          800: 'rgb(var(--ink-800) / <alpha-value>)',
+          700: 'rgb(var(--ink-700) / <alpha-value>)',
+          600: 'rgb(var(--ink-600) / <alpha-value>)',
+          400: 'rgb(var(--ink-400) / <alpha-value>)',
+          200: 'rgb(var(--ink-200) / <alpha-value>)',
         },
+        /** texto principal: branco no tema escuro, quase preto no claro */
+        white: 'rgb(var(--fg) / <alpha-value>)',
+        /** sempre escuro (texto sobre botões coloridos, contornos) */
+        night: '#0f0b17',
+        /** sempre branco (quadro de desenho, botão do Google) */
+        paper: '#ffffff',
         lime: { 300: '#dcff6b', 400: '#c6f432', 500: '#a8d61a' },
         pop: {
           pink: '#ff5fa2',

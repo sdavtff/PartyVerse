@@ -590,7 +590,7 @@ function Podium({ ranking, myId }: { ranking: MatchResult['ranking']; myId: stri
               <AnimatedNumber value={r.score} ms={1200} />
             </p>
             <div
-              className={`podium-rise mt-1 grid w-full place-items-start justify-center rounded-t-2xl border-4 border-b-0 border-ink-950 pt-2 font-display text-3xl font-extrabold text-ink-950 ${st.h} ${st.color} ${first ? 'shine' : ''}`}
+              className={`podium-rise mt-1 grid w-full place-items-start justify-center rounded-t-2xl border-4 border-b-0 border-night pt-2 font-display text-3xl font-extrabold text-night ${st.h} ${st.color} ${first ? 'shine' : ''}`}
               style={{ animationDelay: `${st.delay}ms` }}
             >
               {r.place}º

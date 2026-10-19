@@ -64,7 +64,7 @@ export function FriendsPage() {
         </p>
         <Link
           to="/entrar"
-          className="mt-6 inline-block rounded-2xl bg-lime-400 px-5 py-3 font-bold text-ink-950 shadow-chunky hover:bg-lime-300"
+          className="mt-6 inline-block rounded-2xl bg-lime-400 px-5 py-3 font-bold text-night shadow-chunky hover:bg-lime-300"
         >
           Criar conta grátis
         </Link>
@@ -120,7 +120,7 @@ export function FriendsPage() {
                     <span className="text-sm text-ink-400">pedido enviado</span>
                   ) : (
                     <button
-                      className="rounded-xl bg-lime-400 px-3 py-1.5 text-sm font-bold text-ink-950 hover:bg-lime-300"
+                      className="rounded-xl bg-lime-400 px-3 py-1.5 text-sm font-bold text-night hover:bg-lime-300"
                       onClick={() =>
                         act(
                           friendsApi.add(u.id),
@@ -161,7 +161,7 @@ export function FriendsPage() {
                   Recusar
                 </button>
                 <button
-                  className="rounded-xl bg-lime-400 px-3 py-1.5 text-sm font-bold text-ink-950 hover:bg-lime-300"
+                  className="rounded-xl bg-lime-400 px-3 py-1.5 text-sm font-bold text-night hover:bg-lime-300"
                   onClick={() => act(friendsApi.add(f.user.id), 'Amizade aceita!')}
                 >
                   Aceitar
@@ -218,7 +218,7 @@ export function FriendsPage() {
                   {f.room && (
                     <Link
                       to={`/sala/${f.room.code}`}
-                      className="rounded-xl bg-lime-400 px-3 py-1.5 text-sm font-bold text-ink-950 hover:bg-lime-300"
+                      className="rounded-xl bg-lime-400 px-3 py-1.5 text-sm font-bold text-night hover:bg-lime-300"
                     >
                       {f.room.phase === 'playing' ? 'Assistir' : 'Entrar'}
                     </Link>

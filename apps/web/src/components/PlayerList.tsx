@@ -93,7 +93,7 @@ export function PlayerList({
           {showScores ? (
             <span className="flex items-center gap-2">
               Placar
-              <span className="chip bg-pop-rose text-ink-950">
+              <span className="chip bg-pop-rose text-night">
                 <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-ink-950" aria-hidden />
                 ao vivo
               </span>
@@ -162,7 +162,7 @@ export function PlayerList({
                   {gain && (
                     <span
                       key={gain.key}
-                      className="float-up pointer-events-none absolute -top-4 right-0 whitespace-nowrap rounded-full bg-lime-400 px-1.5 text-xs font-extrabold text-ink-950"
+                      className="float-up pointer-events-none absolute -top-4 right-0 whitespace-nowrap rounded-full bg-lime-400 px-1.5 text-xs font-extrabold text-night"
                     >
                       +{gain.n}
                     </span>

@@ -101,7 +101,7 @@ export function CustomListEditor<T>({
             setBusy(true);
             await onSave(items).finally(() => setBusy(false));
           }}
-          className="rounded-xl bg-lime-400 px-3 py-1.5 text-sm font-bold text-ink-950 hover:bg-lime-300 disabled:opacity-50"
+          className="rounded-xl bg-lime-400 px-3 py-1.5 text-sm font-bold text-night hover:bg-lime-300 disabled:opacity-50"
         >
           {items.length === 0 ? 'Limpar lista' : `Salvar ${items.length}`}
         </button>

@@ -69,7 +69,7 @@ export function HelpPage() {
         <div className="mt-5 flex flex-wrap gap-3">
           <Link
             to="/#criar"
-            className="rounded-2xl bg-lime-400 px-5 py-3 font-bold text-ink-950 shadow-chunky hover:bg-lime-300"
+            className="rounded-2xl bg-lime-400 px-5 py-3 font-bold text-night shadow-chunky hover:bg-lime-300"
           >
             Criar uma sala
           </Link>

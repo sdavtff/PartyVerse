@@ -249,6 +249,42 @@ export class Room {
     this.remove(targetId, 'kicked');
   }
 
+  /** Remove alguém sem exigir anfitrião (moderação). */
+  expel(targetId: string) {
+    const target = this.players.get(targetId);
+    if (!target) return;
+    this.banned.add(targetId);
+    if (target.socketId)
+      this.transport.toPlayer(target.socketId, EVENTS.ROOM_KICKED, { code: this.code });
+    this.remove(targetId, 'kicked');
+  }
+
+  /** Fecha a sala para todos (moderação). */
+  closeAll() {
+    for (const id of [...this.players.keys()]) this.expel(id);
+    this.destroy();
+  }
+
+  /** Resumo para o painel de administração. */
+  adminSummary() {
+    return {
+      code: this.code,
+      name: this.settings.name,
+      gameId: this.settings.gameId,
+      phase: this.phase,
+      isPublic: this.settings.isPublic,
+      hostId: this.hostId,
+      createdAt: this.createdAt,
+      lastActivity: this.lastActivity,
+      players: [...this.players.values()].map((p) => ({
+        id: p.id,
+        nickname: p.nickname,
+        status: p.status,
+        isGuest: this.isGuestPlayer(p.id),
+      })),
+    };
+  }
+
   transferHost(actorId: string, targetId: string) {
     this.requireHost(actorId);
     const target = this.players.get(targetId);

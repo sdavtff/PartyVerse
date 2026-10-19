@@ -6,10 +6,19 @@ import { setSoundEnabled } from './sound';
 export interface Prefs {
   sound: boolean;
   reducedMotion: boolean;
+  theme: 'dark' | 'light';
 }
 
 const KEY = 'pv:prefs';
-const DEFAULTS: Prefs = { sound: true, reducedMotion: false };
+const DEFAULTS: Prefs = { sound: true, reducedMotion: false, theme: 'dark' };
+
+/** Aplica o tema na página (o index.html já aplica antes de carregar, para não piscar). */
+export function applyTheme(theme: Prefs['theme']) {
+  document.documentElement.dataset.theme = theme;
+  document
+    .querySelector('meta[name="theme-color"]')
+    ?.setAttribute('content', theme === 'light' ? '#f7f4fc' : '#16121f');
+}
 
 function readLocal(): Prefs {
   try {
@@ -56,6 +65,7 @@ export function PrefsProvider({ children }: { children: ReactNode }) {
             ...(typeof server.reducedMotion === 'boolean'
               ? { reducedMotion: server.reducedMotion }
               : {}),
+            ...(server.theme === 'dark' || server.theme === 'light' ? { theme: server.theme } : {}),
           };
           writeLocal(next);
           return next;
@@ -67,6 +77,7 @@ export function PrefsProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     setSoundEnabled(prefs.sound);
     document.documentElement.classList.toggle('reduce-motion', prefs.reducedMotion);
+    applyTheme(prefs.theme);
   }, [prefs]);
 
   const setPref = useCallback<PrefsCtx['setPref']>(

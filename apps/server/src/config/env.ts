@@ -24,6 +24,15 @@ const envSchema = z.object({
   GOOGLE_CLIENT_SECRET: z.string().optional(),
   /** Endereço público do site, ex.: https://meusite.com (usado no retorno do Google) */
   PUBLIC_URL: z.string().url().optional(),
+  /** E-mail (recuperar senha). Na Hostinger: smtp.hostinger.com, porta 465 */
+  SMTP_HOST: z.string().optional(),
+  SMTP_PORT: z.coerce.number().int().positive().default(465),
+  SMTP_USER: z.string().optional(),
+  SMTP_PASS: z.string().optional(),
+  /** remetente, ex.: "PartyVerse <contato@meusite.com>" (padrão: SMTP_USER) */
+  MAIL_FROM: z.string().optional(),
+  /** e-mails com acesso ao painel /admin, separados por vírgula */
+  ADMIN_EMAILS: z.string().default(''),
   /** aplica as migrations do banco ao iniciar (padrão: sim) */
   AUTO_MIGRATE: z
     .enum(['true', 'false', '1', '0'])

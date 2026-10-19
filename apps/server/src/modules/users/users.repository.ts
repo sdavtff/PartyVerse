@@ -36,6 +36,12 @@ export interface UserRepository {
     data: Partial<Pick<UserRecord, 'nickname' | 'avatar' | 'preferences'>>,
   ): Promise<UserRecord>;
   stats(id: string): Promise<UserStatsRecord>;
+  setPassword(id: string, passwordHash: string): Promise<void>;
+  setBanned(id: string, banned: boolean): Promise<void>;
+  bannedIds(): Promise<string[]>;
+  /** Busca para o painel de administração (apelido ou e-mail). */
+  adminSearch(q: string, limit: number): Promise<UserRecord[]>;
+  counts(since: Date): Promise<{ total: number; recent: number }>;
 }
 
 const toRecord = (u: {
@@ -98,6 +104,39 @@ export class PrismaUserRepository implements UserRepository {
     const s = await this.db.userStats.findUnique({ where: { userId: id } });
     return s ?? { matchesPlayed: 0, wins: 0, totalScore: 0, bestScore: 0 };
   }
+  async setPassword(id: string, passwordHash: string) {
+    await this.db.user.update({ where: { id }, data: { passwordHash } });
+  }
+  async setBanned(id: string, banned: boolean) {
+    await this.db.user.update({ where: { id }, data: { banned } });
+  }
+  async bannedIds() {
+    return (await this.db.user.findMany({ where: { banned: true }, select: { id: true } })).map(
+      (u) => u.id,
+    );
+  }
+  async adminSearch(q: string, limit: number) {
+    const rs = await this.db.user.findMany({
+      where: q
+        ? {
+            OR: [
+              { nickname: { contains: q, mode: 'insensitive' } },
+              { email: { contains: q, mode: 'insensitive' } },
+            ],
+          }
+        : {},
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+    });
+    return rs.map(toRecord);
+  }
+  async counts(since: Date) {
+    const [total, recent] = await Promise.all([
+      this.db.user.count(),
+      this.db.user.count({ where: { createdAt: { gte: since } } }),
+    ]);
+    return { total, recent };
+  }
 }
 
 /** Implementação em memória: usada em testes e quando não há DATABASE_URL. */
@@ -125,6 +164,8 @@ export class MemoryUserRepository implements UserRepository {
       preferences: {},
       ...data,
       googleId: data.googleId ?? null,
+      banned: false,
+      createdAt: new Date().toISOString(),
     };
     this.users.set(u.id, u);
     return u;
@@ -141,5 +182,28 @@ export class MemoryUserRepository implements UserRepository {
   }
   async stats(id: string) {
     return this.statsMap.get(id) ?? { matchesPlayed: 0, wins: 0, totalScore: 0, bestScore: 0 };
+  }
+  async setPassword(id: string, passwordHash: string) {
+    this.users.set(id, { ...this.users.get(id)!, passwordHash });
+  }
+  async setBanned(id: string, banned: boolean) {
+    this.users.set(id, { ...this.users.get(id)!, banned });
+  }
+  async bannedIds() {
+    return [...this.users.values()].filter((u) => u.banned).map((u) => u.id);
+  }
+  async adminSearch(q: string, limit: number) {
+    const n = q.toLowerCase();
+    return [...this.users.values()]
+      .filter((u) => !n || u.nickname.toLowerCase().includes(n) || u.email.includes(n))
+      .reverse()
+      .slice(0, limit);
+  }
+  async counts(since: Date) {
+    const all = [...this.users.values()];
+    return {
+      total: all.length,
+      recent: all.filter((u) => (u.createdAt ? new Date(u.createdAt) >= since : true)).length,
+    };
   }
 }

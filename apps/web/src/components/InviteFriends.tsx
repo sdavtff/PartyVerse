@@ -96,7 +96,7 @@ export function InviteFriends({ onClose, roomCode }: { onClose: () => void; room
                   <button
                     disabled={!f.online || here || sent.has(f.user.id)}
                     onClick={() => invite(f)}
-                    className="rounded-xl bg-lime-400 px-3 py-1.5 text-sm font-bold text-ink-950 hover:bg-lime-300 disabled:bg-ink-700 disabled:text-ink-400"
+                    className="rounded-xl bg-lime-400 px-3 py-1.5 text-sm font-bold text-night hover:bg-lime-300 disabled:bg-ink-700 disabled:text-ink-400"
                   >
                     {sent.has(f.user.id) ? 'Enviado ✓' : 'Convidar'}
                   </button>

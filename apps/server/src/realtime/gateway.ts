@@ -22,6 +22,7 @@ import {
   type Identity,
   type TokenService,
 } from '../modules/auth/token.js';
+import type { BanList } from '../modules/admin/bans.js';
 import type { Presence } from '../modules/social/presence.js';
 import type { Room, RoomTransport } from '../rooms/Room.js';
 import type { RoomManager } from '../rooms/RoomManager.js';
@@ -65,6 +66,7 @@ export function attachGateway(
   rooms: RoomManager,
   tokens: TokenService,
   presence?: Presence,
+  bans?: BanList,
 ) {
   presence?.bind((sid, event, payload) => io.to(sid).emit(event, payload));
   io.use((socket, next) => {
@@ -74,6 +76,7 @@ export function attachGateway(
         : undefined) ?? readCookie(socket.handshake.headers.cookie, TOKEN_COOKIE);
     const identity = token ? tokens.verify(token) : null;
     if (!identity) return next(new Error('UNAUTHORIZED'));
+    if (bans?.has(identity.id)) return next(new Error('BANNED'));
     (socket as PvSocket).data.identity = identity;
     (socket as PvSocket).data.roomCode = null;
     next();

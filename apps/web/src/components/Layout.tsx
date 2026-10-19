@@ -2,9 +2,11 @@ import { useEffect, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useSession } from '../lib/session';
 import { Avatar } from './Avatar';
+import { InstallButton } from './InstallButton';
 import { InviteCenter } from './InviteCenter';
 import { Logo } from './Logo';
 import { SoundToggle } from './SoundToggle';
+import { ThemeToggle } from './ThemeToggle';
 
 const BASE_NAV = [
   { to: '/jogos', label: 'Jogos' },
@@ -16,10 +18,10 @@ const BASE_NAV = [
 ];
 
 export function Layout() {
-  const { user, logout } = useSession();
+  const { user, logout, admin } = useSession();
   const [menu, setMenu] = useState(false);
   const { pathname, hash } = useLocation();
-  const NAV = BASE_NAV;
+  const NAV = admin ? [...BASE_NAV, { to: '/admin', label: 'Admin' }] : BASE_NAV;
 
   // fecha o menu ao navegar; rola para o topo (ou para a âncora, ex.: /#criar)
   useEffect(() => {
@@ -41,7 +43,7 @@ export function Layout() {
     <div className="bg-confetti flex min-h-dvh flex-col">
       <a
         href="#main"
-        className="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-50 focus:rounded-xl focus:bg-lime-400 focus:px-3 focus:py-2 focus:text-ink-950"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-50 focus:rounded-xl focus:bg-lime-400 focus:px-3 focus:py-2 focus:text-night"
       >
         Pular para o conteúdo
       </a>
@@ -61,6 +63,8 @@ export function Layout() {
             </div>
           </div>
           <div className="flex items-center gap-1 sm:gap-2">
+            <InstallButton />
+            <ThemeToggle />
             <SoundToggle />
             {user ? (
               <>
@@ -124,12 +128,13 @@ export function Layout() {
                   to={n.to}
                   end={n.to === '/'}
                   className={({ isActive }) =>
-                    `rounded-2xl px-4 py-3 text-center font-bold ${isActive ? 'bg-lime-400 text-ink-950' : 'bg-ink-800 text-white'}`
+                    `rounded-2xl px-4 py-3 text-center font-bold ${isActive ? 'bg-lime-400 text-night' : 'bg-ink-800 text-white'}`
                   }
                 >
                   {n.label}
                 </NavLink>
               ))}
+              <InstallButton block />
               {user && (
                 <button
                   onClick={logout}

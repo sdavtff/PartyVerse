@@ -64,7 +64,7 @@ export function RankingPage() {
             role="tab"
             aria-selected={period === id}
             onClick={() => setPeriod(id)}
-            className={`rounded-xl px-4 py-2 text-sm font-bold transition ${period === id ? 'bg-lime-400 text-ink-950' : 'text-ink-200 hover:text-white'}`}
+            className={`rounded-xl px-4 py-2 text-sm font-bold transition ${period === id ? 'bg-lime-400 text-night' : 'text-ink-200 hover:text-white'}`}
           >
             {label}
           </button>
@@ -82,7 +82,7 @@ export function RankingPage() {
             type="button"
             aria-pressed={game === g.id}
             onClick={() => setGame(g.id)}
-            className={`rounded-full border-2 px-3 py-1 text-sm font-bold transition ${game === g.id ? 'border-lime-400 bg-lime-400 text-ink-950' : 'border-ink-600 text-ink-200 hover:border-ink-400'}`}
+            className={`rounded-full border-2 px-3 py-1 text-sm font-bold transition ${game === g.id ? 'border-lime-400 bg-lime-400 text-night' : 'border-ink-600 text-ink-200 hover:border-ink-400'}`}
           >
             {g.name}
           </button>
@@ -112,7 +112,7 @@ export function RankingPage() {
               style={{ animationDelay: `${Math.min(i, 10) * 40}ms` }}
             >
               <span
-                className={`grid h-9 w-9 shrink-0 place-items-center rounded-full font-display font-extrabold ${MEDAL[i] ? `${MEDAL[i]} text-ink-950` : 'bg-ink-700 text-white'}`}
+                className={`grid h-9 w-9 shrink-0 place-items-center rounded-full font-display font-extrabold ${MEDAL[i] ? `${MEDAL[i]} text-night` : 'bg-ink-700 text-white'}`}
               >
                 {i + 1}
               </span>

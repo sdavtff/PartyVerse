@@ -88,7 +88,7 @@ export function GuessSettingsForm({
                 disabled={!editable}
                 aria-pressed={on}
                 onClick={() => save({ category: c })}
-                className={`rounded-full border-2 px-3 py-1 text-sm font-bold transition disabled:cursor-default ${on ? 'border-pop-pink bg-pop-pink text-ink-950' : 'border-ink-600 text-ink-200 enabled:hover:border-ink-400'}`}
+                className={`rounded-full border-2 px-3 py-1 text-sm font-bold transition disabled:cursor-default ${on ? 'border-pop-pink bg-pop-pink text-night' : 'border-ink-600 text-ink-200 enabled:hover:border-ink-400'}`}
               >
                 {CAT_LABEL[c]}
               </button>

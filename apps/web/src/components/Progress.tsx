@@ -14,7 +14,7 @@ export function LevelBar({ xp }: { xp: number }) {
   const l = levelInfo(xp);
   return (
     <div className="flex items-center gap-3">
-      <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl border-4 border-ink-950 bg-pop-amber font-display text-xl font-extrabold text-ink-950 shadow-chunky">
+      <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl border-4 border-night bg-pop-amber font-display text-xl font-extrabold text-night shadow-chunky">
         {l.level}
       </span>
       <div className="min-w-0 flex-1">

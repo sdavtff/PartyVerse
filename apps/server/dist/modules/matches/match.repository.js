@@ -3,6 +3,18 @@ export class PrismaMatchRepository {
     constructor(db) {
         this.db = db;
     }
+    async counts(since) {
+        const [total, recent, groups] = await Promise.all([
+            this.db.match.count(),
+            this.db.match.count({ where: { endedAt: { gte: since } } }),
+            this.db.match.groupBy({ by: ['gameId'], where: { endedAt: { gte: since } }, _count: true }),
+        ]);
+        return {
+            total,
+            recent,
+            byGame: Object.fromEntries(groups.map((g) => [g.gameId, g._count])),
+        };
+    }
     async save(m) {
         const registered = m.participants.filter((p) => p.userId);
         await this.db.$transaction(async (tx) => {
@@ -73,6 +85,13 @@ export class PrismaMatchRepository {
     }
 }
 export class MemoryMatchRepository {
+    async counts(since) {
+        const recent = this.saved.filter((m) => m.endedAt >= since);
+        const byGame = {};
+        for (const m of recent)
+            byGame[m.gameId] = (byGame[m.gameId] ?? 0) + 1;
+        return { total: this.saved.length, recent: recent.length, byGame };
+    }
     async leaderboard(gameId, limit, since) {
         const rows = new Map();
         for (const m of this.saved) {

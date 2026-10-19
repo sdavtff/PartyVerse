@@ -23,6 +23,10 @@ export class Presence {
     if (!set.size) this.sockets.delete(userId);
   }
 
+  socketsOf(userId: string) {
+    return [...(this.sockets.get(userId) ?? [])];
+  }
+
   isOnline(userId: string) {
     return this.sockets.has(userId);
   }

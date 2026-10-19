@@ -240,7 +240,7 @@ export function DrawingBoard({
   return (
     <div className="space-y-2">
       <div
-        className="relative w-full overflow-hidden rounded-2xl border-4 border-ink-950 bg-white shadow-chunky"
+        className="relative w-full overflow-hidden rounded-2xl border-4 border-night bg-paper shadow-chunky"
         style={{ aspectRatio: `${W} / ${H}` }}
       >
         <canvas
@@ -275,7 +275,7 @@ export function DrawingBoard({
                 aria-pressed={tool === t.id}
                 title={t.label}
                 aria-label={t.label}
-                className={`grid h-10 w-10 place-items-center rounded-xl transition ${tool === t.id ? 'bg-lime-400 text-ink-950' : 'bg-ink-700 text-white hover:bg-ink-600'}`}
+                className={`grid h-10 w-10 place-items-center rounded-xl transition ${tool === t.id ? 'bg-lime-400 text-night' : 'bg-ink-700 text-white hover:bg-ink-600'}`}
               >
                 <svg
                   width="22"
@@ -297,7 +297,7 @@ export function DrawingBoard({
                 type="button"
                 onClick={() => setFilled((f) => !f)}
                 aria-pressed={filled}
-                className={`h-10 rounded-xl px-3 text-sm font-bold ${filled ? 'bg-lime-400 text-ink-950' : 'bg-ink-700 text-white'}`}
+                className={`h-10 rounded-xl px-3 text-sm font-bold ${filled ? 'bg-lime-400 text-night' : 'bg-ink-700 text-white'}`}
               >
                 {filled ? 'Cheio' : 'Contorno'}
               </button>
@@ -351,7 +351,7 @@ export function DrawingBoard({
                   setColor(c);
                   if (tool === 'eraser') setTool('pen');
                 }}
-                className={`h-8 w-8 rounded-lg border-2 transition ${color === c ? 'scale-110 border-lime-400 ring-2 ring-lime-400' : 'border-ink-950'}`}
+                className={`h-8 w-8 rounded-lg border-2 transition ${color === c ? 'scale-110 border-lime-400 ring-2 ring-lime-400' : 'border-night'}`}
                 style={{ background: c }}
               />
             ))}

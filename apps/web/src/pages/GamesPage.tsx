@@ -32,7 +32,7 @@ export function GamesPage() {
                 <p className="mt-1 flex-1 text-sm text-ink-200">{guide?.intro ?? g.tagline}</p>
                 <div className="mt-4 flex items-center justify-between text-xs">
                   <span className="text-ink-400">{guide?.bestWith}</span>
-                  <span className="chip bg-lime-400 text-ink-950">Ver como jogar ▸</span>
+                  <span className="chip bg-lime-400 text-night">Ver como jogar ▸</span>
                 </div>
               </Link>
             </li>

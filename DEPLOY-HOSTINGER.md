@@ -133,3 +133,34 @@ Sem estas variáveis o botão do Google simplesmente não aparece. Precisa do ba
 
 Se aparecer o erro `redirect_uri_mismatch` do Google, o endereço do passo 3 não está idêntico
 ao `PUBLIC_URL` + `/api/auth/google/callback` (atenção a `https`, `www` e barra final).
+
+
+## Recuperar senha por e-mail (opcional)
+
+Sem isto, a página "Esqueci minha senha" avisa que o envio ainda não foi configurado.
+Use uma caixa de e-mail do seu domínio (no hPanel: **E-mails → Contas de e-mail → Criar**,
+por exemplo `contato@seudominio.com.br`). Depois, em **Environment variables**:
+
+| Nome | Valor |
+|---|---|
+| `SMTP_HOST` | `smtp.hostinger.com` |
+| `SMTP_PORT` | `465` |
+| `SMTP_USER` | o e-mail completo, ex.: `contato@seudominio.com.br` |
+| `SMTP_PASS` | a senha dessa caixa de e-mail |
+| `MAIL_FROM` | (opcional) `PartyVerse <contato@seudominio.com.br>` |
+| `PUBLIC_URL` | `https://seudominio.com.br` (o link do e-mail usa este endereço) |
+
+Reinicie o app. No painel **/admin** o quadro "E-mail" mostra ✅ quando está tudo certo.
+
+## Painel de administração
+
+Adicione a variável `ADMIN_EMAILS` com o(s) e-mail(s) das contas administradoras, separados
+por vírgula (ex.: `voce@gmail.com`). Entre no site com essa conta: aparece **Admin** no menu,
+com números do site (pessoas jogando, contas, partidas, desafio do dia), salas abertas (dá para
+fechar) e busca de contas (dá para suspender e liberar). Conta suspensa não entra, não joga e
+é tirada das salas na hora.
+
+## Instalar como app
+
+Nada a configurar: o site já é um app instalável (PWA). No Android/Chrome aparece "Instalar
+app" no menu; no iPhone, Compartilhar → "Adicionar à Tela de Início".

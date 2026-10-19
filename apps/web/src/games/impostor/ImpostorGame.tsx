@@ -51,7 +51,7 @@ export function ImpostorGame({ view, room, myId }: Props) {
   return (
     <div className="card space-y-5 p-5">
       <div className="flex flex-wrap items-center gap-4">
-        <div className="grid h-16 w-16 place-items-center rounded-3xl border-4 border-ink-950 bg-pop-rose font-display text-3xl font-extrabold text-ink-950 shadow-chunky">
+        <div className="grid h-16 w-16 place-items-center rounded-3xl border-4 border-night bg-pop-rose font-display text-3xl font-extrabold text-night shadow-chunky">
           {view.round}
         </div>
         <div className="min-w-0 flex-1">
@@ -62,7 +62,7 @@ export function ImpostorGame({ view, room, myId }: Props) {
         </div>
         {view.deadline && view.phase !== 'finished' && (
           <div
-            className={`rounded-2xl px-4 py-2 font-display text-3xl font-extrabold tabular-nums ${left <= 10 && view.phase !== 'round-results' ? 'animate-pulse bg-pop-rose text-ink-950' : 'bg-ink-700 text-white'}`}
+            className={`rounded-2xl px-4 py-2 font-display text-3xl font-extrabold tabular-nums ${left <= 10 && view.phase !== 'round-results' ? 'animate-pulse bg-pop-rose text-night' : 'bg-ink-700 text-white'}`}
             role="timer"
             aria-label={`${left} segundos restantes`}
           >
@@ -157,15 +157,15 @@ function SecretCard({ me, big }: { me: NonNullable<ImpostorView['me']>; big: boo
     <button
       type="button"
       onClick={() => setHidden((h) => !h)}
-      className={`flip-in relative w-full overflow-hidden rounded-3xl border-4 border-ink-950 text-left shadow-chunky transition ${impostor ? 'bg-pop-rose' : 'bg-lime-400'} ${big ? 'p-6 sm:p-8' : 'p-4'}`}
+      className={`flip-in relative w-full overflow-hidden rounded-3xl border-4 border-night text-left shadow-chunky transition ${impostor ? 'bg-pop-rose' : 'bg-lime-400'} ${big ? 'p-6 sm:p-8' : 'p-4'}`}
       aria-label={hidden ? 'Mostrar minha carta' : 'Esconder minha carta'}
     >
       {hidden ? (
-        <p className="py-2 text-center font-display text-xl font-extrabold text-ink-950">
+        <p className="py-2 text-center font-display text-xl font-extrabold text-night">
           Carta escondida · toque para ver
         </p>
       ) : impostor ? (
-        <div className="text-ink-950">
+        <div className="text-night">
           <p className="text-sm font-bold uppercase tracking-widest">Sua carta</p>
           <p className={`font-display font-extrabold ${big ? 'text-4xl sm:text-5xl' : 'text-2xl'}`}>
             Você é o impostor!
@@ -175,7 +175,7 @@ function SecretCard({ me, big }: { me: NonNullable<ImpostorView['me']>; big: boo
           </p>
         </div>
       ) : (
-        <div className="text-ink-950">
+        <div className="text-night">
           <p className="text-sm font-bold uppercase tracking-widest">O local é</p>
           <p className={`font-display font-extrabold ${big ? 'text-4xl sm:text-5xl' : 'text-2xl'}`}>
             {me.location}
@@ -185,7 +185,7 @@ function SecretCard({ me, big }: { me: NonNullable<ImpostorView['me']>; big: boo
           </p>
         </div>
       )}
-      <span className="absolute right-3 top-3 rounded-full bg-ink-950/15 px-2 py-0.5 text-xs font-bold text-ink-950">
+      <span className="absolute right-3 top-3 rounded-full bg-night/15 px-2 py-0.5 text-xs font-bold text-night">
         {hidden ? 'mostrar' : 'esconder'}
       </span>
     </button>
@@ -295,7 +295,7 @@ function Voting({ view, myId, isPlayer, nick, avatar, send }: Helpers) {
                 {view.votedPlayers.includes(p) && (
                   <span className="chip bg-ink-700 text-ink-200">votou</span>
                 )}
-                {mine && <span className="chip bg-pop-rose text-ink-950">seu voto</span>}
+                {mine && <span className="chip bg-pop-rose text-night">seu voto</span>}
               </button>
             </li>
           );
@@ -335,7 +335,7 @@ function GuessPanel({
             type="button"
             onClick={() => setChoice(l)}
             aria-pressed={choice === l}
-            className={`rounded-full border-2 px-3 py-1 text-sm font-bold transition ${choice === l ? 'border-pop-rose bg-pop-rose text-ink-950' : 'border-ink-600 text-ink-200 hover:border-ink-400'}`}
+            className={`rounded-full border-2 px-3 py-1 text-sm font-bold transition ${choice === l ? 'border-pop-rose bg-pop-rose text-night' : 'border-ink-600 text-ink-200 hover:border-ink-400'}`}
           >
             {l}
           </button>
@@ -377,7 +377,7 @@ function Outcome({
   return (
     <div className="space-y-4">
       <div
-        className={`flip-in flex flex-wrap items-center gap-4 rounded-3xl border-4 border-ink-950 p-5 text-ink-950 shadow-chunky ${impostorWon ? 'bg-pop-rose' : 'bg-lime-400'}`}
+        className={`flip-in flex flex-wrap items-center gap-4 rounded-3xl border-4 border-night p-5 text-night shadow-chunky ${impostorWon ? 'bg-pop-rose' : 'bg-lime-400'}`}
       >
         <Avatar avatar={avatar(o.impostorId)} size={64} />
         <div className="min-w-0 flex-1">

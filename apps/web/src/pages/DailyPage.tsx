@@ -205,7 +205,7 @@ export function DailyPage() {
                 role="tab"
                 aria-selected={rankTab === id}
                 onClick={() => setRankTab(id)}
-                className={`rounded-xl px-4 py-2 text-sm font-bold ${rankTab === id ? 'bg-lime-400 text-ink-950' : 'text-ink-200'}`}
+                className={`rounded-xl px-4 py-2 text-sm font-bold ${rankTab === id ? 'bg-lime-400 text-night' : 'text-ink-200'}`}
               >
                 {label}
               </button>
@@ -383,7 +383,7 @@ function DailyQuiz({
               key={k}
               disabled={answers.length > i}
               onClick={() => answer(k)}
-              className={`rounded-2xl p-4 text-left text-lg font-bold text-ink-950 shadow-chunky transition hover:-translate-y-0.5 disabled:opacity-60 ${OPTION_BG[k]}`}
+              className={`rounded-2xl p-4 text-left text-lg font-bold text-night shadow-chunky transition hover:-translate-y-0.5 disabled:opacity-60 ${OPTION_BG[k]}`}
             >
               {o}
             </button>
@@ -447,7 +447,7 @@ function DailyStop({
         }}
       >
         <div className="flex items-center gap-4">
-          <span className="grid h-20 w-20 shrink-0 animate-pop place-items-center rounded-3xl bg-lime-400 font-display text-5xl font-extrabold text-ink-950 shadow-chunky">
+          <span className="grid h-20 w-20 shrink-0 animate-pop place-items-center rounded-3xl bg-lime-400 font-display text-5xl font-extrabold text-night shadow-chunky">
             {letter}
           </span>
           <div className="min-w-0 flex-1">

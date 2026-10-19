@@ -180,7 +180,7 @@ export function Home() {
                   title="Editar avatar"
                 >
                   <Avatar avatar={avatar} size={56} />
-                  <span className="absolute -bottom-1 -right-1 grid h-6 w-6 place-items-center rounded-full border-2 border-ink-950 bg-lime-400 text-xs text-ink-950">
+                  <span className="absolute -bottom-1 -right-1 grid h-6 w-6 place-items-center rounded-full border-2 border-night bg-lime-400 text-xs text-night">
                     ✎
                   </span>
                 </button>
@@ -334,7 +334,7 @@ export function Home() {
                 </span>
                 {g.available ? (
                   <button
-                    className="chip bg-lime-400 text-ink-950 hover:bg-lime-300"
+                    className="chip bg-lime-400 text-night hover:bg-lime-300"
                     onClick={() => {
                       setForm({ ...form, gameId: g.id });
                       document.getElementById('room-name')?.focus();

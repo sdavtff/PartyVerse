@@ -25,7 +25,7 @@ const limits = {
     game: new RateLimiter(60, 30),
     room: new RateLimiter(10, 1),
 };
-export function attachGateway(io, rooms, tokens, presence) {
+export function attachGateway(io, rooms, tokens, presence, bans) {
     presence?.bind((sid, event, payload) => io.to(sid).emit(event, payload));
     io.use((socket, next) => {
         const token = (typeof socket.handshake.auth?.token === 'string'
@@ -34,6 +34,8 @@ export function attachGateway(io, rooms, tokens, presence) {
         const identity = token ? tokens.verify(token) : null;
         if (!identity)
             return next(new Error('UNAUTHORIZED'));
+        if (bans?.has(identity.id))
+            return next(new Error('BANNED'));
         socket.data.identity = identity;
         socket.data.roomCode = null;
         next();

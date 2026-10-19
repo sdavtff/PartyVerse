@@ -168,7 +168,7 @@ export function AuthPage() {
           <Avatar avatar={user.avatar} size={80} />
           <h1 className="mt-4 text-2xl font-extrabold">Você já entrou como {user.nickname}</h1>
           <div className="mt-6 flex justify-center gap-3">
-            <Link to="/" className="rounded-2xl bg-lime-400 px-5 py-3 font-bold text-ink-950">
+            <Link to="/" className="rounded-2xl bg-lime-400 px-5 py-3 font-bold text-night">
               Jogar agora
             </Link>
             <Link to="/perfil" className="rounded-2xl bg-ink-700 px-5 py-3 font-bold text-white">
@@ -230,7 +230,7 @@ export function AuthPage() {
                 setErr('');
                 setTouched({});
               }}
-              className={`rounded-xl py-2 text-sm font-bold transition ${mode === t.id ? 'bg-lime-400 text-ink-950' : 'text-ink-200 hover:text-white'}`}
+              className={`rounded-xl py-2 text-sm font-bold transition ${mode === t.id ? 'bg-lime-400 text-night' : 'text-ink-200 hover:text-white'}`}
             >
               {t.label}
             </button>
@@ -276,7 +276,7 @@ export function AuthPage() {
           <>
             <a
               href={googleHref}
-              className="mt-5 flex w-full items-center justify-center gap-3 rounded-2xl bg-white px-4 py-3 font-bold text-ink-950 shadow-chunky transition hover:bg-ink-200 active:translate-y-0.5 active:shadow-none"
+              className="mt-5 flex w-full items-center justify-center gap-3 rounded-2xl bg-paper px-4 py-3 font-bold text-night shadow-chunky transition hover:bg-ink-200 active:translate-y-0.5 active:shadow-none"
             >
               <GoogleLogo />
               {mode === 'login' ? 'Entrar com Google' : 'Criar conta com Google'}
@@ -301,7 +301,7 @@ export function AuthPage() {
                 aria-label="Editar avatar"
               >
                 <Avatar avatar={avatar} size={56} />
-                <span className="absolute -bottom-1 -right-1 grid h-6 w-6 place-items-center rounded-full border-2 border-ink-950 bg-lime-400 text-xs text-ink-950">
+                <span className="absolute -bottom-1 -right-1 grid h-6 w-6 place-items-center rounded-full border-2 border-night bg-lime-400 text-xs text-night">
                   ✎
                 </span>
               </button>
@@ -411,7 +411,7 @@ export function AuthPage() {
           {busy ? (
             <>
               <span
-                className="h-5 w-5 animate-spin rounded-full border-[3px] border-ink-950/30 border-t-ink-950"
+                className="h-5 w-5 animate-spin rounded-full border-[3px] border-night/30 border-t-night"
                 aria-hidden
               />
               {busyText}
@@ -436,11 +436,12 @@ export function AuthPage() {
               >
                 Criar agora
               </button>
-              {health?.google && (
-                <span className="mt-2 block text-xs">
-                  Esqueceu a senha? Entre com o Google usando o mesmo e-mail.
-                </span>
-              )}
+              <span className="mt-2 block text-xs">
+                <Link to="/esqueci-senha" className="font-bold text-pop-sky hover:underline">
+                  Esqueci minha senha
+                </Link>
+                {health?.google && ' · ou entre com o Google usando o mesmo e-mail'}
+              </span>
             </>
           ) : mode === 'register' ? (
             <>

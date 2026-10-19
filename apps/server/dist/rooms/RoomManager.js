@@ -73,6 +73,23 @@ export class RoomManager {
                 return r;
         return undefined;
     }
+    /** Moderação: fecha uma sala. */
+    close(code) {
+        const r = this.get(code);
+        r.closeAll();
+        this.rooms.delete(r.code);
+    }
+    /** Moderação: tira a pessoa de todas as salas. */
+    expelEverywhere(userId) {
+        for (const r of this.rooms.values())
+            r.expel(userId);
+    }
+    adminList() {
+        return [...this.rooms.values()]
+            .sort((a, b) => b.lastActivity - a.lastActivity)
+            .slice(0, 200)
+            .map((r) => r.adminSummary());
+    }
     get size() {
         return this.rooms.size;
     }

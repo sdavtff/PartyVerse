@@ -8,11 +8,11 @@ import { useCountdown } from '../../lib/useCountdown';
 import { useSoundOnChange, useTickSound } from '../../lib/useGameSounds';
 
 const STATUS_STYLE = {
-  unique: 'bg-lime-400 text-ink-950',
-  repeated: 'bg-pop-sky text-ink-950',
+  unique: 'bg-lime-400 text-night',
+  repeated: 'bg-pop-sky text-night',
   empty: 'bg-ink-700 text-ink-400',
   invalid: 'bg-ink-700 text-ink-400 line-through',
-  rejected: 'bg-pop-rose text-ink-950 line-through',
+  rejected: 'bg-pop-rose text-night line-through',
 } as const;
 
 const norm = (s: string) =>
@@ -89,7 +89,7 @@ export function StopGame({ view, room, myId }: { view: StopView; room: PublicRoo
   const header = (
     <div className="flex flex-wrap items-center gap-4">
       <div
-        className="grid h-20 w-20 animate-pop place-items-center rounded-3xl border-4 border-ink-950 bg-lime-400 font-display text-5xl font-extrabold text-ink-950 shadow-chunky"
+        className="grid h-20 w-20 animate-pop place-items-center rounded-3xl border-4 border-night bg-lime-400 font-display text-5xl font-extrabold text-night shadow-chunky"
         aria-label={`Letra ${view.letter}`}
       >
         {view.letter}
@@ -112,7 +112,7 @@ export function StopGame({ view, room, myId }: { view: StopView; room: PublicRoo
       </div>
       {view.deadline && (
         <div
-          className={`rounded-2xl px-4 py-2 font-display text-3xl font-extrabold tabular-nums ${left <= 5 ? 'animate-pulse bg-pop-rose text-ink-950' : 'bg-ink-700 text-white'}`}
+          className={`rounded-2xl px-4 py-2 font-display text-3xl font-extrabold tabular-nums ${left <= 5 ? 'animate-pulse bg-pop-rose text-night' : 'bg-ink-700 text-white'}`}
           role="timer"
           aria-label={`${left} segundos restantes`}
         >
@@ -301,9 +301,7 @@ function StopReview({
                           {results && pts !== undefined ? (
                             <span className="font-display font-extrabold">+{pts}</span>
                           ) : r.rejections[c]! > 0 ? (
-                            <span className="chip bg-pop-rose text-ink-950">
-                              ✕{r.rejections[c]}
-                            </span>
+                            <span className="chip bg-pop-rose text-night">✕{r.rejections[c]}</span>
                           ) : null}
                         </button>
                       </td>
@@ -436,7 +434,7 @@ function CategoryReview({
           return (
             <li key={g.text}>
               <div
-                className={`rounded-2xl border-4 border-ink-950 px-4 py-2.5 text-center font-display text-lg font-extrabold uppercase shadow-chunky transition ${bad ? 'bg-ink-700 text-ink-400 line-through' : deniedByMe ? 'bg-pop-rose text-ink-950' : 'bg-[#7be0c3] text-ink-950'}`}
+                className={`rounded-2xl border-4 border-night px-4 py-2.5 text-center font-display text-lg font-extrabold uppercase shadow-chunky transition ${bad ? 'bg-ink-700 text-ink-400 line-through' : deniedByMe ? 'bg-pop-rose text-night' : 'bg-[#7be0c3] text-night'}`}
               >
                 {g.text}
               </div>
@@ -458,14 +456,12 @@ function CategoryReview({
                     type="button"
                     onClick={() => others.forEach((a) => vote(a, cat, deniedByMe))}
                     aria-pressed={deniedByMe}
-                    className={`rounded-lg px-2 py-0.5 text-xs font-extrabold uppercase ${deniedByMe ? 'bg-pop-rose text-ink-950' : 'text-ink-200 hover:bg-ink-700'}`}
+                    className={`rounded-lg px-2 py-0.5 text-xs font-extrabold uppercase ${deniedByMe ? 'bg-pop-rose text-night' : 'text-ink-200 hover:bg-ink-700'}`}
                   >
                     {deniedByMe ? 'Denunciada ✕' : '⚠ Denunciar'}
                   </button>
                 ) : null}
-                {count > 0 && !bad && (
-                  <span className="chip bg-pop-rose text-ink-950">✕{count}</span>
-                )}
+                {count > 0 && !bad && <span className="chip bg-pop-rose text-night">✕{count}</span>}
               </div>
             </li>
           );

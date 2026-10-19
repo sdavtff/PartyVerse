@@ -171,7 +171,7 @@ function WriteForm({ onSubmit }: { onSubmit: (s: [string, string, string], lie: 
             type="button"
             onClick={() => setLie(i)}
             aria-pressed={lie === i}
-            className={`whitespace-nowrap rounded-xl px-3 py-2 text-sm font-bold transition ${lie === i ? 'bg-pop-rose text-ink-950' : 'bg-ink-700 text-ink-200 hover:text-white'}`}
+            className={`whitespace-nowrap rounded-xl px-3 py-2 text-sm font-bold transition ${lie === i ? 'bg-pop-rose text-night' : 'bg-ink-700 text-ink-200 hover:text-white'}`}
           >
             🤥 {lie === i ? 'Mentira' : 'É mentira?'}
           </button>

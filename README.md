@@ -1,8 +1,19 @@
 # PartyVerse
 
-Plataforma web de minijogos multiplayer em tempo real. **Versão 0.2:** página inicial, contas e convidados, salas (criar, entrar por código ou link, lobby, chat, moderação, reconexão) e seis jogos completos: **Adedonha (STOP)**, **Rabisco** (desenhe e adivinhe), **Mímica**, **Palavra Secreta**, **Quiz Relâmpago** e **Impostor**. Efeitos sonoros e animações com preferências que funcionam.
+Plataforma web de minijogos multiplayer em tempo real. **Versão 0.6:** página inicial, contas e convidados, salas (criar, entrar por código ou link, lobby, chat, moderação, reconexão) e nove jogos completos: **Adedonha (STOP)**, **Rabisco** (desenhe e adivinhe), **Mímica**, **Palavra Secreta**, **Quiz Relâmpago**, **Impostor**, **Quem é Mais Provável**, **Verdade ou Desafio** e **Duas Verdades e Uma Mentira**. Efeitos sonoros e animações com preferências que funcionam.
 
 > **Publicar na Hostinger:** veja [DEPLOY-HOSTINGER.md](DEPLOY-HOSTINGER.md).
+
+## Novidades da 0.6
+
+- **3 jogos novos**: Quem é Mais Provável, Verdade ou Desafio (versão leve, a turma vota se valeu) e Duas Verdades e Uma Mentira.
+- **Temas personalizados**: palavras próprias (Rabisco, Mímica, Palavra Secreta), perguntas próprias no Quiz (`pergunta | certa | errada | errada | errada`) e frases/verdades/desafios próprios. As listas não são enviadas aos outros jogadores.
+- **Mais conteúdo**: perguntas e palavras de anime, games, música brasileira e futebol.
+- **Desafio do dia** (`/desafio`): Quiz e Adedonha iguais para todos no dia, uma tentativa, ranking diário, sequência de dias e XP.
+- **Níveis, XP e conquistas**: 15 medalhas, itens de avatar liberados por nível, **perfil público** (`/jogador/:id`) e **ranking por temporada** (mês).
+- **Amigos** (`/amigos`): pedidos de amizade, quem está online e em qual sala, **convite em tempo real** para a sua sala.
+- **Reações rápidas** (emojis voando), **modo espectador** (sala cheia entra assistindo; botão "Só assistir") e **botão de WhatsApp** com prévia do link (imagem e título).
+- **Instalar como app** (PWA), **tema claro**, **recuperar senha por e-mail** e **painel de administração** (`/admin`: números do site, fechar salas, suspender contas).
 
 ## Novidades da 0.5
 

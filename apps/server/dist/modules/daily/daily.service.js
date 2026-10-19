@@ -194,6 +194,13 @@ export class DailyService {
             return { userId: r.userId, nickname: r.nickname, avatar: r.avatar, score: r.score, place };
         });
     }
+    async counts(day = dayKey()) {
+        const [quiz, stop] = await Promise.all([
+            this.repo.listDay(day, 'quiz'),
+            this.repo.listDay(day, 'stop'),
+        ]);
+        return { day, quiz: quiz.length, stop: stop.length };
+    }
     /** Sequência de dias seguidos com algum desafio feito. */
     async streak(userId, today = dayKey()) {
         const days = new Set(await this.repo.days(userId));

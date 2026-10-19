@@ -49,7 +49,7 @@ export function FriendButton({ userId }: { userId: string }) {
     return (
       <button
         disabled={busy}
-        className={`${base} bg-ink-700 text-white hover:bg-pop-rose hover:text-ink-950`}
+        className={`${base} bg-ink-700 text-white hover:bg-pop-rose hover:text-night`}
         onClick={() => confirm('Desfazer amizade?') && run(() => friendsApi.remove(userId))}
         title="Desfazer amizade"
       >
@@ -69,7 +69,7 @@ export function FriendButton({ userId }: { userId: string }) {
   return (
     <button
       disabled={busy}
-      className={`${base} bg-lime-400 text-ink-950 hover:bg-lime-300`}
+      className={`${base} bg-lime-400 text-night hover:bg-lime-300`}
       onClick={() =>
         run(
           () => friendsApi.add(userId),

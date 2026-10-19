@@ -34,9 +34,17 @@ import {
   type DailyRepository,
 } from './modules/daily/daily.repository.js';
 import { DailyService } from './modules/daily/daily.service.js';
+import { BanList } from './modules/admin/bans.js';
+import { SmtpMailer, type Mailer } from './modules/mail/mailer.js';
+import {
+  MemoryResetRepository,
+  PrismaResetRepository,
+  type ResetRepository,
+} from './modules/auth/reset.repository.js';
 import { RoomManager } from './rooms/RoomManager.js';
 
 export interface BuildOptions {
+  mailer?: Mailer;
   friends?: FriendsRepository;
   progress?: ProgressRepository;
   users?: UserRepository | null;
@@ -70,6 +78,19 @@ export function buildServer(env: Env, opts: BuildOptions = {}) {
         users instanceof MemoryUserRepository ? users.users.get(id) : undefined,
       );
   const daily = new DailyService(dailyRepo);
+  const mailer = opts.mailer ?? new SmtpMailer(env);
+  const resets: ResetRepository = prisma
+    ? new PrismaResetRepository(prisma)
+    : new MemoryResetRepository();
+  const bans = new BanList();
+  const loadBans = () =>
+    users
+      ?.bannedIds()
+      .then((ids) => bans.load(ids))
+      .catch(() => undefined);
+  void loadBans();
+  const banTimer = setInterval(loadBans, 5 * 60_000);
+  banTimer.unref?.();
   const friends: FriendsRepository | undefined =
     opts.friends ??
     (prisma
@@ -108,14 +129,21 @@ export function buildServer(env: Env, opts: BuildOptions = {}) {
     presence,
     friends,
     daily,
+    bans,
+    mailer,
+    resets,
+    disconnectUser: (userId) => {
+      for (const sid of presence.socketsOf(userId)) io.sockets.sockets.get(sid)?.disconnect(true);
+    },
   }));
-  attachGateway(io, rooms, tokens, presence);
+  attachGateway(io, rooms, tokens, presence, bans);
 
   const close = async () => {
+    clearInterval(banTimer);
     rooms.shutdown();
     io.close();
     await new Promise<void>((r) => httpServer.close(() => r()));
     await prisma?.$disconnect();
   };
-  return { httpServer, io, rooms, tokens, app, close, progress, presence, friends };
+  return { httpServer, io, rooms, tokens, app, close, progress, presence, friends, bans, mailer };
 }

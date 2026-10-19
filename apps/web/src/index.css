@@ -3,8 +3,28 @@
 @tailwind utilities;
 
 @layer base {
-  html {
+  :root {
     color-scheme: dark;
+    --ink-950: 15 11 23;
+    --ink-900: 22 18 31;
+    --ink-800: 33 26 46;
+    --ink-700: 45 36 64;
+    --ink-600: 61 50 87;
+    --ink-400: 140 128 168;
+    --ink-200: 214 207 230;
+    --fg: 255 255 255;
+  }
+  /* tema claro: o mesmo layout com a paleta invertida */
+  :root[data-theme='light'] {
+    color-scheme: light;
+    --ink-950: 236 231 245;
+    --ink-900: 247 244 252;
+    --ink-800: 255 255 255;
+    --ink-700: 226 219 238;
+    --ink-600: 205 195 224;
+    --ink-400: 106 95 136;
+    --ink-200: 61 52 84;
+    --fg: 22 18 31;
   }
   body {
     @apply bg-ink-900 font-sans text-ink-200 antialiased;
@@ -200,4 +220,41 @@
   .reduce-motion .reaction-fly {
     animation-duration: 0.01s;
   }
+}
+
+/* tema claro: cores de destaque mais escuras para ler bem sobre fundo branco */
+:root[data-theme='light'] .text-lime-400,
+:root[data-theme='light'] .hover\:text-lime-400:hover {
+  color: #4a7300;
+}
+:root[data-theme='light'] .text-pop-amber {
+  color: #9a6200;
+}
+:root[data-theme='light'] .text-pop-sky {
+  color: #0a6a9f;
+}
+:root[data-theme='light'] .text-pop-rose,
+:root[data-theme='light'] .hover\:text-pop-rose:hover {
+  color: #c03526;
+}
+:root[data-theme='light'] .text-pop-pink {
+  color: #c0186a;
+}
+:root[data-theme='light'] .text-pop-teal {
+  color: #067a66;
+}
+:root[data-theme='light'] .text-pop-indigo {
+  color: #4450d0;
+}
+:root[data-theme='light'] .text-pop-orange {
+  color: #b05500;
+}
+:root[data-theme='light'] .text-pop-violet {
+  color: #6447d4;
+}
+:root[data-theme='light'] .shadow-chunky {
+  box-shadow: 0 4px 0 0 rgba(45, 36, 64, 0.16);
+}
+:root[data-theme='light'] .shadow-chunky-sm {
+  box-shadow: 0 2px 0 0 rgba(45, 36, 64, 0.16);
 }

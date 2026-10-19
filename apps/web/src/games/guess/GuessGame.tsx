@@ -65,7 +65,7 @@ export function GuessGame({
         </div>
         {view.deadline && view.phase !== 'finished' && (
           <div
-            className={`rounded-2xl px-4 py-2 font-display text-2xl font-extrabold tabular-nums ${left <= 10 && view.phase === 'playing' ? 'animate-pulse bg-pop-rose text-ink-950' : 'bg-ink-700 text-white'}`}
+            className={`rounded-2xl px-4 py-2 font-display text-2xl font-extrabold tabular-nums ${left <= 10 && view.phase === 'playing' ? 'animate-pulse bg-pop-rose text-night' : 'bg-ink-700 text-white'}`}
             role="timer"
             aria-label={`${left} segundos restantes`}
           >
@@ -189,7 +189,7 @@ export function GuessGame({
               return (
                 <li
                   key={p}
-                  className={`flex items-center gap-1.5 rounded-full px-2 py-1 text-xs font-bold ${g ? 'bg-lime-400 text-ink-950' : 'bg-ink-900 text-ink-400'}`}
+                  className={`flex items-center gap-1.5 rounded-full px-2 py-1 text-xs font-bold ${g ? 'bg-lime-400 text-night' : 'bg-ink-900 text-ink-400'}`}
                 >
                   <Avatar avatar={avatar(p)} size={20} />
                   {nick(p)}
@@ -273,7 +273,7 @@ function Clues({
           {view.clues.map((c, i) => (
             <li
               key={i}
-              className="animate-pop rounded-2xl bg-pop-violet px-4 py-2 font-display text-lg font-extrabold text-ink-950"
+              className="animate-pop rounded-2xl bg-pop-violet px-4 py-2 font-display text-lg font-extrabold text-night"
             >
               {i + 1}. {c}
             </li>

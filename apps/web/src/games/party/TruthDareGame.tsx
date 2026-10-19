@@ -152,14 +152,14 @@ function JudgeButtons({
       <button
         aria-pressed={mine === true}
         onClick={() => act({ type: 'judge', ok: true })}
-        className={`${base} ${mine === true ? 'bg-lime-400 text-ink-950' : 'bg-ink-700 text-white hover:bg-ink-600'}`}
+        className={`${base} ${mine === true ? 'bg-lime-400 text-night' : 'bg-ink-700 text-white hover:bg-ink-600'}`}
       >
         👍 Cumpriu
       </button>
       <button
         aria-pressed={mine === false}
         onClick={() => act({ type: 'judge', ok: false })}
-        className={`${base} ${mine === false ? 'bg-pop-rose text-ink-950' : 'bg-ink-700 text-white hover:bg-ink-600'}`}
+        className={`${base} ${mine === false ? 'bg-pop-rose text-night' : 'bg-ink-700 text-white hover:bg-ink-600'}`}
       >
         👎 Não valeu
       </button>

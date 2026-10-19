@@ -10,6 +10,7 @@ import { usePageTitle } from '../lib/usePageTitle';
 
 type Mode = 'login' | 'register' | 'guest';
 interface Health {
+  dbHint?: string | null;
   accounts: boolean;
   google: boolean;
   db: 'off' | 'connecting' | 'ok' | 'error';
@@ -248,6 +249,11 @@ export function AuthPage() {
                 : 'O servidor está sem conexão com o banco de dados agora.'}{' '}
               Você pode jogar normalmente como convidado.
             </p>
+            {health?.dbHint && (
+              <p className="mt-2 rounded-xl bg-ink-950/60 p-2 text-xs text-ink-200">
+                <strong className="text-white">Para o dono do site:</strong> {health.dbHint}
+              </p>
+            )}
           </div>
         )}
 

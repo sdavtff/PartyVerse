@@ -56,6 +56,8 @@ export function createApp({ env, tokens, users, matches, rooms, google: googleDe
         ok: true,
         db: users ? dbStatus.state : 'off',
         accounts: Boolean(users) && dbStatus.state !== 'error',
+        // dica do motivo quando o banco falha (sem dados sensíveis)
+        dbHint: dbStatus.state === 'error' ? dbStatus.hint : null,
         google: google.enabled,
     }));
     api.get('/games', (_req, res) => res.json(GAME_CATALOG));

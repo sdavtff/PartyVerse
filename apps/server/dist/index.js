@@ -1,6 +1,6 @@
 import { loadEnv } from './config/env.js';
 import { runMigrations } from './db/migrate.js';
-import { setDbState } from './db/status.js';
+import { explainDbError, setDbState } from './db/status.js';
 import { logger } from './lib/logger.js';
 import { buildServer } from './server.js';
 let env;
@@ -48,7 +48,9 @@ async function prepareDatabase(url) {
         console.error(`[PartyVerse] ERRO no banco (${describeDb(url)}): ${e.message}${e.code ? ` [${e.code}]` : ''}`);
         console.error('[PartyVerse] O jogo continua funcionando para convidados. Confira DATABASE_URL.');
         logger.debug({ err: String(err) }, 'detalhe do erro do banco');
-        setDbState('error', e.message);
+        const hint = explainDbError(e.message, e.code, url);
+        console.error(`[PartyVerse] DICA: ${hint}`);
+        setDbState('error', e.message, hint);
         // tenta de novo daqui a 1 minuto (o banco pode só ter demorado a acordar)
         setTimeout(() => void prepareDatabase(url), 60_000).unref();
     }

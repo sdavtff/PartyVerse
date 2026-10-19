@@ -143,3 +143,31 @@ describe('cadastro nunca fica carregando para sempre', () => {
     expect(r.body.user.avatar).toBe('c-123456');
   });
 });
+
+describe('dica de erro do banco', () => {
+  it('explica os erros mais comuns sem mostrar a senha', async () => {
+    const { explainDbError } = await import('../src/db/status.js');
+    const pooler =
+      'postgresql://postgres.abc:segredo123@aws-0-sa-east-1.pooler.supabase.com:5432/postgres';
+    expect(explainDbError('password authentication failed for user', '28P01', pooler)).toMatch(
+      /Senha/,
+    );
+    expect(
+      explainDbError(
+        'connect ETIMEDOUT',
+        'ETIMEDOUT',
+        'postgresql://postgres:x@db.abc.supabase.co:5432/postgres',
+      ),
+    ).toMatch(/Direct connection/);
+    expect(explainDbError('timeout expired', undefined, pooler)).toMatch(/expirou/);
+    expect(explainDbError('x', undefined, 'isso não é url')).toMatch(/não é um endereço válido/);
+    expect(
+      explainDbError('x', undefined, 'postgresql://p:[YOUR-PASSWORD]@h:5432/postgres'),
+    ).toMatch(/YOUR-PASSWORD/);
+    for (const h of [
+      explainDbError('password authentication failed', '28P01', pooler),
+      explainDbError('timeout expired', undefined, pooler),
+    ])
+      expect(h).not.toContain('segredo123');
+  });
+});

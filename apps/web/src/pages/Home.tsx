@@ -140,6 +140,23 @@ export function Home() {
               Entrar
             </Button>
           </form>
+          <Link
+            to="/desafio"
+            className="mt-4 inline-flex items-center gap-3 rounded-2xl border-2 border-ink-700 bg-ink-800/80 px-4 py-2.5 transition hover:border-lime-400"
+          >
+            <span className="text-2xl" aria-hidden>
+              📅
+            </span>
+            <span>
+              <span className="block font-bold text-white">Desafio do dia</span>
+              <span className="block text-sm text-ink-400">
+                Quiz e Adedonha novos todo dia, com ranking
+              </span>
+            </span>
+            <span className="text-lime-400" aria-hidden>
+              →
+            </span>
+          </Link>
         </div>
 
         {/* CRIAR SALA */}

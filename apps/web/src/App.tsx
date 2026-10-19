@@ -1,4 +1,5 @@
 import { Route, Routes } from 'react-router-dom';
+import { DailyPage } from './pages/DailyPage';
 import { FriendsPage } from './pages/FriendsPage';
 import { Layout } from './components/Layout';
 import { AuthPage } from './pages/AuthPage';
@@ -26,6 +27,7 @@ export function App() {
         <Route path="perfil" element={<ProfilePage />} />
         <Route path="jogador/:id" element={<PublicProfilePage />} />
         <Route path="amigos" element={<FriendsPage />} />
+        <Route path="desafio" element={<DailyPage />} />
         <Route path="sala/:code" element={<RoomPage />} />
         <Route
           path="*"

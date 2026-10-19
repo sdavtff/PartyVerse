@@ -24,12 +24,15 @@ import { GoogleAuth, safeReturnPath } from '../modules/auth/google.js';
 import type { ProgressService } from '../modules/progress/progress.service.js';
 import type { FriendsRepository } from '../modules/social/friends.repository.js';
 import type { Presence } from '../modules/social/presence.js';
+import type { DailyService } from '../modules/daily/daily.service.js';
+import { z } from 'zod';
 import { TOKEN_COOKIE, TokenService, type Identity } from '../modules/auth/token.js';
 import type { MatchRepository } from '../modules/matches/match.repository.js';
 import type { UserRepository } from '../modules/users/users.repository.js';
 import type { RoomManager } from '../rooms/RoomManager.js';
 
 export interface AppDeps {
+  daily?: DailyService;
   presence?: Presence;
   friends?: FriendsRepository;
   google?: GoogleAuth;
@@ -57,6 +60,7 @@ export function createApp({
   progress,
   presence,
   friends,
+  daily,
 }: AppDeps) {
   const app = express();
   const auth = new AuthService(users);
@@ -298,6 +302,65 @@ export function createApp({
       res.json({ user: toIdentity(u), preferences: u.preferences });
     }),
   );
+  // ---------- desafio diário ----------
+  const needDaily = () => {
+    if (!daily) throw new AppError('INTERNAL', 'Desafio diário indisponível', 503);
+    return daily;
+  };
+  const dailyAccount = (req: AuthedRequest) => {
+    if (req.identity!.isGuest)
+      throw new AppError('UNAUTHORIZED', 'Crie uma conta para entrar no ranking do dia', 401);
+    return req.identity!.id;
+  };
+  api.get(
+    '/daily',
+    requireAuth,
+    wrap(async (req, res) => {
+      const id = req.identity!.isGuest ? null : req.identity!.id;
+      res.json(await needDaily().status(id));
+    }),
+  );
+  api.get(
+    '/daily/quiz',
+    requireAuth,
+    wrap(async (_req, res) => res.json(needDaily().quizQuestions())),
+  );
+  api.post(
+    '/daily/quiz',
+    requireAuth,
+    wrap(async (req, res) => {
+      const userId = dailyAccount(req);
+      const { answers } = z
+        .object({ answers: z.array(z.number().int().min(0).max(3).nullable()).max(20) })
+        .parse(req.body);
+      const result = await needDaily().submitQuiz(userId, answers);
+      const reward = await progress?.grant(userId, Math.round(20 + result.score / 10), ['daily_done']);
+      res.json({ result, reward: reward ?? null });
+    }),
+  );
+  api.post(
+    '/daily/stop',
+    requireAuth,
+    wrap(async (req, res) => {
+      const userId = dailyAccount(req);
+      const { answers } = z
+        .object({
+          answers: z.record(z.string().max(40)).refine((r) => Object.keys(r).length <= 20),
+        })
+        .parse(req.body);
+      const result = await needDaily().submitStop(userId, answers);
+      const reward = await progress?.grant(userId, Math.round(20 + result.score / 3), ['daily_done']);
+      res.json({ result, reward: reward ?? null });
+    }),
+  );
+  api.get(
+    '/daily/ranking',
+    wrap(async (req, res) => {
+      const game = req.query.game === 'stop' ? 'stop' : 'quiz';
+      res.json(await needDaily().ranking(game));
+    }),
+  );
+
   // ---------- amigos ----------
   const needFriends = (req: AuthedRequest) => {
     if (!friends || !users) throw new AppError('INTERNAL', 'Amigos indisponíveis', 503);

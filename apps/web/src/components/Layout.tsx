@@ -8,6 +8,7 @@ import { SoundToggle } from './SoundToggle';
 
 const BASE_NAV = [
   { to: '/jogos', label: 'Jogos' },
+  { to: '/desafio', label: 'Desafio' },
   { to: '/salas', label: 'Salas' },
   { to: '/ranking', label: 'Ranking' },
   { to: '/amigos', label: 'Amigos' },

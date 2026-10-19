@@ -52,6 +52,18 @@ export class ProgressService {
         }
         return out;
     }
+    /** XP avulso (ex.: desafio diário) com as conquistas que vierem junto. */
+    async grant(userId, xpGained, codes = []) {
+        const before = levelInfo(await this.repo.getXp(userId)).level;
+        const xp = await this.repo.addXp(userId, xpGained);
+        const { level } = levelInfo(xp);
+        if (level >= 5)
+            codes.push('level_5');
+        if (level >= 10)
+            codes.push('level_10');
+        const achievements = await this.repo.addAchievements(userId, codes);
+        return { xpGained, xp, level, leveledUp: level > before, achievements };
+    }
     /** Desbloqueia uma conquista avulsa (ex.: desafio diário, primeiro amigo). */
     async unlock(userId, code) {
         return (await this.repo.addAchievements(userId, [code])).length > 0;

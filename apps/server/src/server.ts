@@ -28,6 +28,12 @@ import {
   type FriendsRepository,
 } from './modules/social/friends.repository.js';
 import { Presence } from './modules/social/presence.js';
+import {
+  MemoryDailyRepository,
+  PrismaDailyRepository,
+  type DailyRepository,
+} from './modules/daily/daily.repository.js';
+import { DailyService } from './modules/daily/daily.service.js';
 import { RoomManager } from './rooms/RoomManager.js';
 
 export interface BuildOptions {
@@ -58,6 +64,12 @@ export function buildServer(env: Env, opts: BuildOptions = {}) {
         : null);
   const progress = progressRepo ? new ProgressService(progressRepo) : undefined;
   const presence = new Presence();
+  const dailyRepo: DailyRepository = prisma
+    ? new PrismaDailyRepository(prisma)
+    : new MemoryDailyRepository((id) =>
+        users instanceof MemoryUserRepository ? users.users.get(id) : undefined,
+      );
+  const daily = new DailyService(dailyRepo);
   const friends: FriendsRepository | undefined =
     opts.friends ??
     (prisma
@@ -95,6 +107,7 @@ export function buildServer(env: Env, opts: BuildOptions = {}) {
     progress,
     presence,
     friends,
+    daily,
   }));
   attachGateway(io, rooms, tokens, presence);
 

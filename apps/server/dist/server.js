@@ -11,6 +11,8 @@ import { MemoryMatchRepository, PrismaMatchRepository, } from './modules/matches
 import { MemoryUserRepository, PrismaUserRepository, } from './modules/users/users.repository.js';
 import { MemoryFriendsRepository, PrismaFriendsRepository, } from './modules/social/friends.repository.js';
 import { Presence } from './modules/social/presence.js';
+import { MemoryDailyRepository, PrismaDailyRepository, } from './modules/daily/daily.repository.js';
+import { DailyService } from './modules/daily/daily.service.js';
 import { RoomManager } from './rooms/RoomManager.js';
 /** Monta HTTP + Socket.IO. Separado de index.ts para ser usado nos testes. */
 export function buildServer(env, opts = {}) {
@@ -27,6 +29,10 @@ export function buildServer(env, opts = {}) {
                 : null);
     const progress = progressRepo ? new ProgressService(progressRepo) : undefined;
     const presence = new Presence();
+    const dailyRepo = prisma
+        ? new PrismaDailyRepository(prisma)
+        : new MemoryDailyRepository((id) => users instanceof MemoryUserRepository ? users.users.get(id) : undefined);
+    const daily = new DailyService(dailyRepo);
     const friends = opts.friends ??
         (prisma
             ? new PrismaFriendsRepository(prisma)
@@ -57,6 +63,7 @@ export function buildServer(env, opts = {}) {
         progress,
         presence,
         friends,
+        daily,
     }));
     attachGateway(io, rooms, tokens, presence);
     const close = async () => {

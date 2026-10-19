@@ -19,6 +19,11 @@ function setup(n = 3) {
     clearTimer: (n) => void timers.delete(n),
     sync: vi.fn(),
     notice: vi.fn(),
+    announce: vi.fn(),
+    whisper: vi.fn(),
+    chatTo: vi.fn(),
+    emit: vi.fn(),
+    nickname: (id: string) => id,
     isOnline: () => true,
     finish: vi.fn(),
   };

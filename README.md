@@ -1,6 +1,32 @@
 # PartyVerse
 
-Plataforma web de minijogos multiplayer em tempo real. **Versão 0.1:** página inicial, contas e convidados, salas (criar, entrar por código ou link, lobby, chat, moderação, reconexão) e o jogo **Adedonha (STOP)** completo. Os demais jogos aparecem no catálogo como "Em breve" e são o próximo passo (ver [Estado do projeto](#estado-do-projeto)).
+Plataforma web de minijogos multiplayer em tempo real. **Versão 0.2:** página inicial, contas e convidados, salas (criar, entrar por código ou link, lobby, chat, moderação, reconexão) e seis jogos completos: **Adedonha (STOP)**, **Rabisco** (desenhe e adivinhe), **Mímica**, **Palavra Secreta**, **Quiz Relâmpago** e **Impostor**. Efeitos sonoros e animações com preferências que funcionam.
+
+> **Publicar na Hostinger:** veja [DEPLOY-HOSTINGER.md](DEPLOY-HOSTINGER.md).
+
+## Novidades da 0.4
+
+- **Novas páginas**: `/jogos` (catálogo), `/jogos/:jogo` (regras, pontuação, dicas e salas abertas de cada jogo), `/salas` (salas públicas com filtro), `/ranking` (vitórias e pontos de contas registradas, geral e por jogo) e `/ajuda` (primeiros passos e perguntas frequentes). Menu no topo, menu para celular e links no rodapé; cada página tem seu título.
+- **Publicação automática**: o site na Hostinger fica ligado a este repositório; cada envio para a `main` publica sozinho (veja DEPLOY-HOSTINGER.md).
+
+## Novidades da 0.3
+
+- **Rabisco**: quadro de desenho em tempo real com lápis, borracha, balde de tinta, linha, retângulo, círculo (contorno ou cheio), 16 cores, 4 espessuras, desfazer e limpar. Escolha entre 3 palavras, letras reveladas aos poucos, aviso de "quase!", pontos por rapidez e ordem.
+- **Mímica** e **Palavra Secreta**: mesmo motor de palpites no chat; na Palavra Secreta quem sabe a palavra manda dicas curtas (que não podem conter a palavra) e cada dica extra vale menos.
+- Quem já acertou só conversa com quem também sabe a resposta (a palavra não vaza). Palpite rápido dentro do jogo (bom no celular).
+- **Adedonha**: validação categoria por categoria com respostas iguais agrupadas e botão "Denunciar".
+- **Salas com até 50 pessoas** e **senha** (definida ao criar ou no lobby; quem reconecta não precisa digitar de novo).
+- **Figurinhas no chat** (12 desenhos originais) e **criador de avatar** (cabelo, olhos, boca, acessório, pele, cor do cabelo e fundo).
+
+## Novidades da 0.2
+
+- **Impostor**: todos recebem o mesmo local secreto (com um papel), menos o impostor. Discussão, pedido de votação por maioria, votação secreta, chute do local pelo impostor, 30 locais. Ninguém recebe a carta dos outros (testado).
+- **Quiz Relâmpago**: 120 perguntas em 6 temas (ou misto), pontos por velocidade (500–1000) e bônus de sequência. A resposta certa nunca vai para o navegador antes da revelação (testado).
+- **Troca de jogo no lobby** pelo anfitrião.
+- **Sons** sintetizados (Web Audio, sem arquivos): contagem, acerto/erro, STOP, vitória, chat. Botão de som no topo.
+- **Preferências funcionando**: "som" e "reduzir animações" valem para convidados (salvas no navegador) e contas (salvas no servidor). Confete para o vencedor.
+- **Cronômetro corrigido** para aparelhos com relógio adiantado/atrasado (o servidor envia a hora dele).
+- **Produção mais simples**: `server.js` na raiz, migrations aplicadas automaticamente ao iniciar (sem depender da CLI do Prisma), caminho do front independente da pasta de execução, `prisma generate` não exige mais `DATABASE_URL`.
 
 ## Arquitetura
 
@@ -105,7 +131,7 @@ Sem `DATABASE_URL` o servidor sobe mesmo assim: convidados e jogo funcionam; cad
 ## Testes e qualidade
 
 ```bash
-npm test            # Vitest: 33 testes (regras/pontuação STOP, HTTP, salas e partida via sockets reais)
+npm test            # Vitest: 63 testes (regras/pontuação STOP, HTTP, salas e partida via sockets reais)
 npm run typecheck
 npm run lint
 npm run format
@@ -118,10 +144,11 @@ O que os testes cobrem: pontuação (única/repetida/vazia/fora da letra/contest
 ## Produção
 
 ```bash
-npm run build                                     # shared → server → web
-cd apps/server && npx prisma migrate deploy
-NODE_ENV=production DATABASE_URL=... JWT_SECRET=... CORS_ORIGINS=https://seu.dominio node dist/index.js
+npm run build                                     # shared → prisma generate → server → web
+DATABASE_URL=... JWT_SECRET=... CORS_ORIGINS=https://seu.dominio npm start   # = node server.js
 ```
+
+As migrations são aplicadas ao iniciar (`AUTO_MIGRATE=true`, padrão).
 
 Em produção o Express também serve `apps/web/dist` (SPA), então um único processo atende site, API e WebSocket. Alternativa: `docker build -t partyverse . && docker run -p 3001:3001 --env-file apps/server/.env partyverse`.
 
@@ -140,9 +167,9 @@ Atrás de proxy (Nginx, Caddy, Render, Fly…): habilite upgrade de WebSocket e 
 
 **Ainda falta**
 
-- Jogos: Desenho e adivinhação, Mímica, Quiz, Palavra Secreta, Impostor (o contrato já prevê `onChat` para palpites e `viewFor` para papéis secretos)
+- Jogos: Desenho e adivinhação, Mímica, Palavra Secreta (o contrato já prevê `onChat` para palpites)
 - Redis: adaptador Socket.IO e estado de salas compartilhado para escalar horizontalmente
-- Preferências "som" e "reduzir animações" são salvas mas ainda não alteram a interface (o site já respeita `prefers-reduced-motion` do sistema); tema claro não existe
+- Tema claro não existe
 - Registro de moderação: a tabela existe, mas expulsões ainda não são gravadas nela
 - Recuperação de senha, verificação de e-mail
 - Testes de componentes do front-end (o front é coberto só pelo teste ponta a ponta)

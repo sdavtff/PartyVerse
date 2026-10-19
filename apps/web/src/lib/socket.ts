@@ -32,7 +32,7 @@ export function emitAck<T = unknown>(
     s.timeout(timeoutMs).emit(event, payload, (err: Error | null, res: Ack<T>) => {
       if (err) return reject(new Error('O servidor demorou a responder. Tente novamente.'));
       if (res.ok) resolve(res.data);
-      else reject(new Error(res.error.message));
+      else reject(Object.assign(new Error(res.error.message), { code: res.error.code }));
     });
   });
 }

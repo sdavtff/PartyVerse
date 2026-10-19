@@ -6,7 +6,7 @@ interface SessionCtx {
   user: Identity | null;
   loading: boolean;
   setUser: (u: Identity | null) => void;
-  guest: (nickname: string) => Promise<Identity>;
+  guest: (nickname: string, avatar?: string) => Promise<Identity>;
   login: (email: string, password: string) => Promise<Identity>;
   register: (email: string, password: string, nickname: string) => Promise<Identity>;
   logout: () => Promise<void>;
@@ -40,7 +40,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     user,
     loading,
     setUser,
-    guest: (nickname) => wrap(api('/auth/guest', { method: 'POST', json: { nickname } })),
+    guest: (nickname, avatar) =>
+      wrap(api('/auth/guest', { method: 'POST', json: { nickname, avatar } })),
     login: (email, password) =>
       wrap(api('/auth/login', { method: 'POST', json: { email, password } })),
     register: (email, password, nickname) =>

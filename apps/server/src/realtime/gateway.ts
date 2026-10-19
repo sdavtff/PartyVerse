@@ -52,7 +52,8 @@ export function createTransport(io: Server): RoomTransport {
 /** Limites de frequência por socket (capacidade, recarga por segundo). */
 const limits = {
   chat: new RateLimiter(5, 1),
-  game: new RateLimiter(20, 10),
+  // generoso para o desenho (traços chegam em lotes de ~60 ms)
+  game: new RateLimiter(60, 30),
   room: new RateLimiter(10, 1),
 };
 
@@ -111,13 +112,20 @@ export function attachGateway(io: Server, rooms: RoomManager, tokens: TokenServi
       return room;
     };
 
-    const enter = (room: Room) => {
+    const enter = (room: Room, password?: string) => {
       if (socket.data.roomCode && socket.data.roomCode !== room.code) {
         rooms.find(socket.data.roomCode)?.leave(me().id);
       }
       socket.join(roomChannel(room.code));
       socket.data.roomCode = room.code;
-      const { replacedSocket } = room.join(me(), socket.id);
+      let replacedSocket: string | null;
+      try {
+        ({ replacedSocket } = room.join(me(), socket.id, password));
+      } catch (err) {
+        socket.leave(roomChannel(room.code));
+        socket.data.roomCode = null;
+        throw err;
+      }
       if (replacedSocket) {
         io.to(replacedSocket).emit(EVENTS.NOTICE, {
           message: 'Você abriu esta sala em outra aba ou dispositivo.',
@@ -127,10 +135,12 @@ export function attachGateway(io: Server, rooms: RoomManager, tokens: TokenServi
       return room.toPublic();
     };
 
-    on(EVENTS.ROOM_CREATE, 'room', createRoomSchema, ({ settings }) =>
-      enter(rooms.create(me(), settings)),
+    on(EVENTS.ROOM_CREATE, 'room', createRoomSchema, ({ settings, password }) =>
+      enter(rooms.create(me(), settings, password), password),
     );
-    on(EVENTS.ROOM_JOIN, 'room', joinRoomSchema, ({ code }) => enter(rooms.get(code)));
+    on(EVENTS.ROOM_JOIN, 'room', joinRoomSchema, ({ code, password }) =>
+      enter(rooms.get(code), password),
+    );
     on(EVENTS.ROOM_LEAVE, 'room', joinRoomSchema.partial(), () => {
       const room = currentRoom();
       room.leave(me().id);
@@ -143,15 +153,19 @@ export function attachGateway(io: Server, rooms: RoomManager, tokens: TokenServi
     on(EVENTS.ROOM_TRANSFER_HOST, 'room', transferHostSchema, ({ playerId }) =>
       currentRoom().transferHost(me().id, playerId),
     );
-    on(EVENTS.ROOM_UPDATE_SETTINGS, 'room', updateSettingsSchema, ({ room, game }) =>
-      currentRoom().updateSettings(me().id, room, game),
+    on(EVENTS.ROOM_UPDATE_SETTINGS, 'room', updateSettingsSchema, ({ room, game, password }) =>
+      currentRoom().updateSettings(me().id, room, game, password),
     );
     on(EVENTS.ROOM_START, 'room', joinRoomSchema.partial(), () => currentRoom().start(me().id));
     on(EVENTS.ROOM_END, 'room', joinRoomSchema.partial(), () => currentRoom().endByHost(me().id));
     on(EVENTS.ROOM_BACK_TO_LOBBY, 'room', joinRoomSchema.partial(), () =>
       currentRoom().backToLobby(me().id),
     );
-    on(EVENTS.CHAT_SEND, 'chat', chatSchema, ({ text }) => currentRoom().chat(me().id, text));
+    on(EVENTS.CHAT_SEND, 'chat', chatSchema, (msg) =>
+      'sticker' in msg
+        ? currentRoom().sticker(me().id, msg.sticker)
+        : currentRoom().chat(me().id, msg.text),
+    );
     on(EVENTS.GAME_ACTION, 'game', gameActionSchema, ({ action, actionId }) =>
       currentRoom().gameAction(me().id, action, actionId),
     );

@@ -20,6 +20,7 @@ export interface PublicRoomSummary {
   players: number;
   maxPlayers: number;
   phase: string;
+  hasPassword: boolean;
 }
 
 /**
@@ -39,7 +40,7 @@ export class RoomManager {
     this.sweeper.unref?.();
   }
 
-  create(host: Identity, settings: RoomSettings): Room {
+  create(host: Identity, settings: RoomSettings, password = ''): Room {
     if (!isGameAvailable(settings.gameId))
       throw new AppError('VALIDATION', 'Este jogo ainda não está disponível');
     if (this.rooms.size >= (this.opts.maxRooms ?? 5000))
@@ -60,6 +61,7 @@ export class RoomManager {
       },
       { reconnectGraceMs: this.opts.reconnectGraceMs },
     );
+    room.password = password.trim();
     this.rooms.set(code, room);
     return room;
   }
@@ -88,6 +90,7 @@ export class RoomManager {
         players: r.activeCount,
         maxPlayers: r.settings.maxPlayers,
         phase: r.phase,
+        hasPassword: Boolean(r.password),
       }));
   }
 

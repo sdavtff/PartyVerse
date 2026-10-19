@@ -1,5 +1,8 @@
 node_modules
-dist
 .env
 *.log
+shots
 apps/server/src/generated
+*.tsbuildinfo
+# As pastas dist/ (versão compilada) FICAM no repositório de propósito:
+# a Hostinger publica direto do GitHub sem precisar compilar nada.

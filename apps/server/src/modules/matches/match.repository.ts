@@ -26,9 +26,20 @@ export interface MatchHistoryItem {
   players: number;
 }
 
+export interface LeaderboardRow {
+  userId: string;
+  nickname: string;
+  avatar: string;
+  matches: number;
+  wins: number;
+  score: number;
+}
+
 export interface MatchRepository {
   save(match: MatchInput): Promise<void>;
   historyFor(userId: string, limit: number): Promise<MatchHistoryItem[]>;
+  /** Ranking de contas registradas (vitórias, depois pontos), opcionalmente de um jogo. */
+  leaderboard(gameId: string | null, limit: number): Promise<LeaderboardRow[]>;
 }
 
 export class PrismaMatchRepository implements MatchRepository {
@@ -69,6 +80,22 @@ export class PrismaMatchRepository implements MatchRepository {
     });
   }
 
+  async leaderboard(gameId: string | null, limit: number): Promise<LeaderboardRow[]> {
+    const rows = await this.db.$queryRaw<LeaderboardRow[]>`
+      SELECT p."userId" AS "userId", u.nickname, u.avatar,
+             COUNT(*)::int AS matches,
+             SUM(CASE WHEN p.place = 1 THEN 1 ELSE 0 END)::int AS wins,
+             COALESCE(SUM(p.score), 0)::int AS score
+      FROM "MatchParticipant" p
+      JOIN "Match" m ON m.id = p."matchId"
+      JOIN "User" u ON u.id = p."userId"
+      WHERE p."userId" IS NOT NULL AND (${gameId}::text IS NULL OR m."gameId" = ${gameId})
+      GROUP BY p."userId", u.nickname, u.avatar
+      ORDER BY wins DESC, score DESC
+      LIMIT ${limit}`;
+    return rows;
+  }
+
   async historyFor(userId: string, limit: number) {
     const rows = await this.db.matchParticipant.findMany({
       where: { userId },
@@ -88,6 +115,29 @@ export class PrismaMatchRepository implements MatchRepository {
 }
 
 export class MemoryMatchRepository implements MatchRepository {
+  async leaderboard(gameId: string | null, limit: number) {
+    const rows = new Map<string, LeaderboardRow>();
+    for (const m of this.saved) {
+      if (gameId && m.gameId !== gameId) continue;
+      for (const p of m.participants) {
+        if (!p.userId) continue;
+        const r = rows.get(p.userId) ?? {
+          userId: p.userId,
+          nickname: p.nickname,
+          avatar: 'blob-1',
+          matches: 0,
+          wins: 0,
+          score: 0,
+        };
+        r.matches += 1;
+        r.wins += p.place === 1 ? 1 : 0;
+        r.score += p.score;
+        rows.set(p.userId, r);
+      }
+    }
+    return [...rows.values()].sort((a, b) => b.wins - a.wins || b.score - a.score).slice(0, limit);
+  }
+
   saved: MatchInput[] = [];
   async save(m: MatchInput) {
     this.saved.push(m);

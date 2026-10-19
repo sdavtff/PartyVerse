@@ -1,15 +1,15 @@
 {
   "name": "partyverse",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.4.0",
   "workspaces": [
     "packages/*",
     "apps/*"
   ],
   "scripts": {
     "dev": "npm run build -w @partyverse/shared && concurrently -n server,web -c magenta,cyan \"npm run dev -w @partyverse/server\" \"npm run dev -w @partyverse/web\"",
-    "build": "npm run build -w @partyverse/shared && npm run build -w @partyverse/server && npm run build -w @partyverse/web",
-    "start": "npm run start -w @partyverse/server",
+    "build": "npm run build -w @partyverse/shared && npm run db:generate -w @partyverse/server && npm run build -w @partyverse/server && npm run build -w @partyverse/web",
+    "start": "node server.js",
     "test": "npm run build -w @partyverse/shared && npm run test -w @partyverse/server",
     "typecheck": "npm run build -w @partyverse/shared && npm run typecheck -w @partyverse/server && npm run typecheck -w @partyverse/web",
     "lint": "eslint .",
@@ -26,5 +26,9 @@
     "typescript": "^5.7.2",
     "typescript-eslint": "^8.18.2"
   },
-  "type": "module"
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "main": "server.js"
 }

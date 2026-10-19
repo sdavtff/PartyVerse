@@ -1,6 +1,8 @@
 import { useState, type FormEvent, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { useSession } from '../lib/session';
+import { encodeAvatar, randomAvatarParts } from './Avatar';
+import { AvatarEditor } from './AvatarEditor';
 import { Button } from './Button';
 
 /** Garante que existe uma sessão (convidado ou conta) antes de mostrar o conteúdo. */
@@ -13,6 +15,7 @@ export function NicknameGate({
 }) {
   const { user, loading, guest } = useSession();
   const [nick, setNick] = useState('');
+  const [avatar, setAvatar] = useState(() => encodeAvatar(randomAvatarParts()));
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
 
@@ -24,7 +27,7 @@ export function NicknameGate({
     setBusy(true);
     setErr('');
     try {
-      await guest(nick);
+      await guest(nick, avatar);
     } catch (e) {
       setErr((e as Error).message);
     } finally {
@@ -33,13 +36,16 @@ export function NicknameGate({
   };
 
   return (
-    <div className="mx-auto max-w-md px-4 py-16">
+    <div className="mx-auto max-w-md px-4 py-10">
       <form onSubmit={submit} className="card animate-pop p-6 sm:p-8">
         <h1 className="text-2xl font-extrabold">{title}</h1>
         <p className="mt-1 text-ink-400">
           Entre como convidado em segundos. Dá pra criar conta depois.
         </p>
-        <label htmlFor="nick" className="label mt-6">
+        <div className="mt-5">
+          <AvatarEditor value={avatar} onChange={setAvatar} compact />
+        </div>
+        <label htmlFor="nick" className="label mt-5">
           Apelido
         </label>
         <input

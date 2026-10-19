@@ -1,9 +1,10 @@
 import { EVENTS, type ChatMessage, type MatchResult, type PublicRoom } from '@partyverse/shared';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { syncClock } from './clock';
 import { emitAck, getSocket } from './socket';
 
 export type ConnStatus =
-  'connecting' | 'online' | 'reconnecting' | 'failed' | 'kicked' | 'replaced';
+  'connecting' | 'online' | 'reconnecting' | 'failed' | 'kicked' | 'replaced' | 'password';
 
 /** Mantém a conexão com uma sala: entra, reconecta e acumula o estado vindo do servidor. */
 export function useRoom(code: string) {
@@ -14,23 +15,39 @@ export function useRoom(code: string) {
   const [status, setStatus] = useState<ConnStatus>('connecting');
   const [error, setError] = useState<string | null>(null);
   const left = useRef(false);
+  const gameEvents = useRef(new Set<(ev: unknown) => void>());
+  /** Assina eventos leves do jogo (ex.: traços do desenho). Retorna a função para cancelar. */
+  const onGameEvent = useCallback((fn: (ev: unknown) => void) => {
+    gameEvents.current.add(fn);
+    return () => void gameEvents.current.delete(fn);
+  }, []);
 
-  const join = useCallback(async () => {
-    try {
-      const r = await emitAck<PublicRoom>(EVENTS.ROOM_JOIN, { code });
-      setRoom(r);
-      setStatus('online');
-      setError(null);
-    } catch (e) {
-      setStatus('failed');
-      setError((e as Error).message);
-    }
-  }, [code]);
+  const password = useRef<string | undefined>(undefined);
+  const join = useCallback(
+    async (pass?: string) => {
+      if (pass !== undefined) password.current = pass;
+      try {
+        const r = await emitAck<PublicRoom>(EVENTS.ROOM_JOIN, {
+          code,
+          ...(password.current ? { password: password.current } : {}),
+        });
+        setRoom(r);
+        setStatus('online');
+        setError(null);
+      } catch (e) {
+        const err = e as Error & { code?: string };
+        setStatus(err.code === 'PASSWORD_REQUIRED' ? 'password' : 'failed');
+        setError(err.message);
+      }
+    },
+    [code],
+  );
 
   useEffect(() => {
     const s = getSocket();
     left.current = false;
     const onConnect = () => void join();
+    const onGameEvent = (ev: unknown) => gameEvents.current.forEach((fn) => fn(ev));
     const onDisconnect = (reason: string) => {
       if (left.current) return;
       setStatus(reason === 'io client disconnect' ? 'failed' : 'reconnecting');
@@ -45,6 +62,7 @@ export function useRoom(code: string) {
     const onChat = (m: ChatMessage) => setChat((xs) => [...xs.slice(-99), m]);
     const onHistory = (ms: ChatMessage[]) => setChat(ms);
     const onGame = (g: unknown) => {
+      if (g && typeof g === 'object') syncClock((g as { serverNow?: unknown }).serverNow);
       setGame(g);
       if (g === null) setResult(null);
     };
@@ -68,6 +86,7 @@ export function useRoom(code: string) {
     s.on(EVENTS.GAME_RESULT, onResult);
     s.on(EVENTS.ROOM_KICKED, onKicked);
     s.on(EVENTS.NOTICE, onNotice);
+    s.on(EVENTS.GAME_EVENT, onGameEvent);
     if (s.connected) void join();
     else s.connect();
 
@@ -82,6 +101,7 @@ export function useRoom(code: string) {
       s.off(EVENTS.GAME_RESULT, onResult);
       s.off(EVENTS.ROOM_KICKED, onKicked);
       s.off(EVENTS.NOTICE, onNotice);
+      s.off(EVENTS.GAME_EVENT, onGameEvent);
     };
   }, [join]);
 
@@ -98,5 +118,5 @@ export function useRoom(code: string) {
     }
   }, [room?.phase]);
 
-  return { room, chat, game, result, status, error, rejoin: join, leave };
+  return { room, chat, game, result, status, error, rejoin: join, leave, onGameEvent };
 }

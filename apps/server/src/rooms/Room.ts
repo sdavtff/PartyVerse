@@ -58,6 +58,8 @@ export class Room {
   private timers = new Map<string, NodeJS.Timeout>();
   private lastResult: MatchResult | null = null;
   private readonly now: () => number;
+  /** senha da sala ('' = sem senha) */
+  password = '';
 
   constructor(
     readonly code: string,
@@ -87,10 +89,18 @@ export class Room {
   join(
     identity: Identity,
     socketId: string,
+    password?: string,
   ): { reconnected: boolean; replacedSocket: string | null } {
     if (this.banned.has(identity.id))
       throw forbidden('Você foi removido desta sala pelo anfitrião');
     const existing = this.players.get(identity.id);
+    // quem já está na sala (reconexão) não precisa digitar a senha de novo
+    if (!existing && this.password && (password ?? '').trim() !== this.password)
+      throw new AppError(
+        'PASSWORD_REQUIRED',
+        password ? 'Senha incorreta' : 'Esta sala tem senha',
+        403,
+      );
     if (existing) {
       // reconexão ou segunda aba: a conexão mais recente assume o lugar
       const replaced =
@@ -229,8 +239,14 @@ export class Room {
     this.broadcastState();
   }
 
-  updateSettings(actorId: string, room?: Partial<RoomSettings>, game?: Record<string, unknown>) {
+  updateSettings(
+    actorId: string,
+    room?: Partial<RoomSettings>,
+    game?: Record<string, unknown>,
+    password?: string,
+  ) {
     this.requireHost(actorId);
+    if (password !== undefined) this.password = password.trim();
     if (this.phase === 'playing') throw invalidState('Não é possível alterar durante a partida');
     if (room) {
       const next = { ...this.settings, ...room };
@@ -310,6 +326,21 @@ export class Room {
     this.game.processAction(this.gameState, playerId, action, this.ctx());
   }
 
+  sticker(playerId: string, sticker: string) {
+    const p = this.players.get(playerId);
+    if (!p) throw forbidden('Você não está nesta sala');
+    this.touch();
+    this.pushChat({
+      id: uid(),
+      playerId,
+      nickname: p.nickname,
+      text: '',
+      sticker,
+      at: this.now(),
+      kind: 'sticker',
+    });
+  }
+
   chat(playerId: string, text: string) {
     const p = this.players.get(playerId);
     if (!p) throw forbidden('Você não está nesta sala');
@@ -340,6 +371,14 @@ export class Room {
     });
   }
 
+  /** Mensagem fora do histórico público: entregue só a alguns jogadores. */
+  private sendTo(ids: string[], m: ChatMessage) {
+    for (const id of new Set(ids)) {
+      const sid = this.players.get(id)?.socketId;
+      if (sid) this.transport.toPlayer(sid, EVENTS.CHAT_MESSAGE, m);
+    }
+  }
+
   private pushChat(m: ChatMessage) {
     this.chatLog.push(m);
     if (this.chatLog.length > CHAT_HISTORY) this.chatLog.shift();
@@ -353,6 +392,7 @@ export class Room {
     return {
       code: this.code,
       settings: this.settings,
+      password: this.password || null,
       gameSettings: this.gameSettings,
       phase: this.phase,
       hostId: this.hostId,
@@ -379,29 +419,24 @@ export class Room {
   private sendPrivateStateTo(p: RoomPlayer) {
     if (!p.socketId) return;
     this.transport.toPlayer(p.socketId, EVENTS.CHAT_HISTORY, this.chatLog);
-    if (this.game && this.gameState) {
-      const viewer = this.game.isParticipant(this.gameState, p.id) ? p.id : null;
-      this.transport.toPlayer(
-        p.socketId,
-        EVENTS.GAME_STATE,
-        this.game.viewFor(this.gameState, viewer),
-      );
-    }
+    if (this.game && this.gameState)
+      this.transport.toPlayer(p.socketId, EVENTS.GAME_STATE, this.viewOf(p.id));
     if (this.lastResult) this.transport.toPlayer(p.socketId, EVENTS.GAME_RESULT, this.lastResult);
   }
 
   private syncGame() {
     if (!this.game || !this.gameState) return;
     for (const p of this.players.values()) {
-      if (!p.socketId) continue;
-      const viewer = this.game.isParticipant(this.gameState, p.id) ? p.id : null;
-      this.transport.toPlayer(
-        p.socketId,
-        EVENTS.GAME_STATE,
-        this.game.viewFor(this.gameState, viewer),
-      );
+      if (p.socketId) this.transport.toPlayer(p.socketId, EVENTS.GAME_STATE, this.viewOf(p.id));
     }
     this.broadcastState(); // placar no painel de jogadores
+  }
+
+  /** Visão do jogo para um jogador + relógio do servidor (o cliente corrige a diferença de horário). */
+  private viewOf(playerId: string) {
+    const viewer = this.game!.isParticipant(this.gameState, playerId) ? playerId : null;
+    const view = this.game!.viewFor(this.gameState, viewer) as Record<string, unknown>;
+    return { ...view, serverNow: this.now() };
   }
 
   private ctx(): GameContext {
@@ -428,6 +463,41 @@ export class Room {
       },
       sync: () => this.syncGame(),
       notice: (text) => this.systemMessage(text),
+      announce: (text, kind) =>
+        this.pushChat({
+          id: uid(),
+          playerId: null,
+          nickname: 'PartyVerse',
+          text,
+          at: this.now(),
+          kind,
+        }),
+      whisper: (playerId, text, kind = 'whisper') =>
+        this.sendTo([playerId], {
+          id: uid(),
+          playerId: null,
+          nickname: 'PartyVerse',
+          text,
+          at: this.now(),
+          kind,
+        }),
+      chatTo: (fromId, text, recipients) => {
+        const from = this.players.get(fromId);
+        this.sendTo(recipients, {
+          id: uid(),
+          playerId: fromId,
+          nickname: from?.nickname ?? 'Jogador',
+          text,
+          at: this.now(),
+          kind: 'chat',
+        });
+      },
+      emit: (payload, except) => {
+        for (const pl of this.players.values())
+          if (pl.socketId && pl.id !== except)
+            this.transport.toPlayer(pl.socketId, EVENTS.GAME_EVENT, payload);
+      },
+      nickname: (id) => this.players.get(id)?.nickname ?? this.known.get(id)?.nickname ?? 'Alguém',
       isOnline: (id) => this.players.get(id)?.status === 'online',
       finish: () => this.endMatch(true),
     };

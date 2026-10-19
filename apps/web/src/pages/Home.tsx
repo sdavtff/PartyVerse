@@ -1,43 +1,41 @@
 import { GAME_CATALOG, EVENTS, type GameId, type PublicRoom } from '@partyverse/shared';
 import { useEffect, useState, type FormEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '../components/Button';
 import { useToast } from '../components/Toast';
 import { api } from '../lib/api';
 import { useSession } from '../lib/session';
 import { emitAck, getSocket } from '../lib/socket';
 import { GameIcon, gameAccent } from '../components/GameIcon';
-
-interface RoomSummary {
-  code: string;
-  name: string;
-  gameId: GameId;
-  players: number;
-  maxPlayers: number;
-  phase: string;
-}
+import { Avatar, encodeAvatar, randomAvatarParts } from '../components/Avatar';
+import { AvatarEditor } from '../components/AvatarEditor';
+import { RoomList, usePublicRooms } from '../components/PublicRooms';
+import { guideById, guideBySlug } from '../lib/gameGuides';
+import { usePageTitle } from '../lib/usePageTitle';
 
 export function Home() {
   const nav = useNavigate();
   const toast = useToast();
   const { user, guest } = useSession();
   const [code, setCode] = useState('');
-  const [rooms, setRooms] = useState<RoomSummary[]>([]);
+  const rooms = usePublicRooms();
+  const [params] = useSearchParams();
+  usePageTitle(null);
   const [online, setOnline] = useState<number | null>(null);
   const [form, setForm] = useState({
     name: '',
     isPublic: false,
     maxPlayers: 8,
-    gameId: 'stop' as GameId,
+    gameId: (guideBySlug(params.get('jogo') ?? '')?.id ?? 'stop') as GameId,
   });
   const [nick, setNick] = useState('');
+  const [avatar, setAvatar] = useState(() => encodeAvatar(randomAvatarParts()));
+  const [editAvatar, setEditAvatar] = useState(false);
+  const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     const load = () => {
-      api<RoomSummary[]>('/rooms')
-        .then(setRooms)
-        .catch(() => undefined);
       api<{ online: number }>('/stats')
         .then((s) => setOnline(s.online))
         .catch(() => undefined);
@@ -54,7 +52,7 @@ export function Home() {
       document.getElementById('home-nick')?.focus();
       return false;
     }
-    await guest(nick);
+    await guest(nick, avatar);
     return true;
   };
 
@@ -79,7 +77,10 @@ export function Home() {
         });
       }
       const name = form.name.trim() || `Sala de ${user?.nickname ?? nick.trim()}`;
-      const room = await emitAck<PublicRoom>(EVENTS.ROOM_CREATE, { settings: { ...form, name } });
+      const room = await emitAck<PublicRoom>(EVENTS.ROOM_CREATE, {
+        settings: { ...form, name },
+        ...(password.trim() ? { password: password.trim() } : {}),
+      });
       nav(`/sala/${room.code}`);
     } catch (err) {
       toast((err as Error).message, 'error');
@@ -119,8 +120,8 @@ export function Home() {
             .
           </h1>
           <p className="mt-5 max-w-lg text-lg text-ink-200">
-            Crie uma sala, mande o código para a galera e joguem juntos: adedonha, desenho, mímica,
-            quiz e mais. Sem instalar nada.
+            Crie uma sala, mande o código para a galera e joguem juntos: adedonha, rabisco, mímica,
+            quiz, palavra secreta e impostor. Até 50 pessoas por sala, sem instalar nada.
           </p>
           <form onSubmit={join} className="mt-7 flex max-w-md gap-2">
             <label htmlFor="code" className="sr-only">
@@ -142,12 +143,39 @@ export function Home() {
         </div>
 
         {/* CRIAR SALA */}
-        <form onSubmit={create} className="card animate-pop p-6" aria-labelledby="create-title">
+        <form
+          onSubmit={create}
+          id="criar"
+          className="card animate-pop scroll-mt-24 p-6"
+          aria-labelledby="create-title"
+        >
           <h2 id="create-title" className="text-2xl font-extrabold">
             Criar sala
           </h2>
           {!user && (
             <div className="mt-4">
+              <div className="mb-3 flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setEditAvatar((v) => !v)}
+                  className="relative rounded-full"
+                  aria-label="Editar avatar"
+                  title="Editar avatar"
+                >
+                  <Avatar avatar={avatar} size={56} />
+                  <span className="absolute -bottom-1 -right-1 grid h-6 w-6 place-items-center rounded-full border-2 border-ink-950 bg-lime-400 text-xs text-ink-950">
+                    ✎
+                  </span>
+                </button>
+                <p className="text-sm text-ink-400">
+                  {editAvatar ? 'Monte seu personagem:' : 'Toque no avatar para personalizar'}
+                </p>
+              </div>
+              {editAvatar && (
+                <div className="mb-4 rounded-2xl bg-ink-900/60 p-3">
+                  <AvatarEditor value={avatar} onChange={setAvatar} compact />
+                </div>
+              )}
               <label htmlFor="home-nick" className="label">
                 Seu apelido
               </label>
@@ -198,13 +226,13 @@ export function Home() {
                 id="room-max"
                 type="number"
                 min={2}
-                max={16}
+                max={50}
                 className="input"
                 value={form.maxPlayers}
                 onChange={(e) =>
                   setForm({
                     ...form,
-                    maxPlayers: Math.min(16, Math.max(2, Number(e.target.value) || 2)),
+                    maxPlayers: Math.min(50, Math.max(2, Number(e.target.value) || 2)),
                   })
                 }
               />
@@ -234,6 +262,18 @@ export function Home() {
               ))}
             </div>
           </fieldset>
+          <label htmlFor="room-pass" className="label mt-4">
+            Senha <span className="font-medium text-ink-400">(opcional)</span>
+          </label>
+          <input
+            id="room-pass"
+            className="input"
+            maxLength={20}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="sem senha"
+            autoComplete="off"
+          />
           <Button className="mt-6 w-full" size="lg" disabled={busy}>
             {busy ? 'Criando…' : 'Criar e convidar'}
           </Button>
@@ -247,7 +287,9 @@ export function Home() {
             Jogos
           </h2>
           <span className="text-sm text-ink-400">
-            {available.length} disponíveis · mais chegando
+            <Link to="/jogos" className="font-bold text-lime-400 hover:underline">
+              {available.length} jogos · ver regras ›
+            </Link>
           </span>
         </div>
         <ul className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -258,12 +300,16 @@ export function Home() {
               style={{ animationDelay: `${i * 50}ms` }}
             >
               <div
-                className="absolute -right-6 -top-6 h-28 w-28 rounded-full opacity-20 transition group-hover:scale-125"
+                className="pointer-events-none absolute -right-6 -top-6 h-28 w-28 rounded-full opacity-20 transition group-hover:scale-125"
                 style={{ background: gameAccent(g.id) }}
                 aria-hidden
               />
               <GameIcon id={g.id} />
-              <h3 className="mt-3 text-xl font-extrabold">{g.name}</h3>
+              <h3 className="mt-3 text-xl font-extrabold">
+                <Link to={`/jogos/${guideById(g.id)?.slug ?? g.id}`} className="hover:underline">
+                  {g.name}
+                </Link>
+              </h3>
               <p className="mt-1 text-sm text-ink-200">{g.tagline}</p>
               <div className="mt-4 flex items-center justify-between text-xs">
                 <span className="text-ink-400">
@@ -290,31 +336,22 @@ export function Home() {
 
       {/* SALAS PÚBLICAS */}
       <section aria-labelledby="rooms-title" className="mt-12">
-        <h2 id="rooms-title" className="text-3xl font-extrabold">
-          Salas públicas
-        </h2>
-        {rooms.length === 0 ? (
-          <p className="card mt-5 p-6 text-ink-400">
-            Nenhuma sala pública aberta agora. Crie uma e marque como pública!
-          </p>
-        ) : (
-          <ul className="mt-5 grid gap-3 sm:grid-cols-2">
-            {rooms.map((r) => (
-              <li key={r.code} className="card flex items-center gap-4 p-4">
-                <GameIcon id={r.gameId} small />
-                <div className="min-w-0 flex-1">
-                  <p className="truncate font-bold text-white">{r.name}</p>
-                  <p className="text-xs text-ink-400">
-                    {GAME_CATALOG.find((g) => g.id === r.gameId)?.name} · {r.players}/{r.maxPlayers}{' '}
-                    · {r.phase === 'playing' ? 'em partida' : 'no lobby'}
-                  </p>
-                </div>
-                <Button size="sm" variant="secondary" onClick={() => nav(`/sala/${r.code}`)}>
-                  Entrar
-                </Button>
-              </li>
-            ))}
-          </ul>
+        <div className="flex items-end justify-between">
+          <h2 id="rooms-title" className="text-3xl font-extrabold">
+            Salas públicas
+          </h2>
+          <Link to="/salas" className="text-sm font-bold text-lime-400 hover:underline">
+            Ver todas ›
+          </Link>
+        </div>
+        <RoomList
+          rooms={rooms?.slice(0, 6) ?? null}
+          empty="Nenhuma sala pública aberta agora. Crie uma e marque como pública!"
+        />
+        {rooms && rooms.length > 6 && (
+          <Link to="/salas" className="mt-4 inline-block font-bold text-lime-400 hover:underline">
+            Ver todas as {rooms.length} salas ›
+          </Link>
         )}
       </section>
     </div>

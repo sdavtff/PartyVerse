@@ -69,3 +69,35 @@ describe('HTTP', () => {
     expect((await request(t.app).get('/api/rooms/ABCDEF')).status).toBe(404);
   });
 });
+
+describe('ranking', () => {
+  it('soma vitórias e pontos de contas e filtra por jogo', async () => {
+    const srv = await startTestServer();
+    await srv.matches.save({
+      gameId: 'stop',
+      roomCode: 'AAAAAA',
+      rounds: 1,
+      startedAt: new Date(),
+      endedAt: new Date(),
+      participants: [
+        { userId: 'u1', nickname: 'Ana', score: 30, place: 1, isGuest: false },
+        { userId: 'u2', nickname: 'Bia', score: 10, place: 2, isGuest: false },
+        { userId: null, nickname: 'Convidado', score: 99, place: 3, isGuest: true },
+      ],
+    });
+    await srv.matches.save({
+      gameId: 'quiz',
+      roomCode: 'BBBBBB',
+      rounds: 1,
+      startedAt: new Date(),
+      endedAt: new Date(),
+      participants: [{ userId: 'u2', nickname: 'Bia', score: 900, place: 1, isGuest: false }],
+    });
+    const all = await request(srv.app).get('/api/leaderboard');
+    expect(all.body.rows.map((r: { nickname: string }) => r.nickname)).toEqual(['Bia', 'Ana']);
+    const stop = await request(srv.app).get('/api/leaderboard?game=stop');
+    expect(stop.body.rows[0]).toMatchObject({ nickname: 'Ana', wins: 1, score: 30 });
+    expect(JSON.stringify(stop.body)).not.toContain('Convidado');
+    await srv.close();
+  });
+});

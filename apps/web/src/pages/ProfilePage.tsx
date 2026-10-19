@@ -1,10 +1,12 @@
 import { GAME_CATALOG } from '@partyverse/shared';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { AVATAR_OPTIONS, Avatar } from '../components/Avatar';
+import { Avatar } from '../components/Avatar';
+import { AvatarEditor } from '../components/AvatarEditor';
 import { Button } from '../components/Button';
 import { useToast } from '../components/Toast';
 import { api, type Identity } from '../lib/api';
+import { usePrefs } from '../lib/prefs';
 import { useSession } from '../lib/session';
 
 interface Stats {
@@ -12,11 +14,6 @@ interface Stats {
   wins: number;
   totalScore: number;
   bestScore: number;
-}
-interface Prefs {
-  sound?: boolean;
-  reducedMotion?: boolean;
-  theme?: 'dark' | 'light';
 }
 interface HistoryItem {
   matchId: string;
@@ -31,18 +28,15 @@ export function ProfilePage() {
   const { user, setUser } = useSession();
   const toast = useToast();
   const [stats, setStats] = useState<Stats | null>(null);
-  const [prefs, setPrefs] = useState<Prefs>({});
+  const { prefs, setPref } = usePrefs();
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [nick, setNick] = useState(user?.nickname ?? '');
   const [avatar, setAvatar] = useState(user?.avatar ?? 'blob-1');
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    api<{ stats: Stats | null; preferences: Prefs }>('/me/profile')
-      .then((r) => {
-        setStats(r.stats);
-        setPrefs(r.preferences ?? {});
-      })
+    api<{ stats: Stats | null }>('/me/profile')
+      .then((r) => setStats(r.stats))
       .catch(() => undefined);
     api<HistoryItem[]>('/me/history')
       .then(setHistory)
@@ -60,15 +54,14 @@ export function ProfilePage() {
       </div>
     );
 
-  const save = async (extra: { preferences?: Prefs } = {}) => {
+  const save = async () => {
     setSaving(true);
     try {
-      const r = await api<{ user: Identity; preferences: Prefs }>('/me/profile', {
+      const r = await api<{ user: Identity }>('/me/profile', {
         method: 'PATCH',
-        json: { nickname: nick, avatar, ...extra },
+        json: { nickname: nick, avatar },
       });
       setUser(r.user);
-      if (r.preferences) setPrefs(r.preferences);
       toast('Perfil salvo', 'success');
     } catch (e) {
       toast((e as Error).message, 'error');
@@ -77,15 +70,14 @@ export function ProfilePage() {
     }
   };
 
-  const pref = (k: keyof Prefs, label: string) => (
+  const pref = (k: 'sound' | 'reducedMotion', label: string) => (
     <label className="flex items-center justify-between gap-3 rounded-2xl bg-ink-900 px-4 py-3">
       <span className="font-medium text-white">{label}</span>
       <input
         type="checkbox"
         className="h-5 w-5 accent-lime-400"
-        checked={Boolean(prefs[k])}
-        disabled={user.isGuest}
-        onChange={(e) => save({ preferences: { [k]: e.target.checked } })}
+        checked={prefs[k]}
+        onChange={(e) => void setPref(k, e.target.checked)}
       />
     </label>
   );
@@ -114,20 +106,8 @@ export function ProfilePage() {
           value={nick}
           onChange={(e) => setNick(e.target.value)}
         />
-        <p className="label mt-5">Avatar</p>
-        <div className="grid grid-cols-6 gap-2" role="radiogroup" aria-label="Escolha um avatar">
-          {AVATAR_OPTIONS.map((a) => (
-            <button
-              key={a}
-              role="radio"
-              aria-checked={a === avatar}
-              onClick={() => setAvatar(a)}
-              className={`grid place-items-center rounded-2xl p-1 transition ${a === avatar ? 'bg-ink-600 ring-2 ring-lime-400' : 'hover:bg-ink-700'}`}
-            >
-              <Avatar avatar={a} size={36} />
-            </button>
-          ))}
-        </div>
+        <p className="label mt-5">Crie seu avatar</p>
+        <AvatarEditor value={avatar} onChange={setAvatar} compact />
         <Button className="mt-6 w-full" onClick={() => save()} disabled={saving}>
           {saving ? 'Salvando…' : 'Salvar perfil'}
         </Button>
@@ -175,7 +155,7 @@ export function ProfilePage() {
           </div>
           {user.isGuest && (
             <p className="mt-2 text-xs text-ink-400">
-              Preferências são salvas apenas em contas registradas.
+              Como convidado, as preferências ficam salvas só neste navegador.
             </p>
           )}
         </section>

@@ -36,18 +36,21 @@ with sync_playwright() as p:
     host.wait_for_timeout(600); host.screenshot(path=S+'4-answering.png', full_page=True)
     host.get_by_role('button', name='STOP!').click()
     guest.get_by_text('Hora de conferir').wait_for()
-    # Bia contesta a Cidade da Ana
-    guest.get_by_role('button', name=letter+'aaacidade').click(); guest.wait_for_timeout(400)
+    # revisão categoria por categoria: Bia denuncia a primeira resposta da Ana que encontrar
+    guest.get_by_role('button', name='⚠ Denunciar').first.click(); guest.wait_for_timeout(400)
     guest.screenshot(path=S+'5-review-mobile.png', full_page=True)
-    host.get_by_role('button', name='Terminei de conferir').click(); guest.get_by_role('button', name='Terminei de conferir').click()
+    for pg in (host, guest):
+        while pg.get_by_role('button', name='Validar ›').count():
+            pg.get_by_role('button', name='Validar ›').click()
+        pg.get_by_role('button', name='Validar e terminar').click()
     host.get_by_text('Resultado da rodada').wait_for(); host.screenshot(path=S+'6-round-results.png', full_page=True)
     host.get_by_role('button', name='Próxima rodada').click(); guest.get_by_role('button', name='Próxima rodada').click()
-    host.get_by_text('Fim de jogo!').wait_for(); host.wait_for_timeout(500)
+    host.locator('#results-title').wait_for(); host.wait_for_timeout(500)
     host.screenshot(path=S+'7-final.png', full_page=True); guest.screenshot(path=S+'8-final-mobile.png', full_page=True)
     rank=host.locator('#results-title').locator('..').locator('..').locator('ol li').all_inner_texts()
     print('RANKING', rank)
     # reconexão: guest recarrega a página
-    guest.reload(); guest.get_by_text('Fim de jogo!').wait_for(); print('reconexão OK')
+    guest.reload(); guest.locator('#results-title').wait_for(); print('reconexão OK')
     # perfil com histórico
     host.goto(URL+'/perfil'); host.get_by_text('Festa').count(); host.wait_for_timeout(800)
     host.screenshot(path=S+'9-profile.png', full_page=True)

@@ -31,23 +31,55 @@ export const stopSettingsSchema = z.object({
 });
 export type StopSettings = z.infer<typeof stopSettingsSchema>;
 
+export const MAX_ROOM_PLAYERS = 50;
+
 export const roomSettingsSchema = z.object({
   name: z.string().trim().min(2).max(40),
   gameId: z.enum(GAME_IDS),
   isPublic: z.boolean(),
-  maxPlayers: z.number().int().min(2).max(16),
+  maxPlayers: z.number().int().min(2).max(MAX_ROOM_PLAYERS),
 });
+
+/** Avatar: formato antigo "forma-n" ou montado no criador "c-xxxxxx" (6 partes em base 36). */
+export const avatarSchema = z.string().regex(/^([a-z]+-[0-9]{1,2}|c-[0-9a-z]{6})$/);
+export const roomPasswordSchema = z.string().trim().max(20);
+
+/** Figurinhas do chat (desenhos originais do PartyVerse). */
+export const STICKERS = [
+  'risada',
+  'amei',
+  'bravo',
+  'chorando',
+  'uau',
+  'estiloso',
+  'festa',
+  'pensando',
+  'dormindo',
+  'joinha',
+  'lingua',
+  'medo',
+] as const;
+export type StickerId = (typeof STICKERS)[number];
 export type RoomSettings = z.infer<typeof roomSettingsSchema>;
 
 export const createRoomSchema = z.object({
   settings: roomSettingsSchema,
+  password: roomPasswordSchema.optional(),
 });
-export const joinRoomSchema = z.object({ code: roomCodeSchema });
-export const chatSchema = z.object({ text: z.string().trim().min(1).max(300) });
+export const joinRoomSchema = z.object({
+  code: roomCodeSchema,
+  password: roomPasswordSchema.optional(),
+});
+export const chatSchema = z.union([
+  z.object({ text: z.string().trim().min(1).max(300) }),
+  z.object({ sticker: z.enum(STICKERS) }),
+]);
 export const kickSchema = z.object({ playerId: z.string().min(1).max(64) });
 export const transferHostSchema = kickSchema;
 export const updateSettingsSchema = z.object({
   room: roomSettingsSchema.partial().optional(),
+  /** "" remove a senha */
+  password: roomPasswordSchema.optional(),
   game: z.record(z.unknown()).optional(),
 });
 
@@ -67,6 +99,110 @@ export const stopActionSchema = z.discriminatedUnion('type', [
 ]);
 export type StopAction = z.infer<typeof stopActionSchema>;
 
+// ---------- Impostor ----------
+export const impostorSettingsSchema = z.object({
+  rounds: z.number().int().min(1).max(10),
+  discussionSeconds: z.number().int().min(60).max(600),
+  voteSeconds: z.number().int().min(15).max(120),
+});
+export type ImpostorSettings = z.infer<typeof impostorSettingsSchema>;
+
+export const impostorActionSchema = z.discriminatedUnion('type', [
+  z.object({ type: z.literal('ready') }),
+  z.object({ type: z.literal('callVote') }),
+  z.object({ type: z.literal('vote'), targetId: z.string().min(1).max(64) }),
+  z.object({ type: z.literal('guess'), location: z.string().min(1).max(40) }),
+]);
+export type ImpostorAction = z.infer<typeof impostorActionSchema>;
+
+// ---------- Quiz ----------
+export const QUIZ_CATEGORIES = [
+  'misto',
+  'geral',
+  'ciencia',
+  'geografia',
+  'historia',
+  'esportes',
+  'entretenimento',
+] as const;
+export type QuizCategory = (typeof QUIZ_CATEGORIES)[number];
+
+export const quizSettingsSchema = z.object({
+  questions: z.number().int().min(5).max(20),
+  secondsPerQuestion: z.number().int().min(8).max(30),
+  category: z.enum(QUIZ_CATEGORIES),
+});
+export type QuizSettings = z.infer<typeof quizSettingsSchema>;
+
+export const quizActionSchema = z.discriminatedUnion('type', [
+  z.object({ type: z.literal('answer'), option: z.number().int().min(0).max(3) }),
+]);
+export type QuizAction = z.infer<typeof quizActionSchema>;
+
+// ---------- jogos de adivinhar (Rabisco, Mímica, Palavra Secreta) ----------
+export const WORD_CATEGORIES = [
+  'misto',
+  'animais',
+  'comidas',
+  'objetos',
+  'lugares',
+  'profissoes',
+  'acoes',
+] as const;
+export type WordCategory = (typeof WORD_CATEGORIES)[number];
+
+export const guessSettingsSchema = z.object({
+  rounds: z.number().int().min(1).max(5),
+  turnSeconds: z.number().int().min(30).max(240),
+  category: z.enum(WORD_CATEGORIES),
+  /** revela letras da palavra ao longo do tempo */
+  letterHints: z.boolean(),
+  /** só Palavra Secreta: máximo de dicas por vez */
+  maxClues: z.number().int().min(1).max(10),
+});
+export type GuessSettings = z.infer<typeof guessSettingsSchema>;
+
+/** Coordenadas do desenho: canvas lógico de 800×600, inteiros. */
+const coord = z.number().int().min(-50).max(850);
+const color = z.string().regex(/^#[0-9a-f]{6}$/i);
+const points = z.array(coord).max(600);
+export const drawOpSchema = z.discriminatedUnion('t', [
+  /** começa um traço (lápis ou borracha) */
+  z.object({
+    t: z.literal('s'),
+    id: z.string().min(1).max(16),
+    c: color,
+    w: z.number().int().min(1).max(60),
+    e: z.boolean().optional(),
+    p: points,
+  }),
+  /** continua um traço */
+  z.object({ t: z.literal('a'), id: z.string().min(1).max(16), p: points }),
+  /** forma pronta */
+  z.object({
+    t: z.literal('sh'),
+    id: z.string().min(1).max(16),
+    k: z.enum(['line', 'rect', 'ellipse']),
+    c: color,
+    w: z.number().int().min(1).max(60),
+    f: z.boolean(),
+    p: z.tuple([coord, coord, coord, coord]),
+  }),
+  /** balde de tinta */
+  z.object({ t: z.literal('f'), id: z.string().min(1).max(16), c: color, x: coord, y: coord }),
+  z.object({ t: z.literal('u') }),
+  z.object({ t: z.literal('clear') }),
+]);
+export type DrawOp = z.infer<typeof drawOpSchema>;
+
+export const guessActionSchema = z.discriminatedUnion('type', [
+  z.object({ type: z.literal('choose'), index: z.number().int().min(0).max(2) }),
+  z.object({ type: z.literal('draw'), ops: z.array(drawOpSchema).min(1).max(40) }),
+  z.object({ type: z.literal('clue'), text: z.string().trim().min(1).max(30) }),
+  z.object({ type: z.literal('giveUp') }),
+]);
+export type GuessAction = z.infer<typeof guessActionSchema>;
+
 export const gameActionSchema = z.object({
   action: z.unknown(),
   /** id opcional gerado pelo cliente para deduplicar ações repetidas */
@@ -82,13 +218,10 @@ export const loginSchema = z.object({
   email: z.string().email().max(120),
   password: z.string().min(1).max(100),
 });
-export const guestSchema = z.object({ nickname: nicknameSchema });
+export const guestSchema = z.object({ nickname: nicknameSchema, avatar: avatarSchema.optional() });
 export const profileUpdateSchema = z.object({
   nickname: nicknameSchema.optional(),
-  avatar: z
-    .string()
-    .regex(/^[a-z]+-[0-9]{1,2}$/)
-    .optional(),
+  avatar: avatarSchema.optional(),
   preferences: z
     .object({ sound: z.boolean(), reducedMotion: z.boolean(), theme: z.enum(['dark', 'light']) })
     .partial()

@@ -12,6 +12,7 @@ import rateLimit from 'express-rate-limit';
 import helmet from 'helmet';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { corsOrigins, type Env } from '../config/env.js';
 import { AppError, statusOf, toServerError } from '../lib/errors.js';
 import { logger } from '../lib/logger.js';
@@ -58,7 +59,8 @@ export function createApp({ env, tokens, users, matches, rooms }: AppDeps) {
     res.cookie(TOKEN_COOKIE, tokens.sign(id), {
       httpOnly: true,
       sameSite: 'lax',
-      secure: isProd,
+      // atrás do proxy HTTPS da hospedagem, req.secure vem de X-Forwarded-Proto
+      secure: isProd && res.req.secure,
       maxAge: TokenService.maxAgeMs,
       path: '/',
     });
@@ -79,6 +81,25 @@ export function createApp({ env, tokens, users, matches, rooms }: AppDeps) {
   api.get('/games', (_req, res) => res.json(GAME_CATALOG));
   api.get('/stats', (_req, res) => res.json({ online: rooms.onlineCount, rooms: rooms.size }));
   api.get('/rooms', (_req, res) => res.json(rooms.listPublic()));
+
+  // ranking com cache curto (a consulta agrega todas as partidas)
+  const boardCache = new Map<string, { at: number; data: unknown }>();
+  api.get(
+    '/leaderboard',
+    wrap(async (req, res) => {
+      const game = typeof req.query.game === 'string' ? req.query.game : '';
+      const gameId = GAME_CATALOG.some((g) => g.id === game) ? game : null;
+      const key = gameId ?? 'all';
+      const hit = boardCache.get(key);
+      if (hit && Date.now() - hit.at < 30_000) return res.json(hit.data);
+      const data = {
+        enabled: Boolean(users),
+        rows: users ? await matches.leaderboard(gameId, 50) : [],
+      };
+      boardCache.set(key, { at: Date.now(), data });
+      res.json(data);
+    }),
+  );
   api.get(
     '/rooms/:code',
     wrap((req, res) => {
@@ -98,8 +119,8 @@ export function createApp({ env, tokens, users, matches, rooms }: AppDeps) {
     '/auth/guest',
     authLimiter,
     wrap((req, res) => {
-      const { nickname } = guestSchema.parse(req.body);
-      const id = auth.guest(nickname);
+      const { nickname, avatar } = guestSchema.parse(req.body);
+      const id = auth.guest(nickname, avatar);
       setSession(res, id);
       res.json({ user: id });
     }),
@@ -191,11 +212,23 @@ export function createApp({ env, tokens, users, matches, rooms }: AppDeps) {
     next(new AppError('NOT_FOUND', 'Rota não encontrada', 404)),
   );
 
-  // Em produção o servidor também entrega o front-end compilado
-  const webDist = env.WEB_DIST_DIR ?? path.resolve(process.cwd(), '../web/dist');
+  // Em produção o servidor também entrega o front-end compilado.
+  // O caminho é relativo a este arquivo, então funciona qualquer que seja a pasta de onde o
+  // processo foi iniciado (a Hostinger, por exemplo, inicia pela raiz do projeto).
+  const webDist = env.WEB_DIST_DIR ?? fileURLToPath(new URL('../../../web/dist', import.meta.url));
   if (isProd && existsSync(webDist)) {
+    // arquivos com hash no nome podem ficar em cache por muito tempo; o index.html, nunca
+    app.use(
+      '/assets',
+      express.static(path.join(webDist, 'assets'), { maxAge: '365d', immutable: true }),
+    );
     app.use(express.static(webDist, { maxAge: '1h', index: false }));
-    app.get('*', (_req, res) => res.sendFile(path.join(webDist, 'index.html')));
+    app.get('*', (_req, res) => {
+      res.setHeader('Cache-Control', 'no-cache');
+      res.sendFile(path.join(webDist, 'index.html'));
+    });
+  } else if (isProd) {
+    logger.warn({ webDist }, 'front-end compilado não encontrado; rode npm run build');
   }
 
   app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {

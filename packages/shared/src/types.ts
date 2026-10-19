@@ -1,4 +1,4 @@
-import type { GameId, RoomSettings } from './schemas.js';
+import type { DrawOp, GameId, RoomSettings } from './schemas.js';
 
 export type PresenceStatus = 'online' | 'reconnecting' | 'left';
 
@@ -18,7 +18,9 @@ export interface ChatMessage {
   nickname: string;
   text: string;
   at: number;
-  kind: 'chat' | 'system' | 'guess-correct' | 'guess-close';
+  kind: 'chat' | 'system' | 'guess-correct' | 'guess-close' | 'sticker' | 'whisper';
+  /** só em kind = 'sticker' */
+  sticker?: string;
 }
 
 export type RoomPhase = 'lobby' | 'playing' | 'results';
@@ -26,6 +28,8 @@ export type RoomPhase = 'lobby' | 'playing' | 'results';
 export interface PublicRoom {
   code: string;
   settings: RoomSettings;
+  /** senha da sala (só quem já está dentro recebe este estado); null = sem senha */
+  password: string | null;
   gameSettings: Record<string, unknown>;
   phase: RoomPhase;
   hostId: string;
@@ -55,7 +59,7 @@ export const GAME_CATALOG: GameMeta[] = [
     name: 'Adedonha',
     tagline: 'Letra sorteada, categorias, corrida contra o relógio.',
     minPlayers: 2,
-    maxPlayers: 16,
+    maxPlayers: 50,
     available: true,
     color: 'lime',
   },
@@ -64,17 +68,17 @@ export const GAME_CATALOG: GameMeta[] = [
     name: 'Rabisco',
     tagline: 'Desenhe a palavra secreta enquanto os outros chutam.',
     minPlayers: 2,
-    maxPlayers: 12,
-    available: false,
+    maxPlayers: 20,
+    available: true,
     color: 'pink',
   },
   {
     id: 'charades',
     name: 'Mímica',
     tagline: 'Só gestos valem: a turma chuta no chat.',
-    minPlayers: 3,
-    maxPlayers: 16,
-    available: false,
+    minPlayers: 2,
+    maxPlayers: 20,
+    available: true,
     color: 'amber',
   },
   {
@@ -83,25 +87,25 @@ export const GAME_CATALOG: GameMeta[] = [
     tagline: 'Múltipla escolha, quem responde rápido leva mais.',
     minPlayers: 2,
     maxPlayers: 16,
-    available: false,
+    available: true,
     color: 'sky',
   },
   {
     id: 'secretword',
     name: 'Palavra Secreta',
     tagline: 'Dicas medidas a conta-gotas até alguém acertar.',
-    minPlayers: 3,
-    maxPlayers: 12,
-    available: false,
+    minPlayers: 2,
+    maxPlayers: 20,
+    available: true,
     color: 'violet',
   },
   {
     id: 'impostor',
     name: 'Impostor',
     tagline: 'Todos sabem o local. Menos um. Descubram quem.',
-    minPlayers: 4,
+    minPlayers: 3,
     maxPlayers: 12,
-    available: false,
+    available: true,
     color: 'rose',
   },
 ];
@@ -115,6 +119,7 @@ export interface ServerError {
     | 'RATE_LIMITED'
     | 'INVALID_STATE'
     | 'UNAUTHORIZED'
+    | 'PASSWORD_REQUIRED'
     | 'INTERNAL';
   message: string;
 }
@@ -150,6 +155,85 @@ export interface StopView {
   readyPlayers: string[];
 }
 
+/** Visão do Impostor. O local só aparece para quem não é impostor; o impostor só é revelado no fim. */
+export interface ImpostorView {
+  phase: 'reveal' | 'discussion' | 'voting' | 'round-results' | 'finished';
+  round: number;
+  totalRounds: number;
+  deadline: number | null;
+  participants: string[];
+  /** lista de locais possíveis (todos veem; o impostor usa para chutar) */
+  locations: string[];
+  /** meu papel: null para espectador */
+  me: { isImpostor: true } | { isImpostor: false; location: string; role: string } | null;
+  firstAsker: string | null;
+  readyPlayers: string[];
+  callVotePlayers: string[];
+  /** quem já votou (sem revelar em quem) */
+  votedPlayers: string[];
+  myVote: string | null;
+  totals: Record<string, number>;
+  /** preenchido em round-results/finished */
+  outcome: {
+    impostorId: string;
+    location: string;
+    votes: Record<string, string>;
+    accused: string | null;
+    reason: 'caught' | 'escaped' | 'guessed' | 'wrong-guess';
+    guess: string | null;
+    roundScores: Record<string, number>;
+    roles: Record<string, string>;
+  } | null;
+}
+
+export interface QuizView {
+  phase: 'countdown' | 'question' | 'reveal' | 'finished';
+  index: number;
+  total: number;
+  deadline: number | null;
+  participants: string[];
+  question: { text: string; options: string[]; category: string } | null;
+  myAnswer: number | null;
+  answeredPlayers: string[];
+  totals: Record<string, number>;
+  streaks: Record<string, number>;
+  /** preenchido em reveal */
+  reveal: {
+    correct: number;
+    answers: Record<string, number>;
+    gained: Record<string, number>;
+    fact: string | null;
+  } | null;
+}
+
+/** Visão dos jogos de adivinhar. A palavra só vai para quem a vê (desenhista/ator/dicas) até o fim do turno. */
+export interface GuessView {
+  variant: 'draw' | 'charades' | 'secretword';
+  phase: 'choosing' | 'playing' | 'turn-end' | 'finished';
+  round: number;
+  totalRounds: number;
+  turn: number;
+  totalTurns: number;
+  deadline: number | null;
+  participants: string[];
+  currentId: string | null;
+  /** opções de palavra: só para quem vai desenhar/encenar/dar dicas, na escolha */
+  choices: string[] | null;
+  /** palavra completa: para o jogador da vez, ou para todos no fim do turno */
+  word: string | null;
+  /** máscara com letras reveladas ("_" = escondida), ex.: ["c","_","_"," ","_"] */
+  mask: string[];
+  category: string | null;
+  guessed: { id: string; points: number }[];
+  turnScores: Record<string, number> | null;
+  totals: Record<string, number>;
+  /** só Rabisco */
+  ops: DrawOp[];
+  /** só Palavra Secreta */
+  clues: string[];
+  maxClues: number;
+}
+
 export const EVENTS = {
   // cliente -> servidor
   ROOM_CREATE: 'room:create',
@@ -169,6 +253,7 @@ export const EVENTS = {
   CHAT_MESSAGE: 'chat:message',
   CHAT_HISTORY: 'chat:history',
   GAME_STATE: 'game:state',
+  GAME_EVENT: 'game:event',
   GAME_RESULT: 'game:result',
   NOTICE: 'notice',
 } as const;

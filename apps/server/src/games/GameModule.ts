@@ -16,6 +16,15 @@ export interface GameContext {
   sync(): void;
   /** Mensagem de sistema no chat da sala. */
   notice(text: string): void;
+  /** Mensagem no chat com destaque (ex.: "Fulano acertou!"). */
+  announce(text: string, kind: 'guess-correct' | 'guess-close'): void;
+  /** Mensagem do sistema visível só para um jogador. */
+  whisper(playerId: string, text: string, kind?: 'whisper' | 'guess-close'): void;
+  /** Mensagem de chat de um jogador entregue só a alguns (ex.: quem já acertou). */
+  chatTo(fromId: string, text: string, recipients: string[]): void;
+  /** Evento leve do jogo (ex.: traços de desenho) para todos, menos `except`. */
+  emit(payload: unknown, except?: string): void;
+  nickname(playerId: string): string;
   isOnline(playerId: string): boolean;
   /** Sinaliza que a partida terminou; a sala calcula o ranking e persiste. */
   finish(): void;

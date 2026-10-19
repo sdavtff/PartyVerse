@@ -34,6 +34,14 @@
       transition-duration: 0.001ms !important;
     }
   }
+  /* preferência "Reduzir animações" do perfil */
+  html.reduce-motion *,
+  html.reduce-motion *::before,
+  html.reduce-motion *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
 }
 
 @layer components {
@@ -49,5 +57,54 @@
   }
   .chip {
     @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-bold;
+  }
+}
+
+@layer utilities {
+  .confetti-piece {
+    position: absolute;
+    top: -12px;
+    width: 10px;
+    height: 14px;
+    border-radius: 3px;
+    animation: confetti-fall var(--dur, 2.6s) cubic-bezier(0.2, 0.6, 0.4, 1) var(--delay, 0s) forwards;
+  }
+  @keyframes confetti-fall {
+    0% {
+      transform: translate3d(0, 0, 0) rotate(0deg);
+      opacity: 1;
+    }
+    100% {
+      transform: translate3d(var(--drift, 0px), 105vh, 0) rotate(var(--spin, 540deg));
+      opacity: 0.9;
+    }
+  }
+  .flip-in {
+    animation: flip-in 0.6s cubic-bezier(0.2, 1.2, 0.4, 1) both;
+  }
+  @keyframes flip-in {
+    0% {
+      transform: perspective(800px) rotateY(90deg) scale(0.9);
+      opacity: 0;
+    }
+    100% {
+      transform: perspective(800px) rotateY(0) scale(1);
+      opacity: 1;
+    }
+  }
+  .shake {
+    animation: shake 0.4s ease-in-out both;
+  }
+  @keyframes shake {
+    0%,
+    100% {
+      transform: translateX(0);
+    }
+    25% {
+      transform: translateX(-6px);
+    }
+    75% {
+      transform: translateX(6px);
+    }
   }
 }

@@ -27,8 +27,8 @@ export class AuthService {
     return this.users;
   }
 
-  guest(nickname: string): Identity {
-    return { id: guestId(), nickname, avatar: randomAvatar(), isGuest: true };
+  guest(nickname: string, avatar?: string): Identity {
+    return { id: guestId(), nickname, avatar: avatar ?? randomAvatar(), isGuest: true };
   }
 
   async register(email: string, password: string, nickname: string): Promise<Identity> {

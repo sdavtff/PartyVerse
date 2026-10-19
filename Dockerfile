@@ -7,14 +7,13 @@ COPY apps/server/package.json apps/server/
 COPY apps/web/package.json apps/web/
 RUN npm ci
 COPY . .
-RUN cd apps/server && npx prisma generate && cd ../.. && npm run build
+RUN npm run build
 
 FROM node:22-slim
 ENV NODE_ENV=production
 WORKDIR /app
 COPY --from=build /app /app
-RUN npm prune --omit=dev --workspaces --include-workspace-root=false || true
-WORKDIR /app/apps/server
+RUN npm prune --omit=dev --include= --workspaces --include-workspace-root=false || true
 EXPOSE 3001
-# aplica migrations pendentes e inicia
-CMD ["sh", "-c", "npx prisma migrate deploy && node dist/index.js"]
+# as migrations pendentes são aplicadas pelo próprio servidor ao iniciar
+CMD ["node", "server.js"]

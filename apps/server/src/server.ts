@@ -17,10 +17,21 @@ import {
   PrismaMatchRepository,
   type MatchRepository,
 } from './modules/matches/match.repository.js';
-import { PrismaUserRepository, type UserRepository } from './modules/users/users.repository.js';
+import {
+  MemoryUserRepository,
+  PrismaUserRepository,
+  type UserRepository,
+} from './modules/users/users.repository.js';
+import {
+  MemoryFriendsRepository,
+  PrismaFriendsRepository,
+  type FriendsRepository,
+} from './modules/social/friends.repository.js';
+import { Presence } from './modules/social/presence.js';
 import { RoomManager } from './rooms/RoomManager.js';
 
 export interface BuildOptions {
+  friends?: FriendsRepository;
   progress?: ProgressRepository;
   users?: UserRepository | null;
   matches?: MatchRepository;
@@ -46,6 +57,14 @@ export function buildServer(env: Env, opts: BuildOptions = {}) {
           )
         : null);
   const progress = progressRepo ? new ProgressService(progressRepo) : undefined;
+  const presence = new Presence();
+  const friends: FriendsRepository | undefined =
+    opts.friends ??
+    (prisma
+      ? new PrismaFriendsRepository(prisma)
+      : users instanceof MemoryUserRepository
+        ? new MemoryFriendsRepository(() => [...users.users.values()])
+        : undefined);
 
   // o app precisa existir antes do Socket.IO: ele intercepta /socket.io e repassa o resto ao Express
   const ref: { app?: ReturnType<typeof createApp> } = {};
@@ -74,8 +93,10 @@ export function buildServer(env: Env, opts: BuildOptions = {}) {
     rooms,
     google: opts.google,
     progress,
+    presence,
+    friends,
   }));
-  attachGateway(io, rooms, tokens);
+  attachGateway(io, rooms, tokens, presence);
 
   const close = async () => {
     rooms.shutdown();
@@ -83,5 +104,5 @@ export function buildServer(env: Env, opts: BuildOptions = {}) {
     await new Promise<void>((r) => httpServer.close(() => r()));
     await prisma?.$disconnect();
   };
-  return { httpServer, io, rooms, tokens, app, close, progress };
+  return { httpServer, io, rooms, tokens, app, close, progress, presence, friends };
 }

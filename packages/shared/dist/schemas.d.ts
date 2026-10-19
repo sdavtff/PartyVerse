@@ -133,6 +133,21 @@ export declare const chatSchema: z.ZodUnion<[z.ZodObject<{
 }, {
     sticker: "risada" | "amei" | "bravo" | "chorando" | "uau" | "estiloso" | "festa" | "pensando" | "dormindo" | "joinha" | "lingua" | "medo";
 }>]>;
+export declare const REACTIONS: readonly ["😂", "👏", "🔥", "😮", "😡", "❤️"];
+export declare const reactionSchema: z.ZodObject<{
+    emoji: z.ZodEnum<["😂", "👏", "🔥", "😮", "😡", "❤️"]>;
+}, "strip", z.ZodTypeAny, {
+    emoji: "😂" | "👏" | "🔥" | "😮" | "😡" | "❤️";
+}, {
+    emoji: "😂" | "👏" | "🔥" | "😮" | "😡" | "❤️";
+}>;
+export declare const spectateSchema: z.ZodObject<{
+    on: z.ZodBoolean;
+}, "strip", z.ZodTypeAny, {
+    on: boolean;
+}, {
+    on: boolean;
+}>;
 export declare const kickSchema: z.ZodObject<{
     playerId: z.ZodString;
 }, "strip", z.ZodTypeAny, {

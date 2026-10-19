@@ -61,11 +61,33 @@ describe('salas', () => {
     );
   });
 
-  it('respeita o limite de jogadores', async () => {
-    const { code } = await createRoom({ maxPlayers: 2 });
+  it('sala cheia: quem chega entra como espectador e não joga', async () => {
+    const { host, code } = await createRoom({ maxPlayers: 2 });
     await emit((await t.player('B')).socket, EVENTS.ROOM_JOIN, { code });
-    const r = await emit((await t.player('C')).socket, EVENTS.ROOM_JOIN, { code });
-    expect(r.error!.code).toBe('ROOM_FULL');
+    const c = await t.player('C');
+    const r = await emit<PublicRoom>(c.socket, EVENTS.ROOM_JOIN, { code });
+    expect(r.ok).toBe(true);
+    const me = r.data!.players.find((p) => p.nickname === 'C')!;
+    expect(me.spectator).toBe(true);
+    // não consegue sair do modo espectador enquanto a sala está cheia
+    expect((await emit(c.socket, EVENTS.ROOM_SPECTATE, { on: false })).error!.code).toBe(
+      'ROOM_FULL',
+    );
+    // o anfitrião pode virar espectador; aí C pode jogar
+    expect((await emit(host.socket, EVENTS.ROOM_SPECTATE, { on: true })).ok).toBe(true);
+    expect((await emit(c.socket, EVENTS.ROOM_SPECTATE, { on: false })).ok).toBe(true);
+  });
+
+  it('reações chegam para todos da sala', async () => {
+    const { host, code } = await createRoom();
+    const bia = await t.player('Bia');
+    await emit(bia.socket, EVENTS.ROOM_JOIN, { code });
+    const got = next<{ emoji: string; playerId: string }>(host.socket, EVENTS.REACTION);
+    expect((await emit(bia.socket, EVENTS.REACTION, { emoji: '🔥' })).ok).toBe(true);
+    expect((await got).emoji).toBe('🔥');
+    expect((await emit(bia.socket, EVENTS.REACTION, { emoji: '💩' })).error!.code).toBe(
+      'VALIDATION',
+    );
   });
 
   it('entrada duplicada (segunda aba) não duplica o jogador', async () => {

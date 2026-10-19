@@ -4,6 +4,7 @@ import { uid } from '../lib/ids.js';
 import { cleanText } from '../lib/text.js';
 import { getGameModule } from '../games/registry.js';
 const CHAT_HISTORY = 50;
+const MAX_SPECTATORS = 50;
 export class Room {
     code;
     settings;
@@ -43,8 +44,12 @@ export class Room {
     get onlinePlayers() {
         return [...this.players.values()].filter((p) => p.status === 'online');
     }
+    /** Jogadores que ocupam vaga (espectadores não contam). */
     get activeCount() {
-        return [...this.players.values()].filter((p) => p.status !== 'left').length;
+        return [...this.players.values()].filter((p) => p.status !== 'left' && !p.spectator).length;
+    }
+    get spectatorCount() {
+        return [...this.players.values()].filter((p) => p.spectator).length;
     }
     /** Entra (ou reconecta). Retorna true se for reconexão. */
     join(identity, socketId, password) {
@@ -74,10 +79,13 @@ export class Room {
             this.sendPrivateStateTo(existing);
             return { reconnected: true, replacedSocket: replaced };
         }
-        if (this.activeCount >= this.settings.maxPlayers)
+        // sala cheia: entra como espectador (há um limite próprio para quem só assiste)
+        const asSpectator = this.activeCount >= this.settings.maxPlayers;
+        if (asSpectator && this.spectatorCount >= MAX_SPECTATORS)
             throw new AppError('ROOM_FULL', 'A sala está cheia', 409);
         const player = {
             ...identity,
+            spectator: asSpectator,
             status: 'online',
             joinedAt: this.now(),
             socketId,
@@ -93,7 +101,9 @@ export class Room {
         if (!this.players.has(this.hostId))
             this.hostId = identity.id;
         this.touch();
-        this.systemMessage(`${identity.nickname} entrou`);
+        this.systemMessage(asSpectator
+            ? `${identity.nickname} entrou para assistir (sala cheia)`
+            : `${identity.nickname} entrou`);
         this.broadcastState();
         this.sendPrivateStateTo(player);
         return { reconnected: false, replacedSocket: null };
@@ -216,7 +226,7 @@ export class Room {
         if (this.phase === 'playing')
             throw invalidState('A partida já começou');
         const mod = getGameModule(this.settings.gameId);
-        const online = this.onlinePlayers;
+        const online = this.onlinePlayers.filter((p) => !p.spectator);
         if (online.length < mod.minPlayers)
             throw invalidState(`São necessários pelo menos ${mod.minPlayers} jogadores conectados`);
         const settings = mod.settingsSchema.parse(this.gameSettings);
@@ -251,6 +261,30 @@ export class Room {
         this.touch();
         this.broadcastState();
         this.transport.toRoom(this.code, EVENTS.GAME_STATE, null);
+    }
+    /** Alterna "só assistir". */
+    setSpectator(playerId, on) {
+        const p = this.players.get(playerId);
+        if (!p)
+            throw forbidden('Você não está nesta sala');
+        if (p.spectator === on)
+            return;
+        if (!on && this.activeCount >= this.settings.maxPlayers)
+            throw new AppError('ROOM_FULL', 'Não há vaga para jogar agora', 409);
+        p.spectator = on;
+        this.touch();
+        this.systemMessage(on ? `${p.nickname} vai só assistir` : `${p.nickname} voltou a jogar`);
+        this.broadcastState();
+    }
+    /** Reação rápida (emoji voando na tela de todos). */
+    react(playerId, emoji) {
+        if (!this.players.has(playerId))
+            throw forbidden('Você não está nesta sala');
+        this.transport.toRoom(this.code, EVENTS.REACTION, { playerId, emoji, at: this.now() });
+    }
+    /** Jogador conectado nesta sala? */
+    hasOnline(playerId) {
+        return this.players.get(playerId)?.status === 'online';
     }
     // ---------- jogo e chat ----------
     gameAction(playerId, raw, actionId) {
@@ -351,6 +385,7 @@ export class Room {
                 status: p.status,
                 isGuest: p.isGuest,
                 score: scores[p.id] ?? 0,
+                spectator: p.spectator,
             })),
         };
     }

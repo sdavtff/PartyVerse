@@ -8,7 +8,9 @@ import { TokenService } from './modules/auth/token.js';
 import { MemoryProgressRepository, PrismaProgressRepository, } from './modules/progress/progress.repository.js';
 import { ProgressService } from './modules/progress/progress.service.js';
 import { MemoryMatchRepository, PrismaMatchRepository, } from './modules/matches/match.repository.js';
-import { PrismaUserRepository } from './modules/users/users.repository.js';
+import { MemoryUserRepository, PrismaUserRepository, } from './modules/users/users.repository.js';
+import { MemoryFriendsRepository, PrismaFriendsRepository, } from './modules/social/friends.repository.js';
+import { Presence } from './modules/social/presence.js';
 import { RoomManager } from './rooms/RoomManager.js';
 /** Monta HTTP + Socket.IO. Separado de index.ts para ser usado nos testes. */
 export function buildServer(env, opts = {}) {
@@ -24,6 +26,13 @@ export function buildServer(env, opts = {}) {
                 ? new MemoryProgressRepository(matches instanceof MemoryMatchRepository ? matches : undefined)
                 : null);
     const progress = progressRepo ? new ProgressService(progressRepo) : undefined;
+    const presence = new Presence();
+    const friends = opts.friends ??
+        (prisma
+            ? new PrismaFriendsRepository(prisma)
+            : users instanceof MemoryUserRepository
+                ? new MemoryFriendsRepository(() => [...users.users.values()])
+                : undefined);
     // o app precisa existir antes do Socket.IO: ele intercepta /socket.io e repassa o resto ao Express
     const ref = {};
     const httpServer = createServer((req, res) => ref.app(req, res));
@@ -46,13 +55,15 @@ export function buildServer(env, opts = {}) {
         rooms,
         google: opts.google,
         progress,
+        presence,
+        friends,
     }));
-    attachGateway(io, rooms, tokens);
+    attachGateway(io, rooms, tokens, presence);
     const close = async () => {
         rooms.shutdown();
         io.close();
         await new Promise((r) => httpServer.close(() => r()));
         await prisma?.$disconnect();
     };
-    return { httpServer, io, rooms, tokens, app, close, progress };
+    return { httpServer, io, rooms, tokens, app, close, progress, presence, friends };
 }

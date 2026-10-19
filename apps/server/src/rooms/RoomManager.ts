@@ -103,6 +103,12 @@ export class RoomManager {
       }));
   }
 
+  /** Sala em que a pessoa está conectada agora (para amigos). */
+  roomOf(userId: string): Room | undefined {
+    for (const r of this.rooms.values()) if (r.hasOnline(userId)) return r;
+    return undefined;
+  }
+
   get size() {
     return this.rooms.size;
   }

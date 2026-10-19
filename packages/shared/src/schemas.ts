@@ -74,6 +74,9 @@ export const chatSchema = z.union([
   z.object({ text: z.string().trim().min(1).max(300) }),
   z.object({ sticker: z.enum(STICKERS) }),
 ]);
+export const REACTIONS = ['😂', '👏', '🔥', '😮', '😡', '❤️'] as const;
+export const reactionSchema = z.object({ emoji: z.enum(REACTIONS) });
+export const spectateSchema = z.object({ on: z.boolean() });
 export const kickSchema = z.object({ playerId: z.string().min(1).max(64) });
 export const transferHostSchema = kickSchema;
 export const updateSettingsSchema = z.object({

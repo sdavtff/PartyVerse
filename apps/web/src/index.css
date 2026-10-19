@@ -175,3 +175,29 @@
     }
   }
 }
+
+@layer utilities {
+  .reaction-fly {
+    animation: reaction-fly 2.5s cubic-bezier(0.2, 0.7, 0.4, 1) forwards;
+  }
+  @keyframes reaction-fly {
+    0% {
+      transform: translate(-50%, 20px) scale(0.4);
+      opacity: 0;
+    }
+    12% {
+      transform: translate(-50%, 0) scale(1.15);
+      opacity: 1;
+    }
+    75% {
+      opacity: 1;
+    }
+    100% {
+      transform: translate(calc(-50% + var(--drift, 0px)), -55vh) scale(0.9);
+      opacity: 0;
+    }
+  }
+  .reduce-motion .reaction-fly {
+    animation-duration: 0.01s;
+  }
+}

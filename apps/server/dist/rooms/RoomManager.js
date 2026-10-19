@@ -66,6 +66,13 @@ export class RoomManager {
             hasPassword: Boolean(r.password),
         }));
     }
+    /** Sala em que a pessoa está conectada agora (para amigos). */
+    roomOf(userId) {
+        for (const r of this.rooms.values())
+            if (r.hasOnline(userId))
+                return r;
+        return undefined;
+    }
     get size() {
         return this.rooms.size;
     }

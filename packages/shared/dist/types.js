@@ -65,6 +65,7 @@ export const EVENTS = {
     ROOM_START: 'room:start',
     ROOM_END: 'room:end',
     ROOM_BACK_TO_LOBBY: 'room:backToLobby',
+    ROOM_SPECTATE: 'room:spectate',
     CHAT_SEND: 'chat:send',
     GAME_ACTION: 'game:action',
     // servidor -> cliente

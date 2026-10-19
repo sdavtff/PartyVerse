@@ -27,9 +27,11 @@ export function PlayerList({
       .then(() => toast(okMsg, 'success'))
       .catch((e) => toast(e.message, 'error'));
 
+  const active = room.players.filter((p) => !p.spectator);
+  const watchers = room.players.filter((p) => p.spectator);
   const players = showScores
-    ? [...room.players].sort((a, b) => b.score - a.score || a.nickname.localeCompare(b.nickname))
-    : room.players;
+    ? [...active].sort((a, b) => b.score - a.score || a.nickname.localeCompare(b.nickname))
+    : active;
   const top = players[0]?.score ?? 0;
   const leaderId = showScores && top > 0 && players[1]?.score !== top ? players[0]?.id : null;
 
@@ -100,7 +102,7 @@ export function PlayerList({
           )}
         </h2>
         <span className="text-sm text-ink-400">
-          {room.players.length}/{room.settings.maxPlayers}
+          {active.length}/{room.settings.maxPlayers}
         </span>
       </div>
       <ul className="mt-3 max-h-[28rem] space-y-2 overflow-y-auto pr-1">
@@ -197,6 +199,35 @@ export function PlayerList({
           );
         })}
       </ul>
+      {watchers.length > 0 && (
+        <div className="mt-3 border-t-2 border-ink-700 pt-3">
+          <p className="text-xs font-bold text-ink-400">👀 Assistindo ({watchers.length})</p>
+          <ul className="mt-2 flex flex-wrap gap-1.5">
+            {watchers.map((p) => (
+              <li
+                key={p.id}
+                className={`group flex items-center gap-1.5 rounded-full py-0.5 pl-0.5 pr-2.5 text-xs font-bold ${p.id === myId ? 'bg-lime-400/15 text-white' : 'bg-ink-900/60 text-ink-200'}`}
+              >
+                <Avatar avatar={p.avatar} size={22} dim={p.status !== 'online'} />
+                {p.nickname}
+                {amHost && p.id !== myId && (
+                  <button
+                    className="text-pop-rose hover:text-white"
+                    title="Remover da sala"
+                    aria-label={`Remover ${p.nickname}`}
+                    onClick={() =>
+                      confirm(`Remover ${p.nickname} da sala?`) &&
+                      act(EVENTS.ROOM_KICK, p.id, `${p.nickname} foi removido`)
+                    }
+                  >
+                    ✕
+                  </button>
+                )}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </section>
   );
 }

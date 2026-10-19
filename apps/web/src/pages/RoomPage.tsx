@@ -13,7 +13,7 @@ import {
   type StopSettings,
   type StopView,
 } from '@partyverse/shared';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Avatar } from '../components/Avatar';
 import { Button } from '../components/Button';
@@ -23,7 +23,9 @@ import { Confetti } from '../components/Confetti';
 import { RewardCard } from '../components/RewardCard';
 import { GameIcon } from '../components/GameIcon';
 import { NicknameGate } from '../components/NicknameGate';
+import { InviteFriends } from '../components/InviteFriends';
 import { PlayerList } from '../components/PlayerList';
+import { ReactionBar, ReactionLayer } from '../components/Reactions';
 import { useToast } from '../components/Toast';
 import { GuessGame } from '../games/guess/GuessGame';
 import { GuessSettingsForm } from '../games/guess/GuessSettingsForm';
@@ -53,6 +55,9 @@ function RoomInner({ code }: { code: string }) {
   const { room, chat, game, result, reward, status, error, rejoin, leave, onGameEvent } =
     useRoom(code);
   const myId = user!.id;
+  const [inviting, setInviting] = useState(false);
+  const closeInvite = useCallback(() => setInviting(false), []);
+  const me = room?.players.find((p) => p.id === myId);
   const playerCount = room?.players.length ?? 0;
   const prevCount = useRef(playerCount);
   useEffect(() => {
@@ -95,6 +100,13 @@ function RoomInner({ code }: { code: string }) {
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-6">
+      <ReactionLayer room={room} />
+      {inviting && <InviteFriends roomCode={room.code} onClose={closeInvite} />}
+      {me?.spectator && room.phase === 'playing' && (
+        <p className="mb-4 rounded-2xl bg-pop-sky/15 px-4 py-2 text-sm font-bold text-pop-sky">
+          👀 Você está assistindo. Na próxima partida dá para jogar se houver vaga.
+        </p>
+      )}
       {status === 'reconnecting' && <ReconnectBanner />}
       <div className="mb-5 flex flex-wrap items-center gap-3">
         <GameIcon id={room.settings.gameId} small />
@@ -106,7 +118,20 @@ function RoomInner({ code }: { code: string }) {
           </p>
         </div>
         <div className="flex w-full items-center justify-between gap-2 sm:w-auto">
-          <ShareCode code={room.code} />
+          <ShareCode
+            code={room.code}
+            gameName={GAME_CATALOG.find((g) => g.id === room.settings.gameId)?.name ?? ''}
+          />
+          {!user!.isGuest && (
+            <Button
+              variant="secondary"
+              size="sm"
+              className="whitespace-nowrap"
+              onClick={() => setInviting(true)}
+            >
+              🤝 <span className="hidden sm:inline">Chamar amigos</span>
+            </Button>
+          )}
           <Button variant="ghost" size="sm" className="whitespace-nowrap" onClick={exit}>
             Sair da sala
           </Button>
@@ -144,6 +169,7 @@ function RoomInner({ code }: { code: string }) {
           )}
         </div>
         <aside className="flex flex-col gap-5">
+          <ReactionBar />
           <PlayerList room={room} myId={myId} showScores={room.phase !== 'lobby'} />
           <div className="h-[24rem] lg:flex-1">
             <ChatPanel messages={chat} myId={myId} disabled={status !== 'online'} />
@@ -183,7 +209,7 @@ function GameScreen({
   }
 }
 
-function ShareCode({ code }: { code: string }) {
+function ShareCode({ code, gameName }: { code: string; gameName: string }) {
   const toast = useToast();
   const link = `${location.origin}/sala/${code}`;
   const copy = async (text: string, msg: string) => {
@@ -214,6 +240,18 @@ function ShareCode({ code }: { code: string }) {
       >
         Link
       </button>
+      <a
+        className="flex items-center gap-1 rounded-xl bg-[#25d366] px-2.5 py-1.5 text-sm font-bold text-[#0b2e17] hover:brightness-110"
+        href={`https://wa.me/?text=${encodeURIComponent(`Bora jogar ${gameName} comigo no PartyVerse? 🎉 Entra aqui: ${link}`)}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        title="Convidar pelo WhatsApp"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+          <path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8s-.4-.1-.6.1-.7.8-.8 1-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.2-.4.7-1.4a.5.5 0 0 0 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.7 11.8 11.8 0 0 0 4.5 4c1.7.7 2.3.8 3.2.6a2.7 2.7 0 0 0 1.8-1.2 2.2 2.2 0 0 0 .1-1.3c0-.1-.2-.2-.4-.3z" />
+        </svg>
+        <span className="hidden sm:inline">WhatsApp</span>
+      </a>
     </div>
   );
 }
@@ -221,7 +259,11 @@ function ShareCode({ code }: { code: string }) {
 function Lobby({ room, amHost }: { room: PublicRoom; amHost: boolean }) {
   const toast = useToast();
   const [starting, setStarting] = useState(false);
-  const online = room.players.filter((p) => p.status === 'online').length;
+  const { user } = useSession();
+  const me = room.players.find((p) => p.id === user?.id);
+  const online = room.players.filter((p) => p.status === 'online' && !p.spectator).length;
+  const toggleSpectator = () =>
+    emitAck(EVENTS.ROOM_SPECTATE, { on: !me?.spectator }).catch((e) => toast(e.message, 'error'));
   const meta = GAME_CATALOG.find((g) => g.id === room.settings.gameId)!;
   const saveRoom = (r: Partial<PublicRoom['settings']>) =>
     emitAck(EVENTS.ROOM_UPDATE_SETTINGS, { room: r }).catch((e) => toast(e.message, 'error'));
@@ -261,6 +303,21 @@ function Lobby({ room, amHost }: { room: PublicRoom; amHost: boolean }) {
             esperando…
           </span>
         )}
+      </div>
+      <div className="-mt-2 flex flex-wrap items-center gap-2 text-sm">
+        <button
+          type="button"
+          onClick={toggleSpectator}
+          className={`rounded-xl px-3 py-1.5 font-bold transition ${me?.spectator ? 'bg-pop-sky text-[#10202e]' : 'bg-ink-700 text-ink-200 hover:text-white'}`}
+          aria-pressed={Boolean(me?.spectator)}
+        >
+          {me?.spectator ? '🎮 Quero jogar' : '👀 Só assistir'}
+        </button>
+        <span className="text-ink-400">
+          {me?.spectator
+            ? 'Você está como espectador: vê tudo, mas não entra na partida.'
+            : 'Espectadores acompanham a partida sem jogar.'}
+        </span>
       </div>
 
       {amHost && (

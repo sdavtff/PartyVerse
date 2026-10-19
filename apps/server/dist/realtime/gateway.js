@@ -1,4 +1,4 @@
-import { EVENTS, chatSchema, createRoomSchema, gameActionSchema, joinRoomSchema, kickSchema, transferHostSchema, updateSettingsSchema, } from '@partyverse/shared';
+import { EVENTS, chatSchema, createRoomSchema, gameActionSchema, joinRoomSchema, kickSchema, reactionSchema, spectateSchema, transferHostSchema, updateSettingsSchema, } from '@partyverse/shared';
 import { AppError, toServerError } from '../lib/errors.js';
 import { logger } from '../lib/logger.js';
 import { RateLimiter } from '../lib/rateLimiter.js';
@@ -25,7 +25,8 @@ const limits = {
     game: new RateLimiter(60, 30),
     room: new RateLimiter(10, 1),
 };
-export function attachGateway(io, rooms, tokens) {
+export function attachGateway(io, rooms, tokens, presence) {
+    presence?.bind((sid, event, payload) => io.to(sid).emit(event, payload));
     io.use((socket, next) => {
         const token = (typeof socket.handshake.auth?.token === 'string'
             ? socket.handshake.auth.token
@@ -40,6 +41,8 @@ export function attachGateway(io, rooms, tokens) {
     io.on('connection', (raw) => {
         const socket = raw;
         const me = () => socket.data.identity;
+        if (!me().isGuest)
+            presence?.add(me().id, socket.id);
         /** Envolve um handler: rate limit + validação Zod + ack padronizado + erros tratados. */
         function on(event, bucket, schema, fn) {
             socket.on(event, ((payload, ack) => {
@@ -110,7 +113,11 @@ export function attachGateway(io, rooms, tokens) {
             ? currentRoom().sticker(me().id, msg.sticker)
             : currentRoom().chat(me().id, msg.text));
         on(EVENTS.GAME_ACTION, 'game', gameActionSchema, ({ action, actionId }) => currentRoom().gameAction(me().id, action, actionId));
+        on(EVENTS.REACTION, 'chat', reactionSchema, ({ emoji }) => currentRoom().react(me().id, emoji));
+        on(EVENTS.ROOM_SPECTATE, 'room', spectateSchema, ({ on: value }) => currentRoom().setSpectator(me().id, value));
         socket.on('disconnect', () => {
+            if (!me().isGuest)
+                presence?.remove(me().id, socket.id);
             const code = socket.data.roomCode;
             if (code)
                 rooms.find(code)?.disconnect(me().id, socket.id);

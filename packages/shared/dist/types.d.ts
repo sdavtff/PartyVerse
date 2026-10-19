@@ -8,6 +8,8 @@ export interface PublicPlayer {
     status: PresenceStatus;
     isGuest: boolean;
     score: number;
+    /** só assistindo (não entra na próxima partida) */
+    spectator: boolean;
 }
 export interface ChatMessage {
     id: string;
@@ -189,6 +191,7 @@ export declare const EVENTS: {
     readonly ROOM_START: "room:start";
     readonly ROOM_END: "room:end";
     readonly ROOM_BACK_TO_LOBBY: "room:backToLobby";
+    readonly ROOM_SPECTATE: "room:spectate";
     readonly CHAT_SEND: "chat:send";
     readonly GAME_ACTION: "game:action";
     readonly ROOM_STATE: "room:state";

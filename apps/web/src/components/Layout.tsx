@@ -2,13 +2,15 @@ import { useEffect, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useSession } from '../lib/session';
 import { Avatar } from './Avatar';
+import { InviteCenter } from './InviteCenter';
 import { Logo } from './Logo';
 import { SoundToggle } from './SoundToggle';
 
-const NAV = [
+const BASE_NAV = [
   { to: '/jogos', label: 'Jogos' },
   { to: '/salas', label: 'Salas' },
   { to: '/ranking', label: 'Ranking' },
+  { to: '/amigos', label: 'Amigos' },
   { to: '/ajuda', label: 'Ajuda' },
 ];
 
@@ -16,6 +18,7 @@ export function Layout() {
   const { user, logout } = useSession();
   const [menu, setMenu] = useState(false);
   const { pathname, hash } = useLocation();
+  const NAV = BASE_NAV;
 
   // fecha o menu ao navegar; rola para o topo (ou para a âncora, ex.: /#criar)
   useEffect(() => {
@@ -138,6 +141,7 @@ export function Layout() {
           </div>
         )}
       </header>
+      <InviteCenter />
       <main id="main" className="flex-1">
         <Outlet />
       </main>

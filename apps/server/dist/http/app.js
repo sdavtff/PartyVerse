@@ -1,10 +1,10 @@
-import { avatarMinLevel, GAME_CATALOG, guestSchema, loginSchema, profileUpdateSchema, registerSchema, } from '@partyverse/shared';
+import { avatarMinLevel, EVENTS, GAME_CATALOG, guestSchema, loginSchema, profileUpdateSchema, registerSchema, } from '@partyverse/shared';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import express from 'express';
 import rateLimit from 'express-rate-limit';
 import helmet from 'helmet';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { corsOrigins } from '../config/env.js';
@@ -15,7 +15,7 @@ import { AuthService, toIdentity } from '../modules/auth/auth.service.js';
 import { GoogleAuth, safeReturnPath } from '../modules/auth/google.js';
 import { TOKEN_COOKIE, TokenService } from '../modules/auth/token.js';
 const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res)).catch(next);
-export function createApp({ env, tokens, users, matches, rooms, google: googleDep, progress, }) {
+export function createApp({ env, tokens, users, matches, rooms, google: googleDep, progress, presence, friends, }) {
     const app = express();
     const auth = new AuthService(users);
     const google = googleDep ?? new GoogleAuth(env.GOOGLE_CLIENT_ID, env.GOOGLE_CLIENT_SECRET);
@@ -214,6 +214,95 @@ export function createApp({ env, tokens, users, matches, rooms, google: googleDe
         setSession(res, toIdentity(u));
         res.json({ user: toIdentity(u), preferences: u.preferences });
     }));
+    // ---------- amigos ----------
+    const needFriends = (req) => {
+        if (!friends || !users)
+            throw new AppError('INTERNAL', 'Amigos indisponíveis', 503);
+        if (req.identity.isGuest)
+            throw new AppError('UNAUTHORIZED', 'Crie uma conta para adicionar amigos', 401);
+        return friends;
+    };
+    const inviteLimiter = rateLimit({ windowMs: 60_000, limit: env.NODE_ENV === 'test' ? 1000 : 30 });
+    api.get('/friends', requireAuth, wrap(async (req, res) => {
+        const repo = needFriends(req);
+        const list = await repo.list(req.identity.id);
+        res.json(list.map((f) => {
+            const room = f.status === 'friend' ? rooms.roomOf(f.user.id) : undefined;
+            return {
+                ...f,
+                online: f.status === 'friend' ? Boolean(presence?.isOnline(f.user.id)) : false,
+                room: room
+                    ? {
+                        code: room.code,
+                        name: room.settings.name,
+                        gameId: room.settings.gameId,
+                        phase: room.phase,
+                    }
+                    : null,
+            };
+        }));
+    }));
+    api.get('/friends/relation/:id', requireAuth, wrap(async (req, res) => {
+        if (req.identity.isGuest || !friends)
+            return res.json({ status: null });
+        res.json({ status: await friends.relation(req.identity.id, String(req.params.id)) });
+    }));
+    api.post('/friends/:id', requireAuth, inviteLimiter, wrap(async (req, res) => {
+        const repo = needFriends(req);
+        const target = String(req.params.id);
+        if (target === req.identity.id)
+            throw new AppError('VALIDATION', 'Você não pode adicionar a si mesmo');
+        const other = await users.findById(target);
+        if (!other || other.banned)
+            throw new AppError('NOT_FOUND', 'Jogador não encontrado', 404);
+        const status = await repo.request(req.identity.id, target);
+        if (status === 'friend') {
+            await progress?.unlock(req.identity.id, 'first_friend');
+            await progress?.unlock(target, 'first_friend');
+        }
+        else {
+            presence?.emitToUser(target, EVENTS.INVITE, {
+                kind: 'friend-request',
+                from: {
+                    id: req.identity.id,
+                    nickname: req.identity.nickname,
+                    avatar: req.identity.avatar,
+                },
+            });
+        }
+        res.json({ status });
+    }));
+    api.delete('/friends/:id', requireAuth, wrap(async (req, res) => {
+        await needFriends(req).remove(req.identity.id, String(req.params.id));
+        res.json({ status: null });
+    }));
+    api.post('/friends/:id/invite', requireAuth, inviteLimiter, wrap(async (req, res) => {
+        const repo = needFriends(req);
+        const target = String(req.params.id);
+        if ((await repo.relation(req.identity.id, target)) !== 'friend')
+            throw new AppError('FORBIDDEN', 'Só dá para convidar amigos', 403);
+        const room = rooms.roomOf(req.identity.id);
+        if (!room)
+            throw new AppError('INVALID_STATE', 'Entre numa sala para convidar', 409);
+        const delivered = presence?.emitToUser(target, EVENTS.INVITE, {
+            kind: 'room',
+            from: {
+                id: req.identity.id,
+                nickname: req.identity.nickname,
+                avatar: req.identity.avatar,
+            },
+            room: { code: room.code, name: room.settings.name, gameId: room.settings.gameId },
+        });
+        if (!delivered)
+            throw new AppError('INVALID_STATE', 'Seu amigo não está online agora', 409);
+        res.json({ ok: true });
+    }));
+    api.get('/users', requireAuth, wrap(async (req, res) => {
+        const q = typeof req.query.q === 'string' ? req.query.q.trim() : '';
+        if (q.length < 2 || !friends)
+            return res.json([]);
+        res.json(await friends.search(q.slice(0, 20), req.identity.id, 10));
+    }));
     // perfil público de um jogador
     api.get('/users/:id', wrap(async (req, res) => {
         if (!users)
@@ -244,9 +333,10 @@ export function createApp({ env, tokens, users, matches, rooms, google: googleDe
         // arquivos com hash no nome podem ficar em cache por muito tempo; o index.html, nunca
         app.use('/assets', express.static(path.join(webDist, 'assets'), { maxAge: '365d', immutable: true }));
         app.use(express.static(webDist, { maxAge: '1h', index: false }));
-        app.get('*', (_req, res) => {
+        const template = readFileSync(path.join(webDist, 'index.html'), 'utf8');
+        app.get('*', (req, res) => {
             res.setHeader('Cache-Control', 'no-cache');
-            res.sendFile(path.join(webDist, 'index.html'));
+            res.type('html').send(withPreview(template, previewFor(req.path, req)));
         });
     }
     else if (isProd) {
@@ -282,4 +372,51 @@ const MONTHS = [
 export function seasonLabel(now = new Date()) {
     const br = new Date(now.getTime() - 3 * 3600_000);
     return `Temporada de ${MONTHS[br.getUTCMonth()]} ${br.getUTCFullYear()}`;
+}
+const escapeHtml = (v) => v.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+/** Prévia do link (WhatsApp, Telegram, Discord…) conforme a página. */
+export function previewFor(pathname, req) {
+    const origin = `${req.protocol}://${req.get('host') ?? 'localhost'}`;
+    const base = {
+        title: 'PartyVerse — jogos para jogar com os amigos',
+        description: 'Adedonha, Impostor, Quiz, desenho e mímica: crie uma sala grátis e chame a galera pelo navegador.',
+        url: origin + pathname,
+        image: `${origin}/og.png`,
+    };
+    const room = /^\/sala\/([A-Za-z0-9]{6})\/?$/.exec(pathname);
+    if (room) {
+        return {
+            ...base,
+            title: `🎉 Entre na minha sala do PartyVerse! Código ${room[1].toUpperCase()}`,
+            description: 'Toque no link, escolha um apelido e jogue. Não precisa instalar nada.',
+        };
+    }
+    const game = /^\/jogos\/([a-z-]+)\/?$/.exec(pathname);
+    const slug = (v) => v
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-');
+    const meta = game
+        ? GAME_CATALOG.find((g) => g.id === game[1] || slug(g.name) === game[1])
+        : undefined;
+    if (meta)
+        return { ...base, title: `${meta.name} — PartyVerse`, description: meta.tagline };
+    return base;
+}
+export function withPreview(html, p) {
+    const e = escapeHtml;
+    const tags = [
+        `<title>${e(p.title)}</title>`,
+        `<meta property="og:type" content="website" />`,
+        `<meta property="og:site_name" content="PartyVerse" />`,
+        `<meta property="og:title" content="${e(p.title)}" />`,
+        `<meta property="og:description" content="${e(p.description)}" />`,
+        `<meta property="og:url" content="${e(p.url)}" />`,
+        `<meta property="og:image" content="${e(p.image)}" />`,
+        `<meta property="og:image:width" content="1200" />`,
+        `<meta property="og:image:height" content="630" />`,
+        `<meta name="twitter:card" content="summary_large_image" />`,
+    ].join('\n    ');
+    return html.replace(/<title>[^<]*<\/title>/, tags);
 }

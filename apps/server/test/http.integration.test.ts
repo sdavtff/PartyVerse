@@ -101,3 +101,17 @@ describe('ranking', () => {
     await srv.close();
   });
 });
+
+describe('prévia de links', () => {
+  it('gera título e imagem para sala e jogo', async () => {
+    const { previewFor, withPreview } = await import('../src/http/app.js');
+    const req = { protocol: 'https', get: () => 'exemplo.com' } as never;
+    const room = previewFor('/sala/abc234', req);
+    expect(room.title).toContain('ABC234');
+    expect(room.image).toBe('https://exemplo.com/og.png');
+    expect(previewFor('/jogos/adedonha', req).title).toContain('Adedonha');
+    const html = withPreview('<head><title>X</title></head>', { ...room, title: '<b>"x"</b>' });
+    expect(html).toContain('og:image');
+    expect(html).not.toContain('<b>');
+  });
+});

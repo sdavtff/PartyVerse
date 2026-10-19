@@ -5,6 +5,8 @@ import {
   gameActionSchema,
   joinRoomSchema,
   kickSchema,
+  reactionSchema,
+  spectateSchema,
   transferHostSchema,
   updateSettingsSchema,
   type Ack,
@@ -20,6 +22,7 @@ import {
   type Identity,
   type TokenService,
 } from '../modules/auth/token.js';
+import type { Presence } from '../modules/social/presence.js';
 import type { Room, RoomTransport } from '../rooms/Room.js';
 import type { RoomManager } from '../rooms/RoomManager.js';
 
@@ -57,7 +60,13 @@ const limits = {
   room: new RateLimiter(10, 1),
 };
 
-export function attachGateway(io: Server, rooms: RoomManager, tokens: TokenService) {
+export function attachGateway(
+  io: Server,
+  rooms: RoomManager,
+  tokens: TokenService,
+  presence?: Presence,
+) {
+  presence?.bind((sid, event, payload) => io.to(sid).emit(event, payload));
   io.use((socket, next) => {
     const token =
       (typeof socket.handshake.auth?.token === 'string'
@@ -73,6 +82,7 @@ export function attachGateway(io: Server, rooms: RoomManager, tokens: TokenServi
   io.on('connection', (raw) => {
     const socket = raw as PvSocket;
     const me = () => socket.data.identity;
+    if (!me().isGuest) presence?.add(me().id, socket.id);
 
     /** Envolve um handler: rate limit + validação Zod + ack padronizado + erros tratados. */
     function on<T>(
@@ -170,7 +180,13 @@ export function attachGateway(io: Server, rooms: RoomManager, tokens: TokenServi
       currentRoom().gameAction(me().id, action, actionId),
     );
 
+    on(EVENTS.REACTION, 'chat', reactionSchema, ({ emoji }) => currentRoom().react(me().id, emoji));
+    on(EVENTS.ROOM_SPECTATE, 'room', spectateSchema, ({ on: value }) =>
+      currentRoom().setSpectator(me().id, value),
+    );
+
     socket.on('disconnect', () => {
+      if (!me().isGuest) presence?.remove(me().id, socket.id);
       const code = socket.data.roomCode;
       if (code) rooms.find(code)?.disconnect(me().id, socket.id);
       for (const l of Object.values(limits)) l.forget(socket.id);

@@ -17,6 +17,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Avatar } from '../components/Avatar';
 import { Button } from '../components/Button';
 import { ChatPanel } from '../components/ChatPanel';
+import { AnimatedNumber } from '../components/AnimatedNumber';
 import { Confetti } from '../components/Confetti';
 import { GameIcon } from '../components/GameIcon';
 import { NicknameGate } from '../components/NicknameGate';
@@ -446,9 +447,65 @@ function GamePicker({
   );
 }
 
+/** Pódio animado: os blocos sobem, os avatares caem no lugar e o campeão ganha coroa. */
+function Podium({ ranking, myId }: { ranking: MatchResult['ranking']; myId: string }) {
+  const top = ranking.slice(0, 3);
+  // ordem visual: 2º, 1º, 3º
+  const slots = [top[1], top[0], top[2]];
+  const style = [
+    { h: 'h-24', color: 'bg-ink-200', delay: 300, label: '2º' },
+    { h: 'h-36', color: 'bg-pop-amber', delay: 700, label: '1º' },
+    { h: 'h-16', color: 'bg-pop-rose', delay: 0, label: '3º' },
+  ];
+  return (
+    <div className="mx-auto grid max-w-md grid-cols-3 items-end gap-2 pt-6" aria-label="Pódio">
+      {slots.map((r, i) => {
+        const st = style[i]!;
+        if (!r) return <div key={i} />;
+        const first = i === 1;
+        return (
+          <div key={r.playerId} className="flex flex-col items-center text-center">
+            <div className="drop-in relative" style={{ animationDelay: `${st.delay + 350}ms` }}>
+              {first && (
+                <span
+                  className="absolute -top-6 left-1/2 -translate-x-1/2 animate-wobble text-2xl"
+                  aria-hidden
+                >
+                  👑
+                </span>
+              )}
+              <div className={`rounded-full ${first ? 'ring-4 ring-pop-amber' : ''}`}>
+                <Avatar avatar={r.avatar} size={first ? 72 : 56} />
+              </div>
+            </div>
+            <p
+              className="drop-in mt-1 w-full truncate text-sm font-bold text-white"
+              style={{ animationDelay: `${st.delay + 450}ms` }}
+            >
+              {r.nickname}
+              {r.playerId === myId && ' (você)'}
+            </p>
+            <p
+              className="drop-in font-display text-xl font-extrabold text-lime-400"
+              style={{ animationDelay: `${st.delay + 500}ms` }}
+            >
+              <AnimatedNumber value={r.score} ms={1200} />
+            </p>
+            <div
+              className={`podium-rise mt-1 grid w-full place-items-start justify-center rounded-t-2xl border-4 border-b-0 border-ink-950 pt-2 font-display text-3xl font-extrabold text-ink-950 ${st.h} ${st.color} ${first ? 'shine' : ''}`}
+              style={{ animationDelay: `${st.delay}ms` }}
+            >
+              {r.place}º
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function Results({ result, amHost, myId }: { result: MatchResult; amHost: boolean; myId: string }) {
   const toast = useToast();
-  const podium = ['bg-pop-amber', 'bg-ink-200', 'bg-pop-rose'];
   const me = result.ranking.find((r) => r.playerId === myId);
   const won = me?.place === 1;
   useEffect(() => {
@@ -469,27 +526,28 @@ function Results({ result, amHost, myId }: { result: MatchResult; amHost: boolea
           </p>
         )}
       </div>
-      <ol className="space-y-2">
-        {result.ranking.map((r, i) => (
-          <li
-            key={r.playerId}
-            className="flex animate-rise items-center gap-3 rounded-2xl bg-ink-900 px-4 py-3"
-            style={{ animationDelay: `${i * 80}ms` }}
-          >
-            <span
-              className={`grid h-8 w-8 place-items-center rounded-full font-display font-extrabold text-ink-950 ${podium[r.place - 1] ?? 'bg-ink-600 text-white'}`}
+      <Podium ranking={result.ranking} myId={myId} />
+      {result.ranking.length > 3 && (
+        <ol className="space-y-2" aria-label="Demais colocados">
+          {result.ranking.slice(3).map((r, i) => (
+            <li
+              key={r.playerId}
+              className={`flex animate-rise items-center gap-3 rounded-2xl px-4 py-2.5 ${r.playerId === myId ? 'bg-lime-400/10 ring-2 ring-lime-400/50' : 'bg-ink-900'}`}
+              style={{ animationDelay: `${1200 + i * 70}ms` }}
             >
-              {r.place}
-            </span>
-            <Avatar avatar={r.avatar} size={34} />
-            <span className="flex-1 truncate font-bold text-white">
-              {r.nickname}
-              {r.playerId === myId && ' (você)'}
-            </span>
-            <span className="font-display text-2xl font-extrabold text-lime-400">{r.score}</span>
-          </li>
-        ))}
-      </ol>
+              <span className="grid h-8 w-8 place-items-center rounded-full bg-ink-700 font-display font-extrabold text-white">
+                {r.place}
+              </span>
+              <Avatar avatar={r.avatar} size={32} />
+              <span className="flex-1 truncate font-bold text-white">
+                {r.nickname}
+                {r.playerId === myId && ' (você)'}
+              </span>
+              <span className="font-display text-xl font-extrabold text-lime-400">{r.score}</span>
+            </li>
+          ))}
+        </ol>
+      )}
       {amHost ? (
         <div className="flex flex-wrap justify-center gap-3">
           <Button

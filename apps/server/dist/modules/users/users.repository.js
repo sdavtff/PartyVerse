@@ -15,8 +15,15 @@ export class PrismaUserRepository {
         const u = await this.db.user.findUnique({ where: { id } });
         return u ? toRecord(u) : null;
     }
+    async findByGoogleId(googleId) {
+        const u = await this.db.user.findUnique({ where: { googleId } });
+        return u ? toRecord(u) : null;
+    }
     async create(data) {
         return toRecord(await this.db.user.create({ data: { ...data, stats: { create: {} } } }));
+    }
+    async linkGoogle(id, googleId) {
+        return toRecord(await this.db.user.update({ where: { id }, data: { googleId } }));
     }
     async update(id, data) {
         return toRecord(await this.db.user.update({
@@ -39,9 +46,22 @@ export class MemoryUserRepository {
     async findById(id) {
         return this.users.get(id) ?? null;
     }
+    async findByGoogleId(googleId) {
+        return [...this.users.values()].find((u) => u.googleId === googleId) ?? null;
+    }
     async create(data) {
-        const u = { id: 'u_' + (this.users.size + 1), preferences: {}, ...data };
+        const u = {
+            id: 'u_' + (this.users.size + 1),
+            preferences: {},
+            ...data,
+            googleId: data.googleId ?? null,
+        };
         this.users.set(u.id, u);
+        return u;
+    }
+    async linkGoogle(id, googleId) {
+        const u = { ...this.users.get(id), googleId };
+        this.users.set(id, u);
         return u;
     }
     async update(id, data) {

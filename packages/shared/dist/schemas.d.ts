@@ -605,14 +605,17 @@ export declare const registerSchema: z.ZodObject<{
     email: z.ZodString;
     password: z.ZodString;
     nickname: z.ZodString;
+    avatar: z.ZodOptional<z.ZodString>;
 }, "strip", z.ZodTypeAny, {
     password: string;
     email: string;
     nickname: string;
+    avatar?: string | undefined;
 }, {
     password: string;
     email: string;
     nickname: string;
+    avatar?: string | undefined;
 }>;
 export declare const loginSchema: z.ZodObject<{
     email: z.ZodString;

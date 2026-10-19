@@ -4,6 +4,13 @@ Plataforma web de minijogos multiplayer em tempo real. **Versão 0.2:** página 
 
 > **Publicar na Hostinger:** veja [DEPLOY-HOSTINGER.md](DEPLOY-HOSTINGER.md).
 
+## Novidades da 0.5
+
+- **Placar ao vivo animado** durante a partida: posições trocam com animação, "+pontos" sobe ao lado de quem pontuou, medalhas e coroa no líder.
+- **Pódio animado** no fim da partida (blocos sobem, avatares caem no lugar, coroa no campeão) e lista dos demais colocados.
+- **Login com Google** (OAuth no servidor; liga à conta existente do mesmo e-mail). Ativa com `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` e `PUBLIC_URL`.
+- **Cadastro que não trava**: se o banco estiver fora do ar a resposta é imediata e clara; nenhuma operação de conta passa de 12 s; o servidor tenta reconectar ao banco a cada minuto. A tela de conta ganhou aviso de status, validação em tempo real, mostrar senha, medidor de força, avatar no cadastro e mensagens de progresso.
+
 ## Novidades da 0.4
 
 - **Novas páginas**: `/jogos` (catálogo), `/jogos/:jogo` (regras, pontuação, dicas e salas abertas de cada jogo), `/salas` (salas públicas com filtro), `/ranking` (vitórias e pontos de contas registradas, geral e por jogo) e `/ajuda` (primeiros passos e perguntas frequentes). Menu no topo, menu para celular e links no rodapé; cada página tem seu título.
@@ -131,7 +138,7 @@ Sem `DATABASE_URL` o servidor sobe mesmo assim: convidados e jogo funcionam; cad
 ## Testes e qualidade
 
 ```bash
-npm test            # Vitest: 63 testes (regras/pontuação STOP, HTTP, salas e partida via sockets reais)
+npm test            # Vitest: 71 testes (regras/pontuação STOP, HTTP, salas e partida via sockets reais)
 npm run typecheck
 npm run lint
 npm run format

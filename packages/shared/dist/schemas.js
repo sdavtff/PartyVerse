@@ -175,13 +175,20 @@ export const gameActionSchema = z.object({
     actionId: z.string().max(64).optional(),
 });
 export const registerSchema = z.object({
-    email: z.string().email().max(120),
-    password: z.string().min(8).max(100),
+    email: z.string().trim().email('E-mail inválido').max(120, 'E-mail muito longo'),
+    password: z
+        .string()
+        .min(8, 'A senha precisa ter pelo menos 8 caracteres')
+        .max(100, 'Senha muito longa'),
     nickname: nicknameSchema,
+    avatar: z
+        .string()
+        .regex(/^([a-z]+-[0-9]{1,2}|c-[0-9a-z]{6})$/)
+        .optional(),
 });
 export const loginSchema = z.object({
-    email: z.string().email().max(120),
-    password: z.string().min(1).max(100),
+    email: z.string().trim().email('E-mail inválido').max(120),
+    password: z.string().min(1, 'Digite sua senha').max(100),
 });
 export const guestSchema = z.object({ nickname: nicknameSchema, avatar: avatarSchema.optional() });
 export const profileUpdateSchema = z.object({

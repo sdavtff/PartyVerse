@@ -28,7 +28,7 @@ export function buildServer(env, opts = {}) {
         idleTtlMs: env.ROOM_IDLE_TTL_MS,
         reconnectGraceMs: env.RECONNECT_GRACE_MS,
     });
-    const app = (ref.app = createApp({ env, tokens, users, matches, rooms }));
+    const app = (ref.app = createApp({ env, tokens, users, matches, rooms, google: opts.google }));
     attachGateway(io, rooms, tokens);
     const close = async () => {
         rooms.shutdown();

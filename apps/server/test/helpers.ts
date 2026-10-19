@@ -4,8 +4,12 @@ import { loadEnv } from '../src/config/env.js';
 import { MemoryMatchRepository } from '../src/modules/matches/match.repository.js';
 import { MemoryUserRepository } from '../src/modules/users/users.repository.js';
 import { buildServer } from '../src/server.js';
+import type { GoogleAuth } from '../src/modules/auth/google.js';
 
-export async function startTestServer(overrides: Record<string, unknown> = {}) {
+export async function startTestServer(
+  overrides: Record<string, unknown> = {},
+  opts: { google?: GoogleAuth } = {},
+) {
   const env = loadEnv({
     NODE_ENV: 'test',
     JWT_SECRET: 'test-secret-1234567890',
@@ -15,7 +19,7 @@ export async function startTestServer(overrides: Record<string, unknown> = {}) {
   });
   const users = new MemoryUserRepository();
   const matches = new MemoryMatchRepository();
-  const srv = buildServer(env, { users, matches });
+  const srv = buildServer(env, { users, matches, google: opts.google });
   await new Promise<void>((r) => srv.httpServer.listen(0, r));
   const url = `http://localhost:${(srv.httpServer.address() as AddressInfo).port}`;
   const sockets: Socket[] = [];

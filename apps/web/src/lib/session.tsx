@@ -8,7 +8,12 @@ interface SessionCtx {
   setUser: (u: Identity | null) => void;
   guest: (nickname: string, avatar?: string) => Promise<Identity>;
   login: (email: string, password: string) => Promise<Identity>;
-  register: (email: string, password: string, nickname: string) => Promise<Identity>;
+  register: (
+    email: string,
+    password: string,
+    nickname: string,
+    avatar?: string,
+  ) => Promise<Identity>;
   logout: () => Promise<void>;
 }
 
@@ -44,8 +49,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       wrap(api('/auth/guest', { method: 'POST', json: { nickname, avatar } })),
     login: (email, password) =>
       wrap(api('/auth/login', { method: 'POST', json: { email, password } })),
-    register: (email, password, nickname) =>
-      wrap(api('/auth/register', { method: 'POST', json: { email, password, nickname } })),
+    register: (email, password, nickname, avatar) =>
+      wrap(api('/auth/register', { method: 'POST', json: { email, password, nickname, avatar } })),
     logout: async () => {
       await api('/auth/logout', { method: 'POST' }).catch(() => undefined);
       setUser(null);

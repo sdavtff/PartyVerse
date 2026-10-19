@@ -12,13 +12,16 @@ export class ApiError extends Error {
 
 export async function api<T>(
   path: string,
-  init: RequestInit & { json?: unknown } = {},
+  init: RequestInit & { json?: unknown; timeoutMs?: number } = {},
 ): Promise<T> {
-  const { json, ...rest } = init;
+  const { json, timeoutMs = 20_000, ...rest } = init;
   let res: Response;
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), timeoutMs);
   try {
     res = await fetch(`/api${path}`, {
       credentials: 'include',
+      signal: ctrl.signal,
       ...rest,
       headers: {
         ...(json !== undefined ? { 'Content-Type': 'application/json' } : {}),
@@ -27,8 +30,15 @@ export async function api<T>(
       body: json !== undefined ? JSON.stringify(json) : rest.body,
     });
   } catch {
-    throw new ApiError('NETWORK', 'Sem conexão com o servidor. Verifique sua internet.');
+    clearTimeout(timer);
+    throw new ApiError(
+      'NETWORK',
+      ctrl.signal.aborted
+        ? 'O servidor demorou demais para responder. Tente de novo.'
+        : 'Sem conexão com o servidor. Verifique sua internet.',
+    );
   }
+  clearTimeout(timer);
   const body = await res.json().catch(() => ({}));
   if (!res.ok) {
     const e = (body as { error?: ServerError }).error;

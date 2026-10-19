@@ -14,15 +14,18 @@ import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { corsOrigins, type Env } from '../config/env.js';
+import { dbStatus } from '../db/status.js';
 import { AppError, statusOf, toServerError } from '../lib/errors.js';
 import { logger } from '../lib/logger.js';
 import { AuthService, toIdentity } from '../modules/auth/auth.service.js';
+import { GoogleAuth, safeReturnPath } from '../modules/auth/google.js';
 import { TOKEN_COOKIE, TokenService, type Identity } from '../modules/auth/token.js';
 import type { MatchRepository } from '../modules/matches/match.repository.js';
 import type { UserRepository } from '../modules/users/users.repository.js';
 import type { RoomManager } from '../rooms/RoomManager.js';
 
 export interface AppDeps {
+  google?: GoogleAuth;
   env: Env;
   tokens: TokenService;
   users: UserRepository | null;
@@ -36,9 +39,11 @@ const wrap =
   (req: Request, res: Response, next: NextFunction) =>
     Promise.resolve(fn(req as AuthedRequest, res)).catch(next);
 
-export function createApp({ env, tokens, users, matches, rooms }: AppDeps) {
+export function createApp({ env, tokens, users, matches, rooms, google: googleDep }: AppDeps) {
   const app = express();
   const auth = new AuthService(users);
+  const google = googleDep ?? new GoogleAuth(env.GOOGLE_CLIENT_ID, env.GOOGLE_CLIENT_SECRET);
+  const OAUTH_COOKIE = 'pv_oauth';
   const isProd = env.NODE_ENV === 'production';
 
   app.disable('x-powered-by');
@@ -77,7 +82,14 @@ export function createApp({ env, tokens, users, matches, rooms }: AppDeps) {
 
   const api = express.Router();
 
-  api.get('/health', (_req, res) => res.json({ ok: true }));
+  api.get('/health', (_req, res) =>
+    res.json({
+      ok: true,
+      db: users ? dbStatus.state : 'off',
+      accounts: Boolean(users) && dbStatus.state !== 'error',
+      google: google.enabled,
+    }),
+  );
   api.get('/games', (_req, res) => res.json(GAME_CATALOG));
   api.get('/stats', (_req, res) => res.json({ online: rooms.onlineCount, rooms: rooms.size }));
   api.get('/rooms', (_req, res) => res.json(rooms.listPublic()));
@@ -129,8 +141,8 @@ export function createApp({ env, tokens, users, matches, rooms }: AppDeps) {
     '/auth/register',
     authLimiter,
     wrap(async (req, res) => {
-      const { email, password, nickname } = registerSchema.parse(req.body);
-      const id = await auth.register(email, password, nickname);
+      const { email, password, nickname, avatar } = registerSchema.parse(req.body);
+      const id = await auth.register(email, password, nickname, avatar);
       setSession(res, id);
       res.status(201).json({ user: id });
     }),
@@ -145,6 +157,56 @@ export function createApp({ env, tokens, users, matches, rooms }: AppDeps) {
       res.json({ user: id });
     }),
   );
+  // ---------- login com Google ----------
+  const publicBase = (req: Request) =>
+    (env.PUBLIC_URL ?? `${req.protocol}://${req.get('host')}`).replace(/\/$/, '');
+  const redirectUri = (req: Request) => `${publicBase(req)}/api/auth/google/callback`;
+  const backToLogin = (res: Response, msg: string) =>
+    res.redirect(`/entrar?erro=${encodeURIComponent(msg)}`);
+
+  api.get('/auth/google', authLimiter, (req, res) => {
+    if (!google.enabled || !users) return backToLogin(res, 'Login com Google não está disponível');
+    const state = google.newState();
+    const back = safeReturnPath(req.query.voltar);
+    const avatar =
+      typeof req.query.avatar === 'string' && /^c-[0-9a-z]{6}$/.test(req.query.avatar)
+        ? req.query.avatar
+        : '';
+    res.cookie(OAUTH_COOKIE, JSON.stringify({ state, back, avatar }), {
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: isProd && req.secure,
+      maxAge: 10 * 60_000,
+      path: '/api/auth/google',
+    });
+    res.redirect(google.authUrl(redirectUri(req), state));
+  });
+
+  api.get(
+    '/auth/google/callback',
+    wrap(async (req, res) => {
+      let saved: { state?: string; back?: string; avatar?: string } = {};
+      try {
+        saved = JSON.parse(req.cookies?.[OAUTH_COOKIE] ?? '{}');
+      } catch {
+        /* cookie inválido */
+      }
+      res.clearCookie(OAUTH_COOKIE, { path: '/api/auth/google' });
+      if (req.query.error) return backToLogin(res, 'Login com Google cancelado');
+      const code = typeof req.query.code === 'string' ? req.query.code : '';
+      if (!code || !saved.state || req.query.state !== saved.state)
+        return backToLogin(res, 'A sessão de login expirou. Tente de novo.');
+      try {
+        const profile = await google.exchange(code, redirectUri(req));
+        const id = await auth.google(profile, saved.avatar || undefined);
+        setSession(res, id);
+        res.redirect(safeReturnPath(saved.back));
+      } catch (err) {
+        backToLogin(res, toServerError(err).message);
+      }
+    }),
+  );
+
   api.post('/auth/logout', (_req, res) => {
     res.clearCookie(TOKEN_COOKIE, { path: '/' });
     res.json({ ok: true });

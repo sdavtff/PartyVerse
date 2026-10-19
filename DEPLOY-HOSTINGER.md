@@ -99,9 +99,37 @@ Não precisa definir `PORT` (a Hostinger define) nem `NODE_ENV` (o `server.js` j
 | Tela preta "503 Service Unavailable" | O app não iniciou. Confira se o Entry file é `server.cjs` e leia os **Runtime logs** (a linha com `[PartyVerse]` diz o motivo). |
 | Site abre mas fica "conectando…" | Veja os **Runtime logs**. |
 | Cadastro/login dá erro 503 | `DATABASE_URL` não configurado ou errado. Veja o log `não foi possível preparar o banco`. |
+| Cadastro diz "Contas temporariamente indisponíveis" | O servidor não conecta ao banco. Veja a linha `[PartyVerse] ERRO no banco` nos Runtime logs. O servidor tenta de novo sozinho a cada minuto. |
 | Login não "segura" (volta deslogado) | Acesse com `https://`; sem SSL o navegador descarta o cookie seguro. |
 | Todos deslogam após reiniciar | Falta `JWT_SECRET` nas variáveis. |
 | Jogo com atraso perceptível | O Socket.IO cai para *long-polling* se o WebSocket não passar pelo proxy. Funciona, só com um pouco mais de latência. Para tempo real máximo, use uma VPS (ver README → Docker). |
 
 > Salas ficam na memória do servidor: ao republicar ou reiniciar o app, as salas abertas
 > acabam (contas e histórico continuam no banco). Prefira publicar quando ninguém estiver jogando.
+
+
+## Login com Google (opcional)
+
+Sem estas variáveis o botão do Google simplesmente não aparece. Precisa do banco configurado.
+
+1. Acesse <https://console.cloud.google.com/> e crie um projeto (ex.: `PartyVerse`).
+2. Menu **APIs e serviços → Tela de consentimento OAuth**: tipo **Externo**, preencha nome do
+   app, e-mail de suporte e o domínio do site. Escopos: `email`, `profile`, `openid`.
+   Publique o app (status **Em produção**) para qualquer pessoa conseguir entrar.
+3. **APIs e serviços → Credenciais → Criar credenciais → ID do cliente OAuth**:
+   - Tipo: **Aplicativo da Web**
+   - Origens JavaScript autorizadas: `https://seudominio.com.br`
+   - URIs de redirecionamento autorizados: `https://seudominio.com.br/api/auth/google/callback`
+4. Copie o **ID do cliente** e a **Chave secreta do cliente**.
+5. Na Hostinger, em **Environment variables**, adicione:
+
+| Nome | Valor |
+|---|---|
+| `GOOGLE_CLIENT_ID` | o ID do cliente |
+| `GOOGLE_CLIENT_SECRET` | a chave secreta |
+| `PUBLIC_URL` | `https://seudominio.com.br` (sem barra no final) |
+
+6. Reinicie o app. O botão "Entrar com Google" aparece na página **Entrar**.
+
+Se aparecer o erro `redirect_uri_mismatch` do Google, o endereço do passo 3 não está idêntico
+ao `PUBLIC_URL` + `/api/auth/google/callback` (atenção a `https`, `www` e barra final).

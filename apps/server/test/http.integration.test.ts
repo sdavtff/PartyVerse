@@ -12,7 +12,7 @@ afterAll(async () => {
 
 describe('HTTP', () => {
   it('catálogo e saúde', async () => {
-    expect((await request(t.app).get('/api/health')).body).toEqual({ ok: true });
+    expect((await request(t.app).get('/api/health')).body).toMatchObject({ ok: true });
     const games = (await request(t.app).get('/api/games')).body;
     expect(games.find((g: { id: string }) => g.id === 'stop').available).toBe(true);
   });

@@ -4,6 +4,7 @@ import { corsOrigins, type Env } from './config/env.js';
 import { getPrisma } from './db/prisma.js';
 import { createApp } from './http/app.js';
 import { attachGateway, createTransport } from './realtime/gateway.js';
+import type { GoogleAuth } from './modules/auth/google.js';
 import { TokenService } from './modules/auth/token.js';
 import {
   MemoryMatchRepository,
@@ -16,6 +17,7 @@ import { RoomManager } from './rooms/RoomManager.js';
 export interface BuildOptions {
   users?: UserRepository | null;
   matches?: MatchRepository;
+  google?: GoogleAuth;
 }
 
 /** Monta HTTP + Socket.IO. Separado de index.ts para ser usado nos testes. */
@@ -41,7 +43,7 @@ export function buildServer(env: Env, opts: BuildOptions = {}) {
     idleTtlMs: env.ROOM_IDLE_TTL_MS,
     reconnectGraceMs: env.RECONNECT_GRACE_MS,
   });
-  const app = (ref.app = createApp({ env, tokens, users, matches, rooms }));
+  const app = (ref.app = createApp({ env, tokens, users, matches, rooms, google: opts.google }));
   attachGateway(io, rooms, tokens);
 
   const close = async () => {

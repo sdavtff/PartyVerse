@@ -18,6 +18,11 @@ const envSchema = z.object({
         .default(30 * 60_000),
     RECONNECT_GRACE_MS: z.coerce.number().int().positive().default(60_000),
     WEB_DIST_DIR: z.string().optional(),
+    /** Login com Google (opcional): credenciais OAuth do Google Cloud */
+    GOOGLE_CLIENT_ID: z.string().optional(),
+    GOOGLE_CLIENT_SECRET: z.string().optional(),
+    /** Endereço público do site, ex.: https://meusite.com (usado no retorno do Google) */
+    PUBLIC_URL: z.string().url().optional(),
     /** aplica as migrations do banco ao iniciar (padrão: sim) */
     AUTO_MIGRATE: z
         .enum(['true', 'false', '1', '0'])

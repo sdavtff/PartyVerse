@@ -2,6 +2,7 @@ import { STOP_LETTERS } from '../../games/stop/stop.game.js';
 import { startsWithLetter } from '../../games/stop/stop.scoring.js';
 import { QUIZ_QUESTIONS } from '../../games/quiz/quiz.questions.js';
 import { AppError } from '../../lib/errors.js';
+import { chatJson } from '../../lib/openrouter.js';
 import { normalize } from '../../lib/text.js';
 import type { DailyRepository, DailyRow } from './daily.repository.js';
 
@@ -25,6 +26,24 @@ const STOP_POOL = [
   'Instrumento',
 ];
 const STOP_CATEGORIES = 6;
+
+type AiQuizQ = { text: string; options: string[]; correct: number };
+type AiStop = { letter: string; categories: string[] };
+
+const quizCache = new Map<string, AiQuizQ[]>();
+const stopCache = new Map<string, AiStop>();
+
+let aiCfg: { apiKey?: string; model: string } = {
+  model: 'minimax/minimax-m3.1-flash:free',
+};
+
+/** Chamar uma vez no boot com as variáveis de ambiente. */
+export function configureDailyAi(cfg: { apiKey?: string; model?: string }) {
+  aiCfg = {
+    apiKey: cfg.apiKey,
+    model: cfg.model || 'minimax/minimax-m3.1-flash:free',
+  };
+}
 
 /** Dia do desafio no horário de Brasília (UTC-3), ex.: "2026-10-19". */
 export function dayKey(at = Date.now()) {
@@ -56,23 +75,95 @@ function seededShuffle<T>(xs: readonly T[], rnd: () => number) {
   return a;
 }
 
-/** Perguntas do Quiz do dia, com as opções embaralhadas (a certa fica guardada no servidor). */
-export function dailyQuiz(day: string) {
+async function generateQuizAi(day: string): Promise<AiQuizQ[] | null> {
+  const system = `Você gera perguntas de quiz em português do Brasil para um jogo casual multiplayer.
+Responda APENAS JSON válido no formato:
+{"questions":[{"text":"...","options":["A","B","C","D"],"correct":0}]}
+Regras:
+- Exatamente ${DAILY_QUIZ_SIZE} perguntas
+- correct = índice (0-3) da opção certa
+- Temas variados: Brasil, cultura pop, ciência, futebol, história, curiosidades, anime, games, música
+- Nível fácil/médio, sem controvérsia política ou conteúdo adulto
+- Opções curtas (máximo ~40 caracteres)
+- Perguntas diferentes a cada dia; seja criativo`;
+
+  const user = `Gere o Quiz do dia ${day}. Dez perguntas inéditas e divertidas.`;
+
+  const data = await chatJson<{ questions: AiQuizQ[] }>(aiCfg, system, user);
+  if (!data?.questions?.length || data.questions.length < DAILY_QUIZ_SIZE) return null;
+
+  return data.questions.slice(0, DAILY_QUIZ_SIZE).map((q) => {
+    const options = (q.options ?? []).map((o) => String(o).slice(0, 60)).slice(0, 4);
+    while (options.length < 4) options.push('—');
+    const correct = Math.min(3, Math.max(0, Number(q.correct) || 0));
+    return { text: String(q.text).slice(0, 200), options, correct };
+  });
+}
+
+async function generateStopAi(day: string): Promise<AiStop | null> {
+  const system = `Você define a Adedonha (STOP) do dia em português do Brasil.
+Responda APENAS JSON válido:
+{"letter":"A","categories":["Nome","Animal","Cidade","Comida","Objeto","Profissão"]}
+Regras:
+- letter: UMA letra maiúscula de A a Z, EXCETO K, Q, W, X, Y, Z
+- categories: exatamente 6 categorias curtas e divertidas (máximo 20 caracteres cada)
+- Prefira categorias criativas quando fizer sentido (ex: "App", "Meme", "Time de futebol", "Personagem de série")
+- Adequado para todas as idades`;
+
+  const user = `Adedonha do dia ${day}. Seja criativo.`;
+
+  const data = await chatJson<AiStop>(aiCfg, system, user);
+  if (!data?.letter || !Array.isArray(data.categories) || data.categories.length < 6) return null;
+
+  const letter = String(data.letter).toUpperCase().replace(/[^A-Z]/g, '').slice(0, 1);
+  if (!letter || 'KQWX YZ'.includes(letter)) return null;
+
+  return {
+    letter,
+    categories: data.categories.slice(0, 6).map((c) => String(c).slice(0, 24)),
+  };
+}
+
+/** Quiz do dia: IA se disponível, senão banco fixo com semente. */
+export async function dailyQuiz(day: string): Promise<AiQuizQ[]> {
+  const hit = quizCache.get(day);
+  if (hit) return hit;
+
+  const ai = await generateQuizAi(day);
+  if (ai) {
+    quizCache.set(day, ai);
+    return ai;
+  }
+
+  // fallback (comportamento antigo)
   const rnd = seeded(`quiz:${day}`);
-  return seededShuffle(QUIZ_QUESTIONS, rnd)
+  const fallback = seededShuffle(QUIZ_QUESTIONS, rnd)
     .slice(0, DAILY_QUIZ_SIZE)
     .map((q) => {
       const options = seededShuffle([q.a, ...q.w], rnd);
       return { text: q.q, options, correct: options.indexOf(q.a) };
     });
+  quizCache.set(day, fallback);
+  return fallback;
 }
 
-export function dailyStop(day: string) {
+export async function dailyStop(day: string): Promise<AiStop> {
+  const hit = stopCache.get(day);
+  if (hit) return hit;
+
+  const ai = await generateStopAi(day);
+  if (ai) {
+    stopCache.set(day, ai);
+    return ai;
+  }
+
   const rnd = seeded(`stop:${day}`);
-  return {
+  const fallback = {
     letter: STOP_LETTERS[Math.floor(rnd() * STOP_LETTERS.length)]!,
     categories: seededShuffle(STOP_POOL, rnd).slice(0, STOP_CATEGORIES),
   };
+  stopCache.set(day, fallback);
+  return fallback;
 }
 
 type StopData = { answers: Record<string, string> };
@@ -128,7 +219,7 @@ export class DailyService {
   constructor(private repo: DailyRepository) {}
 
   async status(userId: string | null, day = dayKey()) {
-    const stop = dailyStop(day);
+    const stop = await dailyStop(day);
     const [quizDone, stopDone, streak] = userId
       ? await Promise.all([
           this.repo.get(userId, day, 'quiz'),
@@ -142,7 +233,7 @@ export class DailyService {
       quiz: {
         size: DAILY_QUIZ_SIZE,
         seconds: DAILY_QUIZ_SECONDS,
-        done: quizDone ? this.quizResult(day, quizDone) : null,
+        done: quizDone ? await this.quizResult(day, quizDone) : null,
       },
       stop: {
         ...stop,
@@ -153,12 +244,13 @@ export class DailyService {
   }
 
   /** Perguntas sem a resposta certa. */
-  quizQuestions(day = dayKey()) {
-    return dailyQuiz(day).map(({ text, options }) => ({ text, options }));
+  async quizQuestions(day = dayKey()) {
+    const qs = await dailyQuiz(day);
+    return qs.map(({ text, options }) => ({ text, options }));
   }
 
-  private quizResult(day: string, row: DailyRow) {
-    const qs = dailyQuiz(day);
+  private async quizResult(day: string, row: DailyRow) {
+    const qs = await dailyQuiz(day);
     const answers = (row.data as { answers: (number | null)[] }).answers ?? [];
     return {
       score: row.score,
@@ -169,7 +261,7 @@ export class DailyService {
   }
 
   async submitQuiz(userId: string, answers: (number | null)[], day = dayKey()) {
-    const qs = dailyQuiz(day);
+    const qs = await dailyQuiz(day);
     if (answers.length !== qs.length) throw new AppError('VALIDATION', 'Respostas incompletas');
     const correct = answers.filter((a, i) => a === qs[i]!.correct).length;
     const saved = await this.repo.save(userId, day, 'quiz', correct * 100, { answers });
@@ -179,7 +271,7 @@ export class DailyService {
   }
 
   async submitStop(userId: string, answers: Record<string, string>, day = dayKey()) {
-    const { categories } = dailyStop(day);
+    const { categories } = await dailyStop(day);
     const clean: Record<string, string> = {};
     for (const c of categories) clean[c] = (answers[c] ?? '').trim().slice(0, 40);
     const saved = await this.repo.save(userId, day, 'stop', 0, { answers: clean });
@@ -189,7 +281,7 @@ export class DailyService {
   }
 
   private async stopResult(day: string, userId: string) {
-    const { letter, categories } = dailyStop(day);
+    const { letter, categories } = await dailyStop(day);
     const rows = await this.repo.listDay(day, 'stop');
     const scored = scoreStopDay(rows, letter, categories);
     const mine = rows.find((r) => r.userId === userId);
@@ -204,7 +296,7 @@ export class DailyService {
     const rows = await this.repo.listDay(day, game);
     let list = rows.map((r) => ({ ...r }));
     if (game === 'stop') {
-      const { letter, categories } = dailyStop(day);
+      const { letter, categories } = await dailyStop(day);
       const scored = scoreStopDay(rows, letter, categories);
       list = list
         .map((r) => ({ ...r, score: scored.get(r.userId)?.score ?? 0 }))

@@ -2,6 +2,7 @@ import { loadEnv } from './config/env.js';
 import { runMigrations } from './db/migrate.js';
 import { explainDbError, setDbState } from './db/status.js';
 import { logger } from './lib/logger.js';
+import { configureDailyAi } from './modules/daily/daily.service.js';
 import { buildServer } from './server.js';
 
 let env: ReturnType<typeof loadEnv>;
@@ -11,6 +12,12 @@ try {
   console.error('[PartyVerse] ' + (err as Error).message);
   process.exit(1);
 }
+
+// IA do desafio do dia (OpenRouter) — sem chave, usa o banco fixo
+configureDailyAi({
+  apiKey: env.OPENROUTER_API_KEY,
+  model: env.OPENROUTER_MODEL,
+});
 
 /** Mostra só host/porta/banco do endereço (nunca a senha). */
 function describeDb(url: string) {
@@ -27,6 +34,9 @@ function describeDb(url: string) {
 const { httpServer, close } = buildServer(env);
 httpServer.listen(env.PORT, () => {
   console.log(`[PartyVerse] ouvindo na porta ${env.PORT} (${env.NODE_ENV})`);
+  if (env.OPENROUTER_API_KEY)
+    console.log(`[PartyVerse] desafio do dia com IA (${env.OPENROUTER_MODEL})`);
+  else console.warn('[PartyVerse] OPENROUTER_API_KEY ausente: desafio do dia usa banco fixo');
   if (!env.DATABASE_URL)
     console.warn(
       '[PartyVerse] DATABASE_URL ausente: contas e histórico desativados (só convidados).',

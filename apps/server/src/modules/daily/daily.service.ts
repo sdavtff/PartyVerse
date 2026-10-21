@@ -4,6 +4,15 @@ import { QUIZ_QUESTIONS } from '../../games/quiz/quiz.questions.js';
 import { AppError } from '../../lib/errors.js';
 import { logger } from '../../lib/logger.js';
 import { normalize } from '../../lib/text.js';
+import {
+  checkGuess,
+  plain,
+  TERMO_MAX,
+  termoAnswer,
+  termoMarks,
+  termoScore,
+  type TermoData,
+} from './termo.js';
 import type { ChallengeStore, DailyRepository, DailyRow } from './daily.repository.js';
 import {
   DAILY_QUIZ_SIZE,
@@ -281,9 +290,11 @@ export class DailyService {
     };
   }
 
-  async ranking(game: 'quiz' | 'stop', day = dayKey(), limit = 20): Promise<RankRow[]> {
+  async ranking(game: 'quiz' | 'stop' | 'termo', day = dayKey(), limit = 20): Promise<RankRow[]> {
     const rows = await this.repo.listDay(day, game);
-    let list = rows.map((r) => ({ ...r }));
+    let list = rows
+      .filter((r) => game !== 'termo' || (r.data as TermoData).done)
+      .map((r) => ({ ...r }));
     if (game === 'stop') {
       const scored = scoreStopDay(rows, legacyStop(day));
       list = list
@@ -297,6 +308,43 @@ export class DailyService {
       last = r.score;
       return { userId: r.userId, nickname: r.nickname, avatar: r.avatar, score: r.score, place };
     });
+  }
+
+  // ---------- Termo do dia ----------
+
+  private termoView(day: string, d: TermoData) {
+    const answer = termoAnswer(day);
+    return {
+      max: TERMO_MAX,
+      rows: d.guesses.map((g) => ({ guess: g, marks: termoMarks(g, answer) })),
+      done: d.done,
+      won: d.won,
+      score: termoScore(d),
+      answer: d.done ? answer : null,
+    };
+  }
+
+  async termoStatus(userId: string | null, day = dayKey()) {
+    const row = userId ? await this.repo.get(userId, day, 'termo') : null;
+    const d = (row?.data as TermoData | undefined) ?? { guesses: [], done: false, won: false };
+    return this.termoView(day, d);
+  }
+
+  async termoGuess(userId: string, raw: string, day = dayKey()) {
+    const guess = checkGuess(raw);
+    const row = await this.repo.get(userId, day, 'termo');
+    const d: TermoData = (row?.data as TermoData | undefined) ?? {
+      guesses: [],
+      done: false,
+      won: false,
+    };
+    if (d.done)
+      throw new AppError('INVALID_STATE', 'Você já jogou o Termo de hoje. Volte amanhã!', 409);
+    d.guesses = [...d.guesses, guess];
+    d.won = plain(termoAnswer(day)) === guess;
+    d.done = d.won || d.guesses.length >= TERMO_MAX;
+    await this.repo.upsert(userId, day, 'termo', termoScore(d), d);
+    return { ...this.termoView(day, d), finishedNow: d.done };
   }
 
   async counts(day = dayKey()) {

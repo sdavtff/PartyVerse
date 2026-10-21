@@ -266,3 +266,25 @@ describe('dia seguinte', () => {
     expect(store.rows.has(dk())).toBe(true);
   });
 });
+
+describe('Termo do dia (HTTP)', () => {
+  it('chutes, cores, vitória e uma vez por dia', async () => {
+    const { termoAnswer, plain } = await import('../src/modules/daily/termo.js');
+    const ana = await account('ana@x.com', 'Ana');
+    expect((await ana.agent.post('/api/daily/termo').send({ guess: 'xyzzy' })).status).toBe(400);
+    const st = (await ana.agent.get('/api/daily/termo')).body;
+    expect(st.answer).toBeNull();
+    const answer = plain(termoAnswer(dayKey()));
+    const wrong = answer === 'casas' ? 'carro' : 'casas';
+    const r1 = (await ana.agent.post('/api/daily/termo').send({ guess: wrong })).body.result;
+    expect(r1.rows).toHaveLength(1);
+    expect(r1.answer).toBeNull();
+    const r2 = (await ana.agent.post('/api/daily/termo').send({ guess: answer })).body;
+    expect(r2.result.won).toBe(true);
+    expect(r2.result.score).toBe(500);
+    expect(r2.reward.achievements).toContain('daily_done');
+    expect((await ana.agent.post('/api/daily/termo').send({ guess: answer })).status).toBe(409);
+    const rank = (await request(t.app).get('/api/daily/ranking?game=termo')).body;
+    expect(rank[0]).toMatchObject({ nickname: 'Ana', score: 500 });
+  });
+});

@@ -27,6 +27,8 @@ export interface GameContext {
   emit(payload: unknown, except?: string): void;
   nickname(playerId: string): string;
   isOnline(playerId: string): boolean;
+  /** Ainda está na sala (online ou reconectando)? Falso quando saiu de vez. */
+  inRoom(playerId: string): boolean;
   /** Sinaliza que a partida terminou; a sala calcula o ranking e persiste. */
   finish(): void;
   /** IA (opcional; só existe quando a chave está configurada). */

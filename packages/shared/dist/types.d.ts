@@ -245,6 +245,66 @@ export interface TwoTruthsView {
         gained: Record<string, number>;
     } | null;
 }
+export interface HangmanView {
+    phase: 'playing' | 'round-end' | 'finished';
+    round: number;
+    totalRounds: number;
+    deadline: number | null;
+    participants: string[];
+    currentId: string | null;
+    /** letras reveladas; "_" = escondida, " " e "-" aparecem sempre */
+    mask: string[];
+    category: string | null;
+    guessed: string[];
+    wrong: string[];
+    lives: number;
+    maxLives: number;
+    totals: Record<string, number>;
+    /** palavra completa: só no fim da rodada */
+    word: string | null;
+    solvedBy: string | null;
+    lastEvent: {
+        playerId: string;
+        kind: 'hit' | 'miss' | 'word-hit' | 'word-miss' | 'timeout';
+        text: string;
+    } | null;
+}
+export interface TicTacToeView {
+    phase: 'playing' | 'game-end' | 'finished';
+    game: number;
+    totalGames: number;
+    deadline: number | null;
+    participants: string[];
+    /** quem joga com X e com O nesta partida */
+    x: string;
+    o: string;
+    board: ('X' | 'O' | null)[];
+    turn: 'X' | 'O';
+    winner: 'X' | 'O' | 'draw' | null;
+    line: number[] | null;
+    totals: Record<string, number>;
+}
+/** Peças: "w"/"b" = peão branco/preto, "W"/"B" = dama. */
+export type CheckersPiece = 'w' | 'b' | 'W' | 'B' | null;
+export interface CheckersView {
+    phase: 'playing' | 'game-end' | 'finished';
+    game: number;
+    totalGames: number;
+    deadline: number | null;
+    participants: string[];
+    white: string;
+    black: string;
+    board: CheckersPiece[];
+    turn: 'w' | 'b';
+    /** jogadas possíveis para quem está na vez (caminhos de casas) */
+    moves: number[][];
+    /** há captura obrigatória nesta vez */
+    mustCapture: boolean;
+    lastMove: number[] | null;
+    winner: 'w' | 'b' | 'draw' | null;
+    reason: string | null;
+    totals: Record<string, number>;
+}
 export declare const EVENTS: {
     readonly ROOM_CREATE: "room:create";
     readonly ROOM_JOIN: "room:join";

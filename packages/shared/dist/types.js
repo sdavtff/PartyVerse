@@ -79,6 +79,32 @@ export const GAME_CATALOG = [
         maxPlayers: 16,
         available: true,
         color: 'indigo',
+    }, {
+        id: 'hangman',
+        name: 'Forca',
+        tagline: 'Letra por letra, em turnos. Errou, a forca cresce para todos.',
+        minPlayers: 1,
+        maxPlayers: 12,
+        available: true,
+        color: 'yellow',
+    },
+    {
+        id: 'tictactoe',
+        name: 'Jogo da Velha',
+        tagline: 'Duelo rápido 1 contra 1, em melhor de várias. O resto torce.',
+        minPlayers: 2,
+        maxPlayers: 2,
+        available: true,
+        color: 'cyan',
+    },
+    {
+        id: 'checkers',
+        name: 'Damas',
+        tagline: 'Damas com regras brasileiras: captura obrigatória e dama que voa.',
+        minPlayers: 2,
+        maxPlayers: 2,
+        available: true,
+        color: 'brown',
     },
 ];
 export const EVENTS = {

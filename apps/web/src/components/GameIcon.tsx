@@ -10,6 +10,9 @@ const ACCENTS: Record<GameId, string> = {
   mostlikely: '#ff9a3d',
   truthdare: '#3ee0c0',
   twotruths: '#8f9bff',
+  hangman: '#ffd84d',
+  tictactoe: '#4de8ff',
+  checkers: '#d49a6a',
 };
 export const gameAccent = (id: GameId) => ACCENTS[id];
 
@@ -98,6 +101,24 @@ const GLYPHS: Record<GameId, JSX.Element> = {
       <rect x="16" y="30" width="32" height="5" rx="2.5" />
       <path d="M16 42l6 6M22 42l-6 6" stroke="#0f0b17" strokeWidth="4" strokeLinecap="round" />
       <rect x="28" y="42" width="20" height="5" rx="2.5" opacity=".4" />
+    </g>
+  ),
+  hangman: (
+    <g fill="none" stroke="#0f0b17" strokeWidth="4" strokeLinecap="round">
+      <path d="M16 48h20M22 48V16h18v6" />
+      <circle cx="40" cy="28" r="5" />
+      <path d="M40 33v9M40 36l-5 4M40 36l5 4" />
+    </g>
+  ),
+  tictactoe: (
+    <g fill="none" stroke="#0f0b17" strokeWidth="4" strokeLinecap="round">
+      <path d="M26 16v32M38 16v32M16 26h32M16 38h32" />
+    </g>
+  ),
+  checkers: (
+    <g stroke="#0f0b17" strokeWidth="4">
+      <circle cx="26" cy="38" r="9" fill="#fff8ec" />
+      <circle cx="38" cy="26" r="9" fill="#3a2c48" />
     </g>
   ),
 };

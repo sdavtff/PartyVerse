@@ -194,6 +194,58 @@ export const GAME_GUIDES: GameGuide[] = [
     ],
     bestWith: '3 a 12 pessoas',
   },
+  {
+    id: 'hangman',
+    slug: 'forca',
+    intro:
+      'A clássica forca, em turnos: cada um chuta uma letra; acertou, joga de novo. Dá para jogar sozinho ou com a turma.',
+    steps: [
+      'Uma palavra secreta é sorteada (do tema escolhido, sua lista ou criada pela IA).',
+      'Na sua vez, escolha uma letra ou chute a palavra inteira.',
+      'Letra certa aparece em todos os lugares e você continua; errada tira uma vida de todos e passa a vez.',
+      'Se as vidas acabarem, a forca fica completa e ninguém pontua na palavra.',
+    ],
+    scoring: [
+      'Letra certa: 10 pontos por vez que aparece.',
+      'Revelar a última letra: +30.',
+      'Chutar a palavra certa: +30 e +10 por letra que ainda faltava.',
+    ],
+    tips: ['Vogais primeiro!', 'Acentos não importam: "a" revela "á", "ã" e "â".'],
+    bestWith: '1 a 8 pessoas',
+  },
+  {
+    id: 'tictactoe',
+    slug: 'jogo-da-velha',
+    intro:
+      'Duelo rápido de jogo da velha, em melhor de 3, 5 ou mais. Quem não joga assiste e torce.',
+    steps: [
+      'Jogam os dois primeiros da lista de jogadores (os outros podem marcar "Só assistir").',
+      'X começa; quem joga de X troca a cada partida.',
+      'Faça uma linha de três (reta ou diagonal) para vencer.',
+      'Se o tempo da jogada acabar, a casa é escolhida automaticamente.',
+    ],
+    scoring: ['Vitória: 3 pontos.', 'Velha (empate): 1 ponto para cada.'],
+    tips: ['Comece pelo centro ou por um canto.'],
+    bestWith: '2 jogadores (+ torcida)',
+  },
+  {
+    id: 'checkers',
+    slug: 'damas',
+    intro: 'Damas com as regras brasileiras, contra um amigo, com relógio por lance.',
+    steps: [
+      'Brancas começam; quem joga de brancas troca a cada partida.',
+      'Peão anda uma casa na diagonal para a frente e captura para frente e para trás.',
+      'Capturar é obrigatório — e, se houver mais de uma opção, vale a que pega mais peças.',
+      'Peão que termina o lance na última fileira vira dama, que anda e captura várias casas.',
+      'Ganha quem capturar todas as peças ou deixar o adversário sem jogadas.',
+    ],
+    scoring: [
+      'Vitória: 3 pontos.',
+      'Empate (20 lances só de damas sem captura): 1 ponto para cada.',
+    ],
+    tips: ['Toque na peça e veja os pontinhos verdes: são os destinos possíveis.'],
+    bestWith: '2 jogadores (+ torcida)',
+  },
 ];
 
 export const guideBySlug = (slug: string) => GAME_GUIDES.find((g) => g.slug === slug);

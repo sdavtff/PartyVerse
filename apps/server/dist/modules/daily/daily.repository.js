@@ -31,6 +31,13 @@ export class PrismaDailyRepository {
             throw e;
         }
     }
+    async upsert(userId, day, game, score, data) {
+        await this.db.dailyResult.upsert({
+            where: { userId_day_game: { userId, day, game } },
+            create: { userId, day, game, score, data: data },
+            update: { score, data: data },
+        });
+    }
     async listDay(day, game) {
         const rs = await this.db.dailyResult.findMany({
             where: { day, game, user: { banned: false } },
@@ -66,6 +73,16 @@ export class MemoryDailyRepository {
         const u = this.users(userId) ?? { nickname: '?', avatar: 'blob-1' };
         this.rows.push({ userId, day, game, score, data, createdAt: new Date().toISOString(), ...u });
         return true;
+    }
+    async upsert(userId, day, game, score, data) {
+        const r = await this.get(userId, day, game);
+        if (r) {
+            const row = this.rows.find((x) => x.userId === userId && x.day === day && x.game === game);
+            row.score = score;
+            row.data = data;
+        }
+        else
+            await this.save(userId, day, game, score, data);
     }
     async listDay(day, game) {
         return this.rows

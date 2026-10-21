@@ -24,6 +24,7 @@ function setup(n = 3, questions = 5) {
     emit: vi.fn(),
     nickname: (id: string) => id,
     isOnline: () => true,
+    inRoom: () => true,
     finish: vi.fn(),
   };
   const act = (pid: string, a: unknown) =>

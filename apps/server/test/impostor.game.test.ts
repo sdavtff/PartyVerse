@@ -23,6 +23,7 @@ function setup(n = 4, rounds = 2) {
     emit: vi.fn(),
     nickname: (id: string) => id,
     isOnline: (id) => !offline.has(id),
+    inRoom: () => true,
     finish: vi.fn(),
   };
   const act = (pid: string, a: unknown) =>

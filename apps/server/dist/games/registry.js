@@ -6,6 +6,9 @@ import { mostLikelyGame } from './party/mostlikely.game.js';
 import { truthDareGame } from './party/truthdare.game.js';
 import { twoTruthsGame } from './party/twotruths.game.js';
 import { stopGame } from './stop/stop.game.js';
+import { checkersGame } from './classic/checkers.game.js';
+import { hangmanGame } from './classic/hangman.game.js';
+import { ticTacToeGame } from './classic/tictactoe.game.js';
 const modules = new Map([
     stopGame,
     impostorGame,
@@ -16,6 +19,9 @@ const modules = new Map([
     mostLikelyGame,
     truthDareGame,
     twoTruthsGame,
+    hangmanGame,
+    ticTacToeGame,
+    checkersGame,
 ].map((m) => [m.id, m]));
 export function getGameModule(id) {
     const m = modules.get(id);

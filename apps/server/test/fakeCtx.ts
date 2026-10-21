@@ -17,6 +17,7 @@ export function fakeCtx(opts: { now?: () => number; offline?: Set<string> } = {}
     emit: vi.fn(),
     nickname: (id: string) => id.toUpperCase(),
     isOnline: (id: string) => !offline.has(id),
+    inRoom: (id: string) => !offline.has(id),
     finish: vi.fn(),
   } satisfies GameContext;
   return { ctx, timers, offline };

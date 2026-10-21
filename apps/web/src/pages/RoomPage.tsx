@@ -7,6 +7,12 @@ import {
   type ImpostorView,
   type MatchResult,
   type MatchReward,
+  type CheckersSettings,
+  type CheckersView,
+  type HangmanSettings,
+  type HangmanView,
+  type TicTacToeSettings,
+  type TicTacToeView,
   type MostLikelySettings,
   type MostLikelyView,
   type TruthDareSettings,
@@ -37,6 +43,14 @@ import { GuessGame } from '../games/guess/GuessGame';
 import { GuessSettingsForm } from '../games/guess/GuessSettingsForm';
 import { ImpostorGame } from '../games/impostor/ImpostorGame';
 import { ImpostorSettingsForm } from '../games/impostor/ImpostorSettingsForm';
+import { CheckersGame } from '../games/classic/CheckersGame';
+import {
+  CheckersSettingsForm,
+  HangmanSettingsForm,
+  TicTacToeSettingsForm,
+} from '../games/classic/ClassicSettingsForms';
+import { HangmanGame } from '../games/classic/HangmanGame';
+import { TicTacToeGame } from '../games/classic/TicTacToeGame';
 import { MostLikelyGame } from '../games/party/MostLikelyGame';
 import {
   MostLikelySettingsForm,
@@ -225,6 +239,12 @@ function GameScreen({
       return <TruthDareGame view={game as TruthDareView} room={room} myId={myId} />;
     case 'twotruths':
       return <TwoTruthsGame view={game as TwoTruthsView} room={room} myId={myId} />;
+    case 'hangman':
+      return <HangmanGame view={game as HangmanView} room={room} myId={myId} />;
+    case 'tictactoe':
+      return <TicTacToeGame view={game as TicTacToeView} room={room} myId={myId} />;
+    case 'checkers':
+      return <CheckersGame view={game as CheckersView} room={room} myId={myId} />;
     default:
       return null;
   }
@@ -409,6 +429,24 @@ function Lobby({ room, amHost }: { room: PublicRoom; amHost: boolean }) {
       {room.settings.gameId === 'twotruths' && (
         <TwoTruthsSettingsForm
           settings={room.gameSettings as unknown as TwoTruthsSettings}
+          editable={amHost}
+        />
+      )}
+      {room.settings.gameId === 'hangman' && (
+        <HangmanSettingsForm
+          settings={room.gameSettings as unknown as HangmanSettings}
+          editable={amHost}
+        />
+      )}
+      {room.settings.gameId === 'tictactoe' && (
+        <TicTacToeSettingsForm
+          settings={room.gameSettings as unknown as TicTacToeSettings}
+          editable={amHost}
+        />
+      )}
+      {room.settings.gameId === 'checkers' && (
+        <CheckersSettingsForm
+          settings={room.gameSettings as unknown as CheckersSettings}
           editable={amHost}
         />
       )}

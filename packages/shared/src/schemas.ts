@@ -10,6 +10,9 @@ export const GAME_IDS = [
   'mostlikely',
   'truthdare',
   'twotruths',
+  'hangman',
+  'tictactoe',
+  'checkers',
 ] as const;
 export type GameId = (typeof GAME_IDS)[number];
 
@@ -377,3 +380,43 @@ export const reportSchema = z.object({
   reason: z.enum(REPORT_REASONS),
   details: z.string().trim().max(300).default(''),
 });
+
+// ---------- Forca ----------
+export const hangmanSettingsSchema = z.object({
+  rounds: z.number().int().min(1).max(10),
+  turnSeconds: z.number().int().min(10).max(60),
+  lives: z.number().int().min(4).max(10),
+  category: z.enum(WORD_CATEGORIES),
+  customWords: customListSchema(200, 30),
+});
+export type HangmanSettings = z.infer<typeof hangmanSettingsSchema>;
+export const hangmanActionSchema = z.discriminatedUnion('type', [
+  z.object({ type: z.literal('letter'), letter: z.string().regex(/^[a-zA-Z]$/) }),
+  z.object({ type: z.literal('word'), word: z.string().trim().min(2).max(40) }),
+]);
+export type HangmanAction = z.infer<typeof hangmanActionSchema>;
+
+// ---------- Jogo da velha ----------
+export const ticTacToeSettingsSchema = z.object({
+  games: z.number().int().min(1).max(9),
+  turnSeconds: z.number().int().min(5).max(60),
+});
+export type TicTacToeSettings = z.infer<typeof ticTacToeSettingsSchema>;
+export const ticTacToeActionSchema = z.object({
+  type: z.literal('mark'),
+  cell: z.number().int().min(0).max(8),
+});
+export type TicTacToeAction = z.infer<typeof ticTacToeActionSchema>;
+
+// ---------- Damas (regras brasileiras) ----------
+export const checkersSettingsSchema = z.object({
+  games: z.number().int().min(1).max(5),
+  turnSeconds: z.number().int().min(15).max(180),
+});
+export type CheckersSettings = z.infer<typeof checkersSettingsSchema>;
+/** Caminho da jogada: casa de origem e as casas por onde passa (índices 0–63). */
+export const checkersActionSchema = z.object({
+  type: z.literal('move'),
+  path: z.array(z.number().int().min(0).max(63)).min(2).max(14),
+});
+export type CheckersAction = z.infer<typeof checkersActionSchema>;

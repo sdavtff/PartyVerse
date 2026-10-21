@@ -1,5 +1,5 @@
 import { z } from 'zod';
-export declare const GAME_IDS: readonly ["stop", "draw", "charades", "quiz", "secretword", "impostor", "mostlikely", "truthdare", "twotruths"];
+export declare const GAME_IDS: readonly ["stop", "draw", "charades", "quiz", "secretword", "impostor", "mostlikely", "truthdare", "twotruths", "hangman", "tictactoe", "checkers"];
 export type GameId = (typeof GAME_IDS)[number];
 export declare const nicknameSchema: z.ZodString;
 export declare const roomCodeSchema: z.ZodString;
@@ -58,7 +58,7 @@ export type StopSettings = z.infer<typeof stopSettingsSchema>;
 export declare const MAX_ROOM_PLAYERS = 50;
 export declare const roomSettingsSchema: z.ZodObject<{
     name: z.ZodString;
-    gameId: z.ZodEnum<["stop", "draw", "charades", "quiz", "secretword", "impostor", "mostlikely", "truthdare", "twotruths"]>;
+    gameId: z.ZodEnum<["stop", "draw", "charades", "quiz", "secretword", "impostor", "mostlikely", "truthdare", "twotruths", "hangman", "tictactoe", "checkers"]>;
     isPublic: z.ZodBoolean;
     maxPlayers: z.ZodNumber;
     /** narrador com IA comenta o fim da partida */
@@ -67,14 +67,14 @@ export declare const roomSettingsSchema: z.ZodObject<{
     chatFilter: z.ZodDefault<z.ZodBoolean>;
 }, "strip", z.ZodTypeAny, {
     name: string;
-    gameId: "stop" | "draw" | "charades" | "quiz" | "secretword" | "impostor" | "mostlikely" | "truthdare" | "twotruths";
+    gameId: "stop" | "draw" | "charades" | "quiz" | "secretword" | "impostor" | "mostlikely" | "truthdare" | "twotruths" | "hangman" | "tictactoe" | "checkers";
     isPublic: boolean;
     maxPlayers: number;
     narrator: boolean;
     chatFilter: boolean;
 }, {
     name: string;
-    gameId: "stop" | "draw" | "charades" | "quiz" | "secretword" | "impostor" | "mostlikely" | "truthdare" | "twotruths";
+    gameId: "stop" | "draw" | "charades" | "quiz" | "secretword" | "impostor" | "mostlikely" | "truthdare" | "twotruths" | "hangman" | "tictactoe" | "checkers";
     isPublic: boolean;
     maxPlayers: number;
     narrator?: boolean | undefined;
@@ -90,7 +90,7 @@ export type RoomSettings = z.infer<typeof roomSettingsSchema>;
 export declare const createRoomSchema: z.ZodObject<{
     settings: z.ZodObject<{
         name: z.ZodString;
-        gameId: z.ZodEnum<["stop", "draw", "charades", "quiz", "secretword", "impostor", "mostlikely", "truthdare", "twotruths"]>;
+        gameId: z.ZodEnum<["stop", "draw", "charades", "quiz", "secretword", "impostor", "mostlikely", "truthdare", "twotruths", "hangman", "tictactoe", "checkers"]>;
         isPublic: z.ZodBoolean;
         maxPlayers: z.ZodNumber;
         /** narrador com IA comenta o fim da partida */
@@ -99,14 +99,14 @@ export declare const createRoomSchema: z.ZodObject<{
         chatFilter: z.ZodDefault<z.ZodBoolean>;
     }, "strip", z.ZodTypeAny, {
         name: string;
-        gameId: "stop" | "draw" | "charades" | "quiz" | "secretword" | "impostor" | "mostlikely" | "truthdare" | "twotruths";
+        gameId: "stop" | "draw" | "charades" | "quiz" | "secretword" | "impostor" | "mostlikely" | "truthdare" | "twotruths" | "hangman" | "tictactoe" | "checkers";
         isPublic: boolean;
         maxPlayers: number;
         narrator: boolean;
         chatFilter: boolean;
     }, {
         name: string;
-        gameId: "stop" | "draw" | "charades" | "quiz" | "secretword" | "impostor" | "mostlikely" | "truthdare" | "twotruths";
+        gameId: "stop" | "draw" | "charades" | "quiz" | "secretword" | "impostor" | "mostlikely" | "truthdare" | "twotruths" | "hangman" | "tictactoe" | "checkers";
         isPublic: boolean;
         maxPlayers: number;
         narrator?: boolean | undefined;
@@ -116,7 +116,7 @@ export declare const createRoomSchema: z.ZodObject<{
 }, "strip", z.ZodTypeAny, {
     settings: {
         name: string;
-        gameId: "stop" | "draw" | "charades" | "quiz" | "secretword" | "impostor" | "mostlikely" | "truthdare" | "twotruths";
+        gameId: "stop" | "draw" | "charades" | "quiz" | "secretword" | "impostor" | "mostlikely" | "truthdare" | "twotruths" | "hangman" | "tictactoe" | "checkers";
         isPublic: boolean;
         maxPlayers: number;
         narrator: boolean;
@@ -126,7 +126,7 @@ export declare const createRoomSchema: z.ZodObject<{
 }, {
     settings: {
         name: string;
-        gameId: "stop" | "draw" | "charades" | "quiz" | "secretword" | "impostor" | "mostlikely" | "truthdare" | "twotruths";
+        gameId: "stop" | "draw" | "charades" | "quiz" | "secretword" | "impostor" | "mostlikely" | "truthdare" | "twotruths" | "hangman" | "tictactoe" | "checkers";
         isPublic: boolean;
         maxPlayers: number;
         narrator?: boolean | undefined;
@@ -189,21 +189,21 @@ export declare const transferHostSchema: z.ZodObject<{
 export declare const updateSettingsSchema: z.ZodObject<{
     room: z.ZodOptional<z.ZodObject<{
         name: z.ZodOptional<z.ZodString>;
-        gameId: z.ZodOptional<z.ZodEnum<["stop", "draw", "charades", "quiz", "secretword", "impostor", "mostlikely", "truthdare", "twotruths"]>>;
+        gameId: z.ZodOptional<z.ZodEnum<["stop", "draw", "charades", "quiz", "secretword", "impostor", "mostlikely", "truthdare", "twotruths", "hangman", "tictactoe", "checkers"]>>;
         isPublic: z.ZodOptional<z.ZodBoolean>;
         maxPlayers: z.ZodOptional<z.ZodNumber>;
         narrator: z.ZodOptional<z.ZodDefault<z.ZodBoolean>>;
         chatFilter: z.ZodOptional<z.ZodDefault<z.ZodBoolean>>;
     }, "strip", z.ZodTypeAny, {
         name?: string | undefined;
-        gameId?: "stop" | "draw" | "charades" | "quiz" | "secretword" | "impostor" | "mostlikely" | "truthdare" | "twotruths" | undefined;
+        gameId?: "stop" | "draw" | "charades" | "quiz" | "secretword" | "impostor" | "mostlikely" | "truthdare" | "twotruths" | "hangman" | "tictactoe" | "checkers" | undefined;
         isPublic?: boolean | undefined;
         maxPlayers?: number | undefined;
         narrator?: boolean | undefined;
         chatFilter?: boolean | undefined;
     }, {
         name?: string | undefined;
-        gameId?: "stop" | "draw" | "charades" | "quiz" | "secretword" | "impostor" | "mostlikely" | "truthdare" | "twotruths" | undefined;
+        gameId?: "stop" | "draw" | "charades" | "quiz" | "secretword" | "impostor" | "mostlikely" | "truthdare" | "twotruths" | "hangman" | "tictactoe" | "checkers" | undefined;
         isPublic?: boolean | undefined;
         maxPlayers?: number | undefined;
         narrator?: boolean | undefined;
@@ -216,7 +216,7 @@ export declare const updateSettingsSchema: z.ZodObject<{
     password?: string | undefined;
     room?: {
         name?: string | undefined;
-        gameId?: "stop" | "draw" | "charades" | "quiz" | "secretword" | "impostor" | "mostlikely" | "truthdare" | "twotruths" | undefined;
+        gameId?: "stop" | "draw" | "charades" | "quiz" | "secretword" | "impostor" | "mostlikely" | "truthdare" | "twotruths" | "hangman" | "tictactoe" | "checkers" | undefined;
         isPublic?: boolean | undefined;
         maxPlayers?: number | undefined;
         narrator?: boolean | undefined;
@@ -227,7 +227,7 @@ export declare const updateSettingsSchema: z.ZodObject<{
     password?: string | undefined;
     room?: {
         name?: string | undefined;
-        gameId?: "stop" | "draw" | "charades" | "quiz" | "secretword" | "impostor" | "mostlikely" | "truthdare" | "twotruths" | undefined;
+        gameId?: "stop" | "draw" | "charades" | "quiz" | "secretword" | "impostor" | "mostlikely" | "truthdare" | "twotruths" | "hangman" | "tictactoe" | "checkers" | undefined;
         isPublic?: boolean | undefined;
         maxPlayers?: number | undefined;
         narrator?: boolean | undefined;
@@ -929,3 +929,88 @@ export declare const reportSchema: z.ZodObject<{
     roomCode?: string | undefined;
     details?: string | undefined;
 }>;
+export declare const hangmanSettingsSchema: z.ZodObject<{
+    rounds: z.ZodNumber;
+    turnSeconds: z.ZodNumber;
+    lives: z.ZodNumber;
+    category: z.ZodEnum<["misto", "animais", "comidas", "objetos", "lugares", "profissoes", "acoes", "anime", "games", "musica", "futebol", "personalizado"]>;
+    customWords: z.ZodEffects<z.ZodDefault<z.ZodArray<z.ZodString, "many">>, string[], string[] | undefined>;
+}, "strip", z.ZodTypeAny, {
+    rounds: number;
+    category: "misto" | "anime" | "games" | "musica" | "futebol" | "personalizado" | "animais" | "comidas" | "objetos" | "lugares" | "profissoes" | "acoes";
+    turnSeconds: number;
+    customWords: string[];
+    lives: number;
+}, {
+    rounds: number;
+    category: "misto" | "anime" | "games" | "musica" | "futebol" | "personalizado" | "animais" | "comidas" | "objetos" | "lugares" | "profissoes" | "acoes";
+    turnSeconds: number;
+    lives: number;
+    customWords?: string[] | undefined;
+}>;
+export type HangmanSettings = z.infer<typeof hangmanSettingsSchema>;
+export declare const hangmanActionSchema: z.ZodDiscriminatedUnion<"type", [z.ZodObject<{
+    type: z.ZodLiteral<"letter">;
+    letter: z.ZodString;
+}, "strip", z.ZodTypeAny, {
+    type: "letter";
+    letter: string;
+}, {
+    type: "letter";
+    letter: string;
+}>, z.ZodObject<{
+    type: z.ZodLiteral<"word">;
+    word: z.ZodString;
+}, "strip", z.ZodTypeAny, {
+    type: "word";
+    word: string;
+}, {
+    type: "word";
+    word: string;
+}>]>;
+export type HangmanAction = z.infer<typeof hangmanActionSchema>;
+export declare const ticTacToeSettingsSchema: z.ZodObject<{
+    games: z.ZodNumber;
+    turnSeconds: z.ZodNumber;
+}, "strip", z.ZodTypeAny, {
+    games: number;
+    turnSeconds: number;
+}, {
+    games: number;
+    turnSeconds: number;
+}>;
+export type TicTacToeSettings = z.infer<typeof ticTacToeSettingsSchema>;
+export declare const ticTacToeActionSchema: z.ZodObject<{
+    type: z.ZodLiteral<"mark">;
+    cell: z.ZodNumber;
+}, "strip", z.ZodTypeAny, {
+    type: "mark";
+    cell: number;
+}, {
+    type: "mark";
+    cell: number;
+}>;
+export type TicTacToeAction = z.infer<typeof ticTacToeActionSchema>;
+export declare const checkersSettingsSchema: z.ZodObject<{
+    games: z.ZodNumber;
+    turnSeconds: z.ZodNumber;
+}, "strip", z.ZodTypeAny, {
+    games: number;
+    turnSeconds: number;
+}, {
+    games: number;
+    turnSeconds: number;
+}>;
+export type CheckersSettings = z.infer<typeof checkersSettingsSchema>;
+/** Caminho da jogada: casa de origem e as casas por onde passa (índices 0–63). */
+export declare const checkersActionSchema: z.ZodObject<{
+    type: z.ZodLiteral<"move">;
+    path: z.ZodArray<z.ZodNumber, "many">;
+}, "strip", z.ZodTypeAny, {
+    path: number[];
+    type: "move";
+}, {
+    path: number[];
+    type: "move";
+}>;
+export type CheckersAction = z.infer<typeof checkersActionSchema>;

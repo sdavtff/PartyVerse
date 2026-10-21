@@ -15,6 +15,8 @@ export interface DailyRepository {
   /** Salva; devolve false se a pessoa já tinha jogado hoje. */
   save(userId: string, day: string, game: string, score: number, data: unknown): Promise<boolean>;
   listDay(day: string, game: string): Promise<DailyRow[]>;
+  /** Cria ou atualiza (jogos com várias jogadas no dia, como o Termo). */
+  upsert(userId: string, day: string, game: string, score: number, data: unknown): Promise<void>;
   /** Dias seguidos com desafio feito, terminando hoje ou ontem. */
   days(userId: string): Promise<string[]>;
 }
@@ -53,6 +55,13 @@ export class PrismaDailyRepository implements DailyRepository {
       throw e;
     }
   }
+  async upsert(userId: string, day: string, game: string, score: number, data: unknown) {
+    await this.db.dailyResult.upsert({
+      where: { userId_day_game: { userId, day, game } },
+      create: { userId, day, game, score, data: data as object },
+      update: { score, data: data as object },
+    });
+  }
   async listDay(day: string, game: string) {
     const rs = await this.db.dailyResult.findMany({
       where: { day, game, user: { banned: false } },
@@ -85,6 +94,14 @@ export class MemoryDailyRepository implements DailyRepository {
     const u = this.users(userId) ?? { nickname: '?', avatar: 'blob-1' };
     this.rows.push({ userId, day, game, score, data, createdAt: new Date().toISOString(), ...u });
     return true;
+  }
+  async upsert(userId: string, day: string, game: string, score: number, data: unknown) {
+    const r = await this.get(userId, day, game);
+    if (r) {
+      const row = this.rows.find((x) => x.userId === userId && x.day === day && x.game === game)!;
+      row.score = score;
+      row.data = data;
+    } else await this.save(userId, day, game, score, data);
   }
   async listDay(day: string, game: string) {
     return this.rows

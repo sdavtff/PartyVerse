@@ -170,7 +170,8 @@ export class Room {
         this.game.onPlayerLeft?.(this.gameState, playerId, ctx);
         // sem adversários suficientes conectados, a partida é encerrada (com resultado)
         const stillIn = [...this.players.values()].filter((p) => p.status !== 'left' && this.game.isParticipant(this.gameState, p.id));
-        if (this.phase === 'playing' && stillIn.length < 2) {
+        // jogos solo (ex.: Forca) seguem com 1 pessoa; os demais precisam de 2
+        if (this.phase === 'playing' && stillIn.length < Math.min(2, this.game.minPlayers)) {
             this.systemMessage('Jogadores insuficientes: partida encerrada');
             this.endMatch(true);
         }
@@ -534,6 +535,7 @@ export class Room {
             },
             nickname: (id) => this.players.get(id)?.nickname ?? this.known.get(id)?.nickname ?? 'Alguém',
             isOnline: (id) => this.players.get(id)?.status === 'online',
+            inRoom: (id) => this.players.has(id),
             finish: () => this.endMatch(true),
             ai: this.opts.ai,
         };

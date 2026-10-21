@@ -104,7 +104,7 @@ export function createApp({ env, tokens, users, matches, rooms, google: googleDe
     });
     const AI_FITS = {
         quiz: ['quiz'],
-        words: ['draw', 'charades', 'secretword'],
+        words: ['draw', 'charades', 'secretword', 'hangman'],
         locations: ['impostor'],
         mostlikely: ['mostlikely'],
         truths: ['truthdare'],
@@ -447,8 +447,22 @@ export function createApp({ env, tokens, users, matches, rooms, google: googleDe
         ]);
         res.json({ result, reward: reward ?? null });
     }));
+    api.get('/daily/termo', requireAuth, wrap(async (req, res) => {
+        const id = req.identity.isGuest ? null : req.identity.id;
+        res.json(await needDaily().termoStatus(id));
+    }));
+    const termoLimiter = rateLimit({ windowMs: 60_000, limit: env.NODE_ENV === 'test' ? 1000 : 30 });
+    api.post('/daily/termo', requireAuth, termoLimiter, wrap(async (req, res) => {
+        const userId = dailyAccount(req);
+        const { guess } = z.object({ guess: z.string().max(20) }).parse(req.body);
+        const result = await needDaily().termoGuess(userId, guess);
+        const reward = result.finishedNow
+            ? await progress?.grant(userId, Math.round(20 + result.score / 20), ['daily_done'])
+            : null;
+        res.json({ result, reward: reward ?? null });
+    }));
     api.get('/daily/ranking', wrap(async (req, res) => {
-        const game = req.query.game === 'stop' ? 'stop' : 'quiz';
+        const game = req.query.game === 'stop' ? 'stop' : req.query.game === 'termo' ? 'termo' : 'quiz';
         res.json(await needDaily().ranking(game));
     }));
     // ---------- amigos ----------

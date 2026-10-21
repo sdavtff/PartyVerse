@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { Avatar } from '../components/Avatar';
 import { Button } from '../components/Button';
 import { RewardCard } from '../components/RewardCard';
+import { TermoBoard, type TermoState } from '../components/TermoBoard';
 import { useToast } from '../components/Toast';
 import { api } from '../lib/api';
 import { useSession } from '../lib/session';
@@ -58,7 +59,8 @@ export function DailyPage() {
   const [status, setStatus] = useState<Status | null>(null);
   const [mode, setMode] = useState<'home' | 'quiz' | 'stop'>('home');
   const [reward, setReward] = useState<MatchReward | null>(null);
-  const [rankTab, setRankTab] = useState<'quiz' | 'stop'>('quiz');
+  const [rankTab, setRankTab] = useState<'quiz' | 'stop' | 'termo'>('quiz');
+  const [termo, setTermo] = useState<TermoState | null>(null);
   const [rank, setRank] = useState<RankRow[] | null>(null);
   const isAccount = Boolean(user && !user.isGuest);
 
@@ -71,13 +73,19 @@ export function DailyPage() {
     if (user) load();
   }, [user, load]);
   useEffect(() => {
+    if (!user) return;
+    api<TermoState>('/daily/termo')
+      .then(setTermo)
+      .catch(() => setTermo(null));
+  }, [user]);
+  useEffect(() => {
     setRank(null);
     api<RankRow[]>(`/daily/ranking?game=${rankTab}`)
       .then(setRank)
       .catch(() => setRank([]));
   }, [rankTab, status]);
 
-  const finished = (r: MatchReward | null, game: 'quiz' | 'stop') => {
+  const finished = (r: MatchReward | null, game: 'quiz' | 'stop' | 'termo') => {
     setReward(r);
     setMode('home');
     setRankTab(game);
@@ -103,8 +111,8 @@ export function DailyPage() {
       </p>
       <h1 className="mt-1 text-4xl font-extrabold sm:text-5xl">Desafio do dia</h1>
       <p className="mt-2 max-w-2xl text-ink-200">
-        Todo dia, um Quiz e uma Adedonha novos — iguais para todo mundo. Uma tentativa só, ranking
-        do dia e XP para a sua conta. Renova à meia-noite (horário de Brasília).
+        Todo dia, um Quiz, uma Adedonha e um Termo novos — iguais para todo mundo. Uma tentativa só,
+        ranking do dia e XP para a sua conta. Renova à meia-noite (horário de Brasília).
       </p>
       {status?.source === 'ia' && (
         <p className="mr-2 mt-4 inline-flex items-center gap-2 rounded-full bg-pop-violet/15 px-4 py-1.5 font-bold text-pop-violet">
@@ -203,14 +211,41 @@ export function DailyPage() {
         </section>
       </div>
 
+      <section className="card mt-5 p-6" aria-labelledby="termo-title">
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <h2 id="termo-title" className="text-2xl font-extrabold">
+            🟩 Termo do dia
+          </h2>
+          <p className="text-sm text-ink-400">
+            Descubra a palavra de 5 letras em até 6 tentativas.
+          </p>
+        </div>
+        <div className="mt-5">
+          {termo ? (
+            <TermoBoard
+              initial={termo}
+              canPlay={isAccount}
+              onFinish={(r) => {
+                setReward(r);
+                setRankTab('termo');
+                load();
+              }}
+            />
+          ) : (
+            <p className="text-ink-400">Carregando…</p>
+          )}
+        </div>
+      </section>
+
       <section className="mt-10">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="text-2xl font-extrabold">Ranking de hoje</h2>
-          <div className="inline-grid grid-cols-2 gap-1 rounded-2xl bg-ink-950 p-1" role="tablist">
+          <div className="inline-grid grid-cols-3 gap-1 rounded-2xl bg-ink-950 p-1" role="tablist">
             {(
               [
                 ['quiz', 'Quiz'],
                 ['stop', 'Adedonha'],
+                ['termo', 'Termo'],
               ] as const
             ).map(([id, label]) => (
               <button

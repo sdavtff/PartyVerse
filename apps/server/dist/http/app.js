@@ -13,6 +13,7 @@ import { AppError, statusOf, toServerError } from '../lib/errors.js';
 import { logger } from '../lib/logger.js';
 import { AuthService, toIdentity } from '../modules/auth/auth.service.js';
 import { GoogleAuth, safeReturnPath } from '../modules/auth/google.js';
+import { AppLoginCodes, appIntentUrl, backToAppPage } from '../modules/auth/appLogin.js';
 import { PasswordResetService } from '../modules/auth/reset.service.js';
 import { containsProfanity } from '../modules/moderation/profanity.js';
 import { z } from 'zod';
@@ -23,6 +24,7 @@ export function createApp({ env, tokens, users, matches, rooms, google: googleDe
     const auth = new AuthService(users);
     const google = googleDep ?? new GoogleAuth(env.GOOGLE_CLIENT_ID, env.GOOGLE_CLIENT_SECRET);
     const OAUTH_COOKIE = 'pv_oauth';
+    const appCodes = new AppLoginCodes();
     const isProd = env.NODE_ENV === 'production';
     app.disable('x-powered-by');
     app.set('trust proxy', 1);
@@ -246,7 +248,13 @@ export function createApp({ env, tokens, users, matches, rooms, google: googleDe
         const avatar = typeof req.query.avatar === 'string' && /^c-[0-9a-z]{6}$/.test(req.query.avatar)
             ? req.query.avatar
             : '';
-        res.cookie(OAUTH_COOKIE, JSON.stringify({ state, back, avatar }), {
+        // vindo do app Android: guarda o hash do segredo do app para devolver um código no fim
+        const challenge = req.query.app === '1' &&
+            typeof req.query.challenge === 'string' &&
+            /^[A-Za-z0-9_-]{43}$/.test(req.query.challenge)
+            ? req.query.challenge
+            : '';
+        res.cookie(OAUTH_COOKIE, JSON.stringify({ state, back, avatar, challenge }), {
             httpOnly: true,
             sameSite: 'lax',
             secure: isProd && req.secure,
@@ -264,21 +272,41 @@ export function createApp({ env, tokens, users, matches, rooms, google: googleDe
             /* cookie inválido */
         }
         res.clearCookie(OAUTH_COOKIE, { path: '/api/auth/google' });
+        const fail = (msg) => saved.challenge
+            ? res.type('html').send(backToAppPage(appIntentUrl({ erro: msg }), false))
+            : backToLogin(res, msg);
         if (req.query.error)
-            return backToLogin(res, 'Login com Google cancelado');
+            return fail('Login com Google cancelado');
         const code = typeof req.query.code === 'string' ? req.query.code : '';
         if (!code || !saved.state || req.query.state !== saved.state)
-            return backToLogin(res, 'A sessão de login expirou. Tente de novo.');
+            return fail('A sessão de login expirou. Tente de novo.');
         try {
             const profile = await google.exchange(code, redirectUri(req));
             const av = saved.avatar && avatarMinLevel(saved.avatar) <= 1 ? saved.avatar : undefined;
             const id = await auth.google(profile, av);
+            if (saved.challenge) {
+                // app Android: a sessão é criada dentro do app, ao trocar este código
+                const one = appCodes.create(id, saved.challenge);
+                return res.type('html').send(backToAppPage(appIntentUrl({ code: one }), true));
+            }
             setSession(res, id);
             res.redirect(safeReturnPath(saved.back));
         }
         catch (err) {
-            backToLogin(res, toServerError(err).message);
+            fail(toServerError(err).message);
         }
+    }));
+    api.post('/auth/app-exchange', authLimiter, wrap(async (req, res) => {
+        const { code, verifier } = z
+            .object({ code: z.string().min(20).max(100), verifier: z.string().min(43).max(128) })
+            .parse(req.body);
+        const id = appCodes.consume(code, verifier);
+        if (!id)
+            throw new AppError('UNAUTHORIZED', 'O login expirou. Tente entrar de novo.', 401);
+        if (bans?.has(id.id))
+            throw new AppError('FORBIDDEN', 'Esta conta foi suspensa.', 403);
+        setSession(res, id);
+        res.json({ user: id });
     }));
     api.post('/auth/logout', (_req, res) => {
         res.clearCookie(TOKEN_COOKIE, { path: '/' });

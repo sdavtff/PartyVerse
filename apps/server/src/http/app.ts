@@ -31,6 +31,7 @@ import { AppError, statusOf, toServerError } from '../lib/errors.js';
 import { logger } from '../lib/logger.js';
 import { AuthService, toIdentity } from '../modules/auth/auth.service.js';
 import { GoogleAuth, safeReturnPath } from '../modules/auth/google.js';
+import { AppLoginCodes, appIntentUrl, backToAppPage } from '../modules/auth/appLogin.js';
 import type { ProgressService } from '../modules/progress/progress.service.js';
 import type { FriendsRepository } from '../modules/social/friends.repository.js';
 import type { Presence } from '../modules/social/presence.js';
@@ -105,6 +106,7 @@ export function createApp({
   const auth = new AuthService(users);
   const google = googleDep ?? new GoogleAuth(env.GOOGLE_CLIENT_ID, env.GOOGLE_CLIENT_SECRET);
   const OAUTH_COOKIE = 'pv_oauth';
+  const appCodes = new AppLoginCodes();
   const isProd = env.NODE_ENV === 'production';
 
   app.disable('x-powered-by');
@@ -373,7 +375,14 @@ export function createApp({
       typeof req.query.avatar === 'string' && /^c-[0-9a-z]{6}$/.test(req.query.avatar)
         ? req.query.avatar
         : '';
-    res.cookie(OAUTH_COOKIE, JSON.stringify({ state, back, avatar }), {
+    // vindo do app Android: guarda o hash do segredo do app para devolver um código no fim
+    const challenge =
+      req.query.app === '1' &&
+      typeof req.query.challenge === 'string' &&
+      /^[A-Za-z0-9_-]{43}$/.test(req.query.challenge)
+        ? req.query.challenge
+        : '';
+    res.cookie(OAUTH_COOKIE, JSON.stringify({ state, back, avatar, challenge }), {
       httpOnly: true,
       sameSite: 'lax',
       secure: isProd && req.secure,
@@ -386,26 +395,50 @@ export function createApp({
   api.get(
     '/auth/google/callback',
     wrap(async (req, res) => {
-      let saved: { state?: string; back?: string; avatar?: string } = {};
+      let saved: { state?: string; back?: string; avatar?: string; challenge?: string } = {};
       try {
         saved = JSON.parse(req.cookies?.[OAUTH_COOKIE] ?? '{}');
       } catch {
         /* cookie inválido */
       }
       res.clearCookie(OAUTH_COOKIE, { path: '/api/auth/google' });
-      if (req.query.error) return backToLogin(res, 'Login com Google cancelado');
+      const fail = (msg: string) =>
+        saved.challenge
+          ? res.type('html').send(backToAppPage(appIntentUrl({ erro: msg }), false))
+          : backToLogin(res, msg);
+      if (req.query.error) return fail('Login com Google cancelado');
       const code = typeof req.query.code === 'string' ? req.query.code : '';
       if (!code || !saved.state || req.query.state !== saved.state)
-        return backToLogin(res, 'A sessão de login expirou. Tente de novo.');
+        return fail('A sessão de login expirou. Tente de novo.');
       try {
         const profile = await google.exchange(code, redirectUri(req));
         const av = saved.avatar && avatarMinLevel(saved.avatar) <= 1 ? saved.avatar : undefined;
         const id = await auth.google(profile, av);
+        if (saved.challenge) {
+          // app Android: a sessão é criada dentro do app, ao trocar este código
+          const one = appCodes.create(id, saved.challenge);
+          return res.type('html').send(backToAppPage(appIntentUrl({ code: one }), true));
+        }
         setSession(res, id);
         res.redirect(safeReturnPath(saved.back));
       } catch (err) {
-        backToLogin(res, toServerError(err).message);
+        fail(toServerError(err).message);
       }
+    }),
+  );
+
+  api.post(
+    '/auth/app-exchange',
+    authLimiter,
+    wrap(async (req, res) => {
+      const { code, verifier } = z
+        .object({ code: z.string().min(20).max(100), verifier: z.string().min(43).max(128) })
+        .parse(req.body);
+      const id = appCodes.consume(code, verifier);
+      if (!id) throw new AppError('UNAUTHORIZED', 'O login expirou. Tente entrar de novo.', 401);
+      if (bans?.has(id.id)) throw new AppError('FORBIDDEN', 'Esta conta foi suspensa.', 403);
+      setSession(res, id);
+      res.json({ user: id });
     }),
   );
 

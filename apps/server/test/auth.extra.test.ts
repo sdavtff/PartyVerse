@@ -172,3 +172,56 @@ describe('dica de erro do banco', () => {
       expect(h).not.toContain('segredo123');
   });
 });
+
+describe('login com Google no app Android', () => {
+  it('volta ao app com código de uso único que só o app (com o segredo) consegue trocar', async () => {
+    const { challengeOf } = await import('../src/modules/auth/appLogin.js');
+    srv = await startTestServer(
+      {},
+      {
+        google: fakeGoogle({
+          sub: 'g-app',
+          email: 'app@x.com',
+          email_verified: true,
+          name: 'Duda',
+        }),
+      },
+    );
+    const verifier = 'v'.repeat(20) + 'segredo-do-app-1234567890-abcdefghij';
+    const browser = request.agent(srv.app);
+    const start = await browser.get(`/api/auth/google?app=1&challenge=${challengeOf(verifier)}`);
+    const state = new URL(start.headers.location as string).searchParams.get('state')!;
+    const cb = await browser.get(`/api/auth/google/callback?code=bom&state=${state}`);
+    expect(cb.status).toBe(200);
+    // o navegador não fica logado: quem entra é o app
+    expect([cb.headers['set-cookie'] ?? []].flat().join(';')).not.toMatch(/pv_token=[^;]/);
+    const m =
+      /intent:\/\/auth\?code=([A-Za-z0-9_-]+)#Intent;scheme=partyverse;package=online\.meuassistenteai\.partyverse;end/.exec(
+        cb.text,
+      );
+    expect(m).not.toBeNull();
+    const code = m![1]!;
+
+    const app = request.agent(srv.app);
+    const wrong = await app.post('/api/auth/app-exchange').send({ code, verifier: 'x'.repeat(50) });
+    expect(wrong.status).toBe(401);
+    // o código já foi gasto na tentativa errada: precisa de outro login
+    const again = await app.post('/api/auth/app-exchange').send({ code, verifier });
+    expect(again.status).toBe(401);
+
+    const start2 = await browser.get(`/api/auth/google?app=1&challenge=${challengeOf(verifier)}`);
+    const state2 = new URL(start2.headers.location as string).searchParams.get('state')!;
+    const cb2 = await browser.get(`/api/auth/google/callback?code=bom&state=${state2}`);
+    const code2 = /code=([A-Za-z0-9_-]+)#/.exec(cb2.text)![1]!;
+    const ok = await app.post('/api/auth/app-exchange').send({ code: code2, verifier });
+    expect(ok.status).toBe(200);
+    expect(ok.body.user).toMatchObject({ nickname: 'Duda', isGuest: false });
+    expect((await app.get('/api/auth/me')).body.user.nickname).toBe('Duda');
+
+    // cancelou no Google: volta ao app com a mensagem
+    const s3 = await browser.get(`/api/auth/google?app=1&challenge=${challengeOf(verifier)}`);
+    const st3 = new URL(s3.headers.location as string).searchParams.get('state')!;
+    const cancel = await browser.get(`/api/auth/google/callback?error=access_denied&state=${st3}`);
+    expect(cancel.text).toContain('intent://auth?erro=');
+  });
+});

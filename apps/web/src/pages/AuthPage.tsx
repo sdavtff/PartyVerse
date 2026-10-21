@@ -7,6 +7,7 @@ import { useToast } from '../components/Toast';
 import { api } from '../lib/api';
 import { useSession } from '../lib/session';
 import { isNativeApp } from '../lib/platform';
+import { canGoogleInApp, startGoogleInApp } from '../lib/nativeAuth';
 import { usePageTitle } from '../lib/usePageTitle';
 
 type Mode = 'login' | 'register' | 'guest';
@@ -273,10 +274,17 @@ export function AuthPage() {
               : 'Jogue agora mesmo, sem cadastro.'}
         </p>
 
-        {mode !== 'guest' && health?.google && !isNativeApp() && (
+        {mode !== 'guest' && health?.google && (!isNativeApp() || canGoogleInApp()) && (
           <>
             <a
               href={googleHref}
+              onClick={(e) => {
+                if (!isNativeApp()) return;
+                e.preventDefault();
+                startGoogleInApp(back, avatar).catch(() =>
+                  setErr('Não foi possível abrir o navegador para entrar com o Google'),
+                );
+              }}
               className="mt-5 flex w-full items-center justify-center gap-3 rounded-2xl bg-paper px-4 py-3 font-bold text-night shadow-chunky transition hover:bg-ink-200 active:translate-y-0.5 active:shadow-none"
             >
               <GoogleLogo />

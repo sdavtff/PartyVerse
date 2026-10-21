@@ -206,8 +206,10 @@ Como ele carrega o site, **toda atualização do site já aparece no app** — n
   algo em `mobile/` muda. Para gerar de novo manualmente, abra o fluxo e toque em *Run workflow*.
 - **Instalar:** o Android pede para permitir "instalar apps desconhecidos" no navegador. É normal
   para apps fora da Play Store.
-- **Login com Google** não aparece dentro do app (o Google bloqueia login em apps desse tipo);
-  use e-mail e senha. Notificações push também ficam só no site/PWA por enquanto.
+- **Login com Google no app:** o Google não deixa entrar por dentro do app, então o botão abre o
+  login no navegador do celular e, no fim, volta sozinho para o app já logado (se não voltar,
+  toque em "Voltar para o PartyVerse"). Não precisa mudar nada no Google Cloud. Precisa do APK
+  0.7.3 ou mais novo. Notificações push ficam só no site/PWA por enquanto.
 - **Publicar na Play Store (opcional):** crie uma chave própria (`keytool -genkeypair ...`) e cadastre
   em Settings → Secrets → Actions: `ANDROID_KEYSTORE_BASE64` (o arquivo em base64),
   `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS` e `ANDROID_KEY_PASSWORD`. Sem isso, o APK usa a

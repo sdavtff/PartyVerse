@@ -1,7 +1,7 @@
 {
   "name": "partyverse-mobile",
   "private": true,
-  "version": "0.7.0",
+  "version": "0.8.1",
   "description": "App Android do PartyVerse (Capacitor). Abre o site e acrescenta microfone, ícone e tela offline.",
   "scripts": {
     "sync": "cap sync android",
@@ -10,6 +10,7 @@
   "dependencies": {
     "@capacitor/android": "8.5.3",
     "@capacitor/app": "^8.1.2",
+    "@capacitor/browser": "^8.0.5",
     "@capacitor/core": "8.5.3"
   },
   "devDependencies": {

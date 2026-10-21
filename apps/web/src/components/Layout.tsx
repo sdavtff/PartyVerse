@@ -1,8 +1,10 @@
 import { levelInfo } from '@partyverse/shared';
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useMyProfile } from '../lib/me';
 import { isNativeApp } from '../lib/platform';
+import { listenGoogleReturn } from '../lib/nativeAuth';
+import { useToast } from './Toast';
 import { useSession } from '../lib/session';
 import { Avatar, NameTag } from './Avatar';
 import { Icon, type IconName } from './Icons';
@@ -50,6 +52,25 @@ export function Layout() {
   useEffect(() => {
     document.documentElement.classList.toggle('in-app', app);
   }, [app]);
+
+  // app Android: volta do login com Google feito no navegador
+  const { setUser } = useSession();
+  const navigate = useNavigate();
+  const toast = useToast();
+  const navRef = useRef(navigate);
+  navRef.current = navigate;
+  useEffect(
+    () =>
+      listenGoogleReturn({
+        onLogin: (u, back) => {
+          setUser(u);
+          toast(`Bem-vindo, ${u.nickname}!`, 'success');
+          navRef.current(back.startsWith('/') && !back.startsWith('/entrar') ? back : '/');
+        },
+        onError: (m) => toast(m, 'error'),
+      }),
+    [setUser, toast],
+  );
 
   // fecha o menu ao navegar; rola para o topo (ou para a âncora, ex.: /#criar)
   useEffect(() => {

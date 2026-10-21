@@ -49,7 +49,11 @@ export const ModelName = {
     MatchParticipant: 'MatchParticipant',
     ModerationLog: 'ModerationLog',
     DailyChallenge: 'DailyChallenge',
-    Report: 'Report'
+    Report: 'Report',
+    UserItem: 'UserItem',
+    WeeklyAward: 'WeeklyAward',
+    Clan: 'Clan',
+    ClanMember: 'ClanMember'
 };
 /*
  * Enums
@@ -69,6 +73,7 @@ export const UserScalarFieldEnum = {
     avatar: 'avatar',
     preferences: 'preferences',
     xp: 'xp',
+    coins: 'coins',
     banned: 'banned',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt'
@@ -157,6 +162,36 @@ export const ReportScalarFieldEnum = {
     evidence: 'evidence',
     status: 'status',
     createdAt: 'createdAt'
+};
+export const UserItemScalarFieldEnum = {
+    id: 'id',
+    userId: 'userId',
+    itemId: 'itemId',
+    boughtAt: 'boughtAt'
+};
+export const WeeklyAwardScalarFieldEnum = {
+    id: 'id',
+    week: 'week',
+    userId: 'userId',
+    place: 'place',
+    coins: 'coins',
+    createdAt: 'createdAt'
+};
+export const ClanScalarFieldEnum = {
+    id: 'id',
+    name: 'name',
+    tag: 'tag',
+    emoji: 'emoji',
+    description: 'description',
+    ownerId: 'ownerId',
+    createdAt: 'createdAt'
+};
+export const ClanMemberScalarFieldEnum = {
+    id: 'id',
+    clanId: 'clanId',
+    userId: 'userId',
+    role: 'role',
+    joinedAt: 'joinedAt'
 };
 export const SortOrder = {
     asc: 'asc',

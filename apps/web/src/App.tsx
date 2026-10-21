@@ -1,5 +1,7 @@
 import { Route, Routes } from 'react-router-dom';
 import { AdminPage } from './pages/AdminPage';
+import { ClanPage, ClansPage } from './pages/ClansPage';
+import { ShopPage } from './pages/ShopPage';
 import { DailyPage } from './pages/DailyPage';
 import { ForgotPasswordPage, ResetPasswordPage } from './pages/PasswordPages';
 import { FriendsPage } from './pages/FriendsPage';
@@ -33,6 +35,9 @@ export function App() {
         <Route path="esqueci-senha" element={<ForgotPasswordPage />} />
         <Route path="redefinir-senha" element={<ResetPasswordPage />} />
         <Route path="admin" element={<AdminPage />} />
+        <Route path="loja" element={<ShopPage />} />
+        <Route path="clas" element={<ClansPage />} />
+        <Route path="cla/:tag" element={<ClanPage />} />
         <Route path="sala/:code" element={<RoomPage />} />
         <Route
           path="*"

@@ -18,6 +18,7 @@ model User {
   avatar       String   @default("blob-1")
   preferences  Json     @default("{}")
   xp           Int      @default(0)
+  coins        Int      @default(0)
   banned       Boolean  @default(false)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
@@ -30,6 +31,8 @@ model User {
   gotFriends   Friendship[]       @relation("addressee")
   resets       PasswordReset[]
   daily        DailyResult[]
+  items        UserItem[]
+  clan         ClanMember?
 }
 
 model UserAchievement {
@@ -155,4 +158,51 @@ model Report {
   createdAt     DateTime @default(now())
 
   @@index([status, createdAt])
+}
+
+/// Itens comprados na loja
+model UserItem {
+  id       String   @id @default(cuid())
+  userId   String
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  itemId   String
+  boughtAt DateTime @default(now())
+
+  @@unique([userId, itemId])
+}
+
+/// Prêmios já entregues do torneio da semana
+model WeeklyAward {
+  id        String   @id @default(cuid())
+  week      String
+  userId    String
+  place     Int
+  coins     Int
+  createdAt DateTime @default(now())
+
+  @@unique([week, place])
+  @@index([userId])
+}
+
+model Clan {
+  id          String       @id @default(cuid())
+  name        String
+  tag         String       @unique
+  emoji       String
+  description String       @default("")
+  ownerId     String
+  createdAt   DateTime     @default(now())
+  members     ClanMember[]
+}
+
+model ClanMember {
+  id       String   @id @default(cuid())
+  clanId   String
+  clan     Clan     @relation(fields: [clanId], references: [id], onDelete: Cascade)
+  userId   String   @unique
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role     String   @default("member")
+  joinedAt DateTime @default(now())
+
+  @@index([clanId])
 }

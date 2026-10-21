@@ -7,6 +7,7 @@ export interface ProgressData {
   next: number;
   progress: number;
   achievements: { code: string; unlockedAt: string }[];
+  coins?: number;
 }
 
 /** Selo de nível + barra de XP. */

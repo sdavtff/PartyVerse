@@ -1,7 +1,7 @@
 import { GAME_CATALOG } from '@partyverse/shared';
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { Avatar } from '../components/Avatar';
+import { Avatar, NameTag } from '../components/Avatar';
 import { AchievementsGrid, LevelBar, type ProgressData } from '../components/Progress';
 import { FriendButton } from '../components/FriendButton';
 import { ReportDialog } from '../components/ReportDialog';
@@ -12,6 +12,7 @@ import { Notice } from './RoomPage';
 
 interface PublicProfile {
   user: { id: string; nickname: string; avatar: string };
+  clan?: { tag: string; name: string; emoji: string } | null;
   createdAt?: string;
   stats: { matchesPlayed: number; wins: number; totalScore: number; bestScore: number };
   progress: ProgressData | null;
@@ -54,7 +55,17 @@ export function PublicProfilePage() {
             <Avatar avatar={p.user.avatar} size={104} />
           </div>
           <div className="min-w-0 flex-1">
-            <h1 className="truncate text-4xl font-extrabold">{p.user.nickname}</h1>
+            <h1 className="truncate text-4xl font-extrabold">
+              <NameTag nickname={p.user.nickname} avatar={p.user.avatar} />
+            </h1>
+            {p.clan && (
+              <Link
+                to={`/cla/${p.clan.tag}`}
+                className="mt-1 inline-flex items-center gap-1 rounded-full bg-ink-800 px-3 py-1 text-sm font-bold text-ink-200 hover:text-white"
+              >
+                {p.clan.emoji} [{p.clan.tag}] {p.clan.name}
+              </Link>
+            )}
             {p.createdAt && (
               <p className="text-sm text-ink-400">
                 Jogando desde{' '}

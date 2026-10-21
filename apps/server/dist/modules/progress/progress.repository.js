@@ -37,6 +37,36 @@ export class PrismaProgressRepository {
         const s = await this.db.userStats.findUnique({ where: { userId } });
         return { matchesPlayed: s?.matchesPlayed ?? 0, wins: s?.wins ?? 0 };
     }
+    async getCoins(userId) {
+        return ((await this.db.user.findUnique({ where: { id: userId }, select: { coins: true } }))?.coins ??
+            0);
+    }
+    async addCoins(userId, amount) {
+        const u = await this.db.user.update({
+            where: { id: userId },
+            data: { coins: { increment: amount } },
+            select: { coins: true },
+        });
+        return u.coins;
+    }
+    async spendCoins(userId, amount) {
+        // atualização condicional: nunca fica negativo, mesmo com cliques duplos
+        const r = await this.db.user.updateMany({
+            where: { id: userId, coins: { gte: amount } },
+            data: { coins: { decrement: amount } },
+        });
+        return r.count ? this.getCoins(userId) : null;
+    }
+    async items(userId) {
+        return (await this.db.userItem.findMany({ where: { userId }, select: { itemId: true } })).map((i) => i.itemId);
+    }
+    async addItems(userId, itemIds) {
+        if (itemIds.length)
+            await this.db.userItem.createMany({
+                data: itemIds.map((itemId) => ({ userId, itemId })),
+                skipDuplicates: true,
+            });
+    }
     async distinctGames(userId) {
         const rows = await this.db.match.findMany({
             where: { participants: { some: { userId } } },
@@ -51,6 +81,32 @@ export class MemoryProgressRepository {
     matches;
     xp = new Map();
     ach = new Map();
+    coins = new Map();
+    owned = new Map();
+    async getCoins(userId) {
+        return this.coins.get(userId) ?? 0;
+    }
+    async addCoins(userId, amount) {
+        const v = (this.coins.get(userId) ?? 0) + amount;
+        this.coins.set(userId, v);
+        return v;
+    }
+    async spendCoins(userId, amount) {
+        const v = this.coins.get(userId) ?? 0;
+        if (v < amount)
+            return null;
+        this.coins.set(userId, v - amount);
+        return v - amount;
+    }
+    async items(userId) {
+        return [...(this.owned.get(userId) ?? [])];
+    }
+    async addItems(userId, itemIds) {
+        const s = this.owned.get(userId) ?? new Set();
+        for (const i of itemIds)
+            s.add(i);
+        this.owned.set(userId, s);
+    }
     constructor(matches) {
         this.matches = matches;
     }

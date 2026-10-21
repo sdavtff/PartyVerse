@@ -176,7 +176,9 @@ export class MemoryUserRepository implements UserRepository {
     return u;
   }
   async update(id: string, data: Partial<Pick<UserRecord, 'nickname' | 'avatar' | 'preferences'>>) {
-    const u = { ...this.users.get(id)!, ...data };
+    // como no Prisma: campos undefined não mudam nada
+    const clean = Object.fromEntries(Object.entries(data).filter(([, v]) => v !== undefined));
+    const u = { ...this.users.get(id)!, ...clean };
     this.users.set(id, u);
     return u;
   }

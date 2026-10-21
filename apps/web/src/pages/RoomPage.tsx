@@ -31,7 +31,7 @@ import {
 } from '@partyverse/shared';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { Avatar } from '../components/Avatar';
+import { Avatar, NameTag } from '../components/Avatar';
 import { Button } from '../components/Button';
 import { ChatPanel } from '../components/ChatPanel';
 import { AnimatedNumber } from '../components/AnimatedNumber';
@@ -713,8 +713,8 @@ function Results({
                 {r.place}
               </span>
               <Avatar avatar={r.avatar} size={32} />
-              <span className="flex-1 truncate font-bold text-white">
-                {r.nickname}
+              <span className="flex min-w-0 flex-1 items-center gap-1 font-bold text-white">
+                <NameTag nickname={r.nickname} avatar={r.avatar} />
                 {r.playerId === myId && ' (você)'}
               </span>
               <span className="font-display text-xl font-extrabold text-lime-400">{r.score}</span>

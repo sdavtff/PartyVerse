@@ -1,6 +1,8 @@
 import {
   GAME_CATALOG,
+  DAILY_COINS,
   levelInfo,
+  matchCoins,
   matchXp,
   type Highlights,
   type MatchReward,
@@ -44,7 +46,17 @@ export class ProgressService {
         const available = GAME_CATALOG.filter((g) => g.available).length;
         if ((await this.repo.distinctGames(p.userId)) >= available) codes.push('all_games');
         const achievements = await this.repo.addAchievements(p.userId, codes);
-        out.set(p.userId, { xpGained, xp, level, leveledUp: level > before, achievements });
+        const coinsGained = matchCoins(p.place, match.players);
+        const coins = await this.repo.addCoins(p.userId, coinsGained);
+        out.set(p.userId, {
+          xpGained,
+          xp,
+          level,
+          leveledUp: level > before,
+          achievements,
+          coinsGained,
+          coins,
+        });
       } catch {
         /* progresso nunca impede o resultado da partida */
       }
@@ -53,14 +65,20 @@ export class ProgressService {
   }
 
   /** XP avulso (ex.: desafio diário) com as conquistas que vierem junto. */
-  async grant(userId: string, xpGained: number, codes: string[] = []): Promise<MatchReward> {
+  async grant(
+    userId: string,
+    xpGained: number,
+    codes: string[] = [],
+    coinsGained = DAILY_COINS,
+  ): Promise<MatchReward> {
     const before = levelInfo(await this.repo.getXp(userId)).level;
     const xp = await this.repo.addXp(userId, xpGained);
     const { level } = levelInfo(xp);
     if (level >= 5) codes.push('level_5');
     if (level >= 10) codes.push('level_10');
     const achievements = await this.repo.addAchievements(userId, codes);
-    return { xpGained, xp, level, leveledUp: level > before, achievements };
+    const coins = await this.repo.addCoins(userId, coinsGained);
+    return { xpGained, xp, level, leveledUp: level > before, achievements, coinsGained, coins };
   }
 
   /** Desbloqueia uma conquista avulsa (ex.: desafio diário, primeiro amigo). */
@@ -70,6 +88,29 @@ export class ProgressService {
 
   async profile(userId: string) {
     const xp = await this.repo.getXp(userId);
-    return { ...levelInfo(xp), achievements: await this.repo.achievements(userId) };
+    return {
+      ...levelInfo(xp),
+      achievements: await this.repo.achievements(userId),
+      coins: await this.repo.getCoins(userId),
+    };
+  }
+
+  // ---------- loja ----------
+  wallet(userId: string) {
+    return Promise.all([this.repo.getCoins(userId), this.repo.items(userId)]).then(
+      ([coins, items]) => ({ coins, items }),
+    );
+  }
+  spend(userId: string, amount: number) {
+    return this.repo.spendCoins(userId, amount);
+  }
+  refund(userId: string, amount: number) {
+    return this.repo.addCoins(userId, amount);
+  }
+  giveItems(userId: string, items: string[]) {
+    return this.repo.addItems(userId, items);
+  }
+  giveCoins(userId: string, amount: number) {
+    return this.repo.addCoins(userId, amount);
   }
 }

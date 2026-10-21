@@ -105,7 +105,9 @@ export class MemoryUserRepository {
         return u;
     }
     async update(id, data) {
-        const u = { ...this.users.get(id), ...data };
+        // como no Prisma: campos undefined não mudam nada
+        const clean = Object.fromEntries(Object.entries(data).filter(([, v]) => v !== undefined));
+        const u = { ...this.users.get(id), ...clean };
         this.users.set(id, u);
         return u;
     }

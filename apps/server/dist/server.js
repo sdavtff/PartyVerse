@@ -14,6 +14,8 @@ import { Presence } from './modules/social/presence.js';
 import { MemoryChallengeStore, MemoryDailyRepository, PrismaChallengeStore, PrismaDailyRepository, } from './modules/daily/daily.repository.js';
 import { DailyService } from './modules/daily/daily.service.js';
 import { AiService } from './modules/ai/ai.service.js';
+import { MemoryAwardStore, PrismaAwardStore, TournamentService, } from './modules/tournament/tournament.service.js';
+import { MemoryClansRepository, PrismaClansRepository, } from './modules/clans/clans.repository.js';
 import { MemoryReportsRepository, PrismaReportsRepository, } from './modules/moderation/reports.repository.js';
 import { BanList } from './modules/admin/bans.js';
 import { SmtpMailer } from './modules/mail/mailer.js';
@@ -41,6 +43,12 @@ export function buildServer(env, opts = {}) {
         referer: env.PUBLIC_URL,
         baseUrl: env.OPENROUTER_BASE_URL,
     });
+    const tournament = new TournamentService(matches, prisma ? new PrismaAwardStore(prisma) : new MemoryAwardStore(), progress);
+    if (env.NODE_ENV !== 'test')
+        tournament.start();
+    const clans = prisma
+        ? new PrismaClansRepository(prisma)
+        : new MemoryClansRepository((id) => users instanceof MemoryUserRepository ? users.users.get(id) : undefined);
     const reports = prisma
         ? new PrismaReportsRepository(prisma)
         : new MemoryReportsRepository();
@@ -105,6 +113,8 @@ export function buildServer(env, opts = {}) {
         resets,
         ai,
         reports,
+        tournament,
+        clans,
         disconnectUser: (userId) => {
             for (const sid of presence.socketsOf(userId))
                 io.sockets.sockets.get(sid)?.disconnect(true);
@@ -114,6 +124,7 @@ export function buildServer(env, opts = {}) {
     const close = async () => {
         clearInterval(banTimer);
         daily.stop();
+        tournament.stop();
         rooms.shutdown();
         io.close();
         await new Promise((r) => httpServer.close(() => r()));
@@ -132,5 +143,9 @@ export function buildServer(env, opts = {}) {
         bans,
         mailer,
         daily,
+        ai,
+        reports,
+        tournament,
+        clans,
     };
 }

@@ -4,6 +4,7 @@ import { Avatar } from '../../components/Avatar';
 import { Button } from '../../components/Button';
 import { useCountdown } from '../../lib/useCountdown';
 import { useSoundOnChange, useTickSound } from '../../lib/useGameSounds';
+import { ShareDrawingButton } from '../../components/ShareDrawing';
 import { DrawingBoard } from '../guess/DrawingBoard';
 import { DrawingView } from '../guess/DrawingView';
 import { Clock, useAct, usePlayers } from '../party/shared';
@@ -75,8 +76,12 @@ export function TelephoneGame({
                   “{e.text}”
                 </p>
               ) : e.ops.length ? (
-                <div className="max-w-md">
+                <div className="max-w-md space-y-1">
                   <DrawingView ops={e.ops} label={`Desenho de ${nick(e.author)}`} />
+                  <ShareDrawingButton
+                    ops={e.ops}
+                    title={`"${r.entries[i - 1]?.kind === 'text' ? (r.entries[i - 1] as { text: string }).text : 'Telefone sem fio'}" por ${nick(e.author)}`}
+                  />
                 </div>
               ) : (
                 <p className="rounded-2xl bg-ink-900 px-4 py-3 text-ink-400">(não desenhou nada)</p>

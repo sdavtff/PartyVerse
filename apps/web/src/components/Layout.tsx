@@ -13,8 +13,9 @@ const BASE_NAV = [
   { to: '/desafio', label: 'Desafio' },
   { to: '/salas', label: 'Salas' },
   { to: '/ranking', label: 'Ranking' },
+  { to: '/clas', label: 'Clãs' },
+  { to: '/loja', label: 'Loja' },
   { to: '/amigos', label: 'Amigos' },
-  { to: '/ajuda', label: 'Ajuda' },
 ];
 
 export function Layout() {
@@ -122,7 +123,7 @@ export function Layout() {
             className="animate-rise border-t-2 border-ink-800 px-4 pb-4 pt-2 md:hidden"
           >
             <div className="grid grid-cols-2 gap-2">
-              {[{ to: '/', label: 'Início' }, ...NAV].map((n) => (
+              {[{ to: '/', label: 'Início' }, ...NAV, { to: '/ajuda', label: 'Ajuda' }].map((n) => (
                 <NavLink
                   key={n.to}
                   to={n.to}
@@ -155,7 +156,12 @@ export function Layout() {
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-4">
           <span>PartyVerse · feito para jogar junto</span>
           <nav className="flex flex-wrap gap-4" aria-label="Rodapé">
-            {[{ to: '/', label: 'Início' }, ...NAV, { to: '/perfil', label: 'Perfil' }].map((n) => (
+            {[
+              { to: '/', label: 'Início' },
+              ...NAV,
+              { to: '/ajuda', label: 'Ajuda' },
+              { to: '/perfil', label: 'Perfil' },
+            ].map((n) => (
               <Link key={n.to} to={n.to} className="hover:text-white">
                 {n.label}
               </Link>

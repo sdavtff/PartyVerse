@@ -1,3 +1,5 @@
+import { parseAvatar, shopItem } from '@partyverse/shared';
+import { useId } from 'react';
 /**
  * Avatares originais do PartyVerse.
  * - Formato antigo "forma-n": bichinho de uma forma geométrica.
@@ -70,7 +72,8 @@ export function encodeAvatar(p: AvatarParts): string {
 }
 
 export function decodeAvatar(code: string): AvatarParts | null {
-  const m = /^c-([0-9a-z]{6})$/.exec(code);
+  // ignora os itens da loja (".f2.n1") no fim do código
+  const m = /^c-([0-9a-z]{6})(\.|$)/.exec(code);
   if (!m) return null;
   const d = [...m[1]!].map((c) => parseInt(c, 36));
   const hair = d[2]!;
@@ -281,9 +284,12 @@ export function Avatar({
   dim?: boolean;
   label?: string;
 }) {
-  const parts = decodeAvatar(avatar);
-  const [shape = 'blob', n = '1'] = avatar.split('-');
+  const cos = parseAvatar(avatar);
+  const parts = decodeAvatar(cos.base);
+  const [shape = 'blob', n = '1'] = cos.base.split('-');
   const color = COLORS[(Number(n) - 1 + COLORS.length) % COLORS.length];
+  const frame = cos.frame ? shopItem(cos.frame) : undefined;
+  const gid = useId().replace(/:/g, '');
   return (
     <svg
       width={size}
@@ -317,7 +323,70 @@ export function Avatar({
           />
         </>
       )}
+      {frame?.colors && (
+        <>
+          <defs>
+            <linearGradient id={`fr${gid}`} x1="0" y1="0" x2="1" y2="1">
+              {frame.colors.map((c, i) => (
+                <stop
+                  key={i}
+                  offset={`${(i / Math.max(1, frame.colors!.length - 1)) * 100}%`}
+                  stopColor={c}
+                />
+              ))}
+            </linearGradient>
+          </defs>
+          <circle cx="50" cy="50" r="46" fill="none" stroke={INK} strokeWidth="9" />
+          <circle cx="50" cy="50" r="46" fill="none" stroke={`url(#fr${gid})`} strokeWidth="6" />
+          {cos.frame === 'f9' && (
+            <text x="50" y="16" textAnchor="middle" fontSize="18">
+              🏆
+            </text>
+          )}
+        </>
+      )}
     </svg>
+  );
+}
+
+/** Apelido com a cor e o título comprados na loja. */
+export function NameTag({
+  nickname,
+  avatar,
+  className = '',
+  showTitle = true,
+}: {
+  nickname: string;
+  avatar: string;
+  className?: string;
+  showTitle?: boolean;
+}) {
+  const cos = parseAvatar(avatar);
+  const nameItem = cos.name ? shopItem(cos.name) : undefined;
+  const title = cos.title ? shopItem(cos.title)?.label : undefined;
+  const colors = nameItem?.colors ?? [];
+  const style =
+    colors.length > 1
+      ? {
+          backgroundImage: `linear-gradient(90deg, ${colors.join(', ')})`,
+          WebkitBackgroundClip: 'text',
+          backgroundClip: 'text',
+          color: 'transparent',
+        }
+      : colors.length === 1
+        ? { color: colors[0] }
+        : undefined;
+  return (
+    <span className={`inline-flex min-w-0 items-center gap-1.5 ${className}`}>
+      <span className="truncate" style={style}>
+        {nickname}
+      </span>
+      {showTitle && title && (
+        <span className="shrink-0 rounded-full bg-pop-violet/20 px-1.5 py-px text-[10px] font-extrabold uppercase tracking-wide text-pop-violet">
+          {title}
+        </span>
+      )}
+    </span>
   );
 }
 

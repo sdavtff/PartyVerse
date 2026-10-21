@@ -28,6 +28,11 @@ export function RewardCard({ reward }: { reward: MatchReward }) {
       <div className="flex items-center justify-between gap-3">
         <p className="font-display text-2xl font-extrabold text-lime-400">
           +<AnimatedNumber value={reward.xpGained} ms={900} /> XP
+          {reward.coinsGained ? (
+            <Link to="/loja" className="ml-3 text-pop-amber hover:underline">
+              +{reward.coinsGained} 🪙
+            </Link>
+          ) : null}
         </p>
         <p className="text-sm font-bold text-ink-200">
           Nível <span className="font-display text-xl text-white">{after.level}</span>

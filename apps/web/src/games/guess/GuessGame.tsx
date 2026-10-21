@@ -6,6 +6,7 @@ import { useToast } from '../../components/Toast';
 import { actionId, emitAck } from '../../lib/socket';
 import { useCountdown } from '../../lib/useCountdown';
 import { useSoundOnChange, useTickSound } from '../../lib/useGameSounds';
+import { ShareDrawingButton } from '../../components/ShareDrawing';
 import { DrawingBoard } from './DrawingBoard';
 
 const VERB = {
@@ -140,6 +141,11 @@ export function GuessGame({
           canDraw={mine && view.phase === 'playing'}
           subscribe={subscribe}
         />
+      )}
+      {view.variant === 'draw' && view.phase === 'turn-end' && view.word && (
+        <div className="text-right">
+          <ShareDrawingButton ops={view.ops} title={`"${view.word}" por ${nick(view.currentId)}`} />
+        </div>
       )}
 
       {view.variant === 'charades' && view.phase === 'playing' && (

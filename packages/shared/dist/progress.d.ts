@@ -32,6 +32,9 @@ export declare function avatarMinLevel(avatar: string): number;
 export type Highlights = Record<string, Partial<Record<HighlightKey, number>>>;
 export type HighlightKey = 'maxStreak' | 'firstGuesses' | 'allGuessedTurns' | 'impostorWins' | 'uniqueAnswers';
 export interface MatchReward {
+    /** moedas ganhas (e saldo atual) */
+    coinsGained?: number;
+    coins?: number;
     xpGained: number;
     xp: number;
     level: number;

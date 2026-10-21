@@ -14,6 +14,10 @@ Plataforma web de minijogos multiplayer em tempo real. **Versão 0.6:** página 
 - **Termo do dia** no `/desafio`: a palavra de 5 letras em 6 tentativas, teclado na tela, resultado para compartilhar e ranking do dia.
 - **Telefone Sem Fio** desenhado (escreve → desenha → descreve, revelação com curtidas) e **Espiões** (dois times, mestres com a chave, dica de uma palavra, assassino).
 - **Forca** (em turnos, dá para jogar sozinho; palavras por tema, suas ou da IA), **Jogo da Velha** (melhor de N) e **Damas** com regras brasileiras (captura obrigatória, lei da maioria, dama voadora).
+- **Moedas e loja** (`/loja`): moedas por partida, desafio do dia e torneio; molduras de avatar, cores de nome e títulos (só visual, sem dinheiro de verdade).
+- **Torneio da semana** (aba no `/ranking`): de segunda a domingo; os 3 primeiros ganham moedas e itens exclusivos.
+- **Clãs** (`/clas`): crie ou entre num clã com tag, veja o ranking dos clãs e a etiqueta do clã no perfil.
+- **Compartilhar desenho** do Rabisco e do Telefone Sem Fio (baixar imagem ou enviar pelo WhatsApp).
 
 ## Novidades da 0.6.1
 

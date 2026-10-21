@@ -87,6 +87,14 @@ export const ACHIEVEMENTS = [
         icon: '🤝',
     },
     { code: 'level_5', name: 'Subindo de nível', description: 'Chegue ao nível 5.', icon: '⭐' },
+    {
+        code: 'weekly_podium',
+        name: 'Pódio da semana',
+        description: 'Termine o torneio da semana entre os 3 primeiros.',
+        icon: '🏅',
+    },
+    { code: 'first_clan', name: 'Família', description: 'Entre ou crie um clã.', icon: '🛡️' },
+    { code: 'first_purchase', name: 'Estiloso', description: 'Compre algo na loja.', icon: '🛍️' },
     { code: 'level_10', name: 'Lenda da festa', description: 'Chegue ao nível 10.', icon: '👑' },
 ];
 export const achievementByCode = (code) => ACHIEVEMENTS.find((a) => a.code === code);
@@ -100,7 +108,7 @@ export const AVATAR_LOCKS = {
 };
 /** Nível mínimo para usar o avatar (1 = livre). */
 export function avatarMinLevel(avatar) {
-    const m = /^c-([0-9a-z]{6})$/.exec(avatar);
+    const m = /^c-([0-9a-z]{6})(\.|$)/.exec(avatar);
     if (!m)
         return 1;
     const d = [...m[1]].map((c) => parseInt(c, 36));

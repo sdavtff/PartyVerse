@@ -62,7 +62,9 @@ export const roomSettingsSchema = z.object({
 });
 
 /** Avatar: formato antigo "forma-n" ou montado no criador "c-xxxxxx" (6 partes em base 36). */
-export const avatarSchema = z.string().regex(/^([a-z]+-[0-9]{1,2}|c-[0-9a-z]{6})$/);
+export const avatarSchema = z
+  .string()
+  .regex(/^([a-z]+-[0-9]{1,2}|c-[0-9a-z]{6})(\.[fnt][0-9]{1,2}){0,3}$/);
 export const roomPasswordSchema = z.string().trim().max(20);
 
 /** Figurinhas do chat (desenhos originais do PartyVerse). */
@@ -435,7 +437,11 @@ export const telephoneActionSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('text'), text: z.string().trim().min(1).max(80) }),
   z.object({ type: z.literal('draw'), ops: z.array(drawOpSchema).min(1).max(40) }),
   z.object({ type: z.literal('done') }),
-  z.object({ type: z.literal('like'), book: z.number().int().min(0).max(60), entry: z.number().int().min(0).max(20) }),
+  z.object({
+    type: z.literal('like'),
+    book: z.number().int().min(0).max(60),
+    entry: z.number().int().min(0).max(20),
+  }),
   z.object({ type: z.literal('next') }),
 ]);
 export type TelephoneAction = z.infer<typeof telephoneActionSchema>;

@@ -79,7 +79,8 @@ export const GAME_CATALOG = [
         maxPlayers: 16,
         available: true,
         color: 'indigo',
-    }, {
+    },
+    {
         id: 'hangman',
         name: 'Forca',
         tagline: 'Letra por letra, em turnos. Errou, a forca cresce para todos.',
@@ -105,7 +106,8 @@ export const GAME_CATALOG = [
         maxPlayers: 2,
         available: true,
         color: 'brown',
-    }, {
+    },
+    {
         id: 'telephone',
         name: 'Telefone Sem Fio',
         tagline: 'Escreve, desenha, adivinha… e no fim todo mundo vê o que virou.',

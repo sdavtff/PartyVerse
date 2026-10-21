@@ -135,6 +135,9 @@ export function ProfilePage() {
               <h2 id="lvl-title" className="text-xl font-extrabold">
                 Nível e conquistas
               </h2>
+              <Link to="/loja" className="text-sm font-bold text-pop-amber hover:underline">
+                🪙 {progress?.coins ?? 0} moedas · Loja
+              </Link>
               <Link
                 to={`/jogador/${user.id}`}
                 className="text-sm font-bold text-lime-400 hover:underline"

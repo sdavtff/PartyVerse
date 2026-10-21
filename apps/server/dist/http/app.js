@@ -1,4 +1,4 @@
-import { aiGenerateSchema, reportSchema, avatarMinLevel, EVENTS, GAME_CATALOG, guestSchema, loginSchema, profileUpdateSchema, registerSchema, } from '@partyverse/shared';
+import { buildAvatar, missingItems, parseAvatar, SHOP_ITEMS, shopItem, aiGenerateSchema, reportSchema, avatarMinLevel, EVENTS, GAME_CATALOG, guestSchema, loginSchema, profileUpdateSchema, registerSchema, } from '@partyverse/shared';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import express from 'express';
@@ -18,7 +18,7 @@ import { containsProfanity } from '../modules/moderation/profanity.js';
 import { z } from 'zod';
 import { TOKEN_COOKIE, TokenService } from '../modules/auth/token.js';
 const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res)).catch(next);
-export function createApp({ env, tokens, users, matches, rooms, google: googleDep, progress, presence, friends, daily, bans, mailer, resets, disconnectUser, ai, reports, }) {
+export function createApp({ env, tokens, users, matches, rooms, google: googleDep, progress, presence, friends, daily, bans, mailer, resets, disconnectUser, ai, reports, tournament, clans, }) {
     const app = express();
     const auth = new AuthService(users);
     const google = googleDep ?? new GoogleAuth(env.GOOGLE_CLIENT_ID, env.GOOGLE_CLIENT_SECRET);
@@ -51,6 +51,8 @@ export function createApp({ env, tokens, users, matches, rooms, google: googleDe
             throw new AppError('VALIDATION', 'Escolha um apelido sem palavrões 🙂', 400);
     };
     /** Itens de avatar travados por nível. */
+    /** Moldura/nome/título só vêm da loja: aqui ficam só a base do avatar. */
+    const baseOnly = (avatar) => (avatar ? parseAvatar(avatar).base : avatar);
     const checkAvatar = (avatar, level) => {
         if (!avatar)
             return;
@@ -201,7 +203,8 @@ export function createApp({ env, tokens, users, matches, rooms, google: googleDe
         });
     }));
     api.post('/auth/guest', authLimiter, wrap((req, res) => {
-        const { nickname, avatar } = guestSchema.parse(req.body);
+        const { nickname, avatar: rawAvatar } = guestSchema.parse(req.body);
+        const avatar = baseOnly(rawAvatar);
         checkNickname(nickname);
         checkAvatar(avatar, 1);
         const id = auth.guest(nickname, avatar);
@@ -209,7 +212,8 @@ export function createApp({ env, tokens, users, matches, rooms, google: googleDe
         res.json({ user: id });
     }));
     api.post('/auth/register', authLimiter, wrap(async (req, res) => {
-        const { email, password, nickname, avatar } = registerSchema.parse(req.body);
+        const { email, password, nickname, avatar: rawAvatar } = registerSchema.parse(req.body);
+        const avatar = baseOnly(rawAvatar);
         checkNickname(nickname);
         checkAvatar(avatar, 1);
         const id = await auth.register(email, password, nickname, avatar);
@@ -391,7 +395,7 @@ export function createApp({ env, tokens, users, matches, rooms, google: googleDe
             const next = {
                 ...id,
                 nickname: data.nickname ?? id.nickname,
-                avatar: data.avatar ?? id.avatar,
+                avatar: baseOnly(data.avatar) ?? id.avatar,
             };
             setSession(res, next);
             return res.json({ user: next, preferences: {} });
@@ -399,9 +403,12 @@ export function createApp({ env, tokens, users, matches, rooms, google: googleDe
         const current = await users.findById(id.id);
         if (!current)
             throw new AppError('NOT_FOUND', 'Conta não encontrada', 404);
+        // trocar o rosto do avatar mantém a moldura/nome/título equipados
         const u = await users.update(id.id, {
             nickname: data.nickname,
-            avatar: data.avatar,
+            avatar: data.avatar
+                ? buildAvatar(parseAvatar(data.avatar).base, parseAvatar(current.avatar))
+                : undefined,
             preferences: data.preferences ? { ...current.preferences, ...data.preferences } : undefined,
         });
         setSession(res, toIdentity(u));
@@ -566,8 +573,217 @@ export function createApp({ env, tokens, users, matches, rooms, google: googleDe
             createdAt: u.createdAt,
             stats: await users.stats(u.id),
             progress: progress ? await progress.profile(u.id) : null,
+            clan: clans ? await clanBadge(u.id) : null,
             history: (await matches.historyFor(u.id, 8)).map((h) => ({ ...h, matchId: undefined })),
         });
+    }));
+    // ---------- loja ----------
+    const needProgress = () => {
+        if (!progress || !users)
+            throw new AppError('INTERNAL', 'Loja indisponível', 503);
+        return progress;
+    };
+    const accountOnly = (req, msg) => {
+        if (req.identity.isGuest)
+            throw new AppError('UNAUTHORIZED', msg, 401);
+        return req.identity.id;
+    };
+    api.get('/shop', requireAuth, wrap(async (req, res) => {
+        if (req.identity.isGuest || !progress)
+            return res.json({ items: SHOP_ITEMS, coins: 0, owned: [], equipped: {} });
+        const w = await progress.wallet(req.identity.id);
+        const { frame, name, title } = parseAvatar(req.identity.avatar);
+        const equipped = Object.fromEntries(Object.entries({ frame, name, title }).filter(([, v]) => v));
+        res.json({ items: SHOP_ITEMS, coins: w.coins, owned: w.items, equipped });
+    }));
+    api.post('/shop/buy', requireAuth, wrap(async (req, res) => {
+        const userId = accountOnly(req, 'Crie uma conta para comprar na loja');
+        const p = needProgress();
+        const { itemId } = z.object({ itemId: z.string().max(4) }).parse(req.body);
+        const item = shopItem(itemId);
+        if (!item || item.prizeOnly)
+            throw new AppError('NOT_FOUND', 'Item não encontrado', 404);
+        const { items } = await p.wallet(userId);
+        if (items.includes(itemId))
+            throw new AppError('INVALID_STATE', 'Você já tem esse item', 409);
+        const coins = await p.spend(userId, item.price);
+        if (coins === null)
+            throw new AppError('INVALID_STATE', 'Moedas insuficientes. Jogue mais partidas!', 409);
+        try {
+            await p.giveItems(userId, [itemId]);
+        }
+        catch (e) {
+            await p.refund(userId, item.price);
+            throw e;
+        }
+        const achievements = (await p.unlock(userId, 'first_purchase')) ? ['first_purchase'] : [];
+        res.json({ coins, owned: [...items, itemId], achievements });
+    }));
+    api.post('/shop/equip', requireAuth, wrap(async (req, res) => {
+        const userId = accountOnly(req, 'Crie uma conta para usar itens');
+        const p = needProgress();
+        const slot = z
+            .string()
+            .regex(/^[fnt]\d{1,2}$/)
+            .nullable()
+            .optional();
+        const want = z.object({ frame: slot, name: slot, title: slot }).parse(req.body);
+        const u = await users.findById(userId);
+        if (!u)
+            throw new AppError('NOT_FOUND', 'Conta não encontrada', 404);
+        const cur = parseAvatar(u.avatar);
+        const next = {
+            frame: want.frame === undefined ? cur.frame : (want.frame ?? undefined),
+            name: want.name === undefined ? cur.name : (want.name ?? undefined),
+            title: want.title === undefined ? cur.title : (want.title ?? undefined),
+        };
+        const kinds = { frame: 'frame', name: 'name', title: 'title' };
+        for (const [k, v] of Object.entries(next))
+            if (v && shopItem(v)?.kind !== kinds[k])
+                throw new AppError('VALIDATION', 'Item no lugar errado');
+        const avatar = buildAvatar(cur.base, next);
+        const missing = missingItems(avatar, (await p.wallet(userId)).items);
+        if (missing.length)
+            throw new AppError('FORBIDDEN', 'Compre o item antes de usar', 403);
+        const updated = await users.update(userId, { avatar });
+        setSession(res, toIdentity(updated));
+        res.json({ user: toIdentity(updated) });
+    }));
+    // ---------- torneio da semana ----------
+    api.get('/tournament', wrap(async (_req, res) => {
+        if (!tournament)
+            return res.json(null);
+        const t = await tournament.standings(20);
+        const names = new Map();
+        for (const w of t.lastWinners) {
+            const u = await users?.findById(w.userId).catch(() => null);
+            if (u)
+                names.set(w.userId, { nickname: u.nickname, avatar: u.avatar });
+        }
+        res.json({
+            ...t,
+            lastWinners: t.lastWinners.map((w) => ({
+                ...w,
+                ...(names.get(w.userId) ?? { nickname: '?', avatar: 'blob-1' }),
+            })),
+        });
+    }));
+    // ---------- clãs ----------
+    const needClans = () => {
+        if (!clans || !users)
+            throw new AppError('INTERNAL', 'Clãs indisponíveis', 503);
+        return clans;
+    };
+    const clanBadge = async (userId) => {
+        const c = await clans?.ofUser(userId).catch(() => null);
+        return c ? { tag: c.tag, name: c.name, emoji: c.emoji } : null;
+    };
+    /** Vitórias da temporada por jogador (para o ranking de clãs). */
+    const seasonWins = async () => {
+        const rows = users ? await matches.leaderboard(null, 5000, seasonStart()) : [];
+        return new Map(rows.map((r) => [r.userId, r.wins]));
+    };
+    const withStats = (c, wins) => ({
+        ...c,
+        members: c.members.map((m) => ({ ...m, wins: wins.get(m.userId) ?? 0 })),
+        wins: c.members.reduce((n, m) => n + (wins.get(m.userId) ?? 0), 0),
+    });
+    const CLAN_MAX = 30;
+    api.get('/clans', wrap(async (_req, res) => {
+        if (!clans)
+            return res.json({ clans: [], season: seasonLabel() });
+        const wins = await seasonWins();
+        const list = (await clans.list(200)).map((c) => withStats(c, wins));
+        list.sort((a, b) => b.wins - a.wins || b.members.length - a.members.length);
+        res.json({
+            season: seasonLabel(),
+            clans: list.slice(0, 50).map(({ members, ...c }) => ({ ...c, size: members.length })),
+        });
+    }));
+    api.get('/clans/mine', requireAuth, wrap(async (req, res) => {
+        if (req.identity.isGuest || !clans)
+            return res.json(null);
+        res.json(await clanBadge(req.identity.id));
+    }));
+    api.get('/clans/:tag', wrap(async (req, res) => {
+        const c = await needClans().byTag(String(req.params.tag).toUpperCase());
+        if (!c)
+            throw new AppError('NOT_FOUND', 'Clã não encontrado', 404);
+        res.json(withStats(c, await seasonWins()));
+    }));
+    api.post('/clans', requireAuth, wrap(async (req, res) => {
+        const userId = accountOnly(req, 'Crie uma conta para ter um clã');
+        const repo = needClans();
+        const data = z
+            .object({
+            name: z.string().trim().min(3, 'Nome com pelo menos 3 letras').max(24),
+            tag: z
+                .string()
+                .trim()
+                .toUpperCase()
+                .regex(/^[A-Z0-9]{2,5}$/, 'A sigla tem de 2 a 5 letras/números'),
+            emoji: z.string().min(1).max(8),
+            description: z.string().trim().max(120).default(''),
+        })
+            .parse(req.body);
+        if (containsProfanity(`${data.name} ${data.tag} ${data.description}`))
+            throw new AppError('VALIDATION', 'Escolha um nome sem palavrões 🙂');
+        if (await repo.ofUser(userId))
+            throw new AppError('INVALID_STATE', 'Você já está em um clã', 409);
+        try {
+            const c = await repo.create({ ...data, ownerId: userId });
+            await progress?.unlock(userId, 'first_clan');
+            res.status(201).json(c);
+        }
+        catch (e) {
+            if (e.code === 'P2002')
+                throw new AppError('VALIDATION', 'Essa sigla já existe. Escolha outra.', 409);
+            throw e;
+        }
+    }));
+    api.post('/clans/:tag/join', requireAuth, wrap(async (req, res) => {
+        const userId = accountOnly(req, 'Crie uma conta para entrar em um clã');
+        const repo = needClans();
+        const c = await repo.byTag(String(req.params.tag).toUpperCase());
+        if (!c)
+            throw new AppError('NOT_FOUND', 'Clã não encontrado', 404);
+        if (await repo.ofUser(userId))
+            throw new AppError('INVALID_STATE', 'Saia do seu clã atual antes', 409);
+        if (c.members.length >= CLAN_MAX)
+            throw new AppError('ROOM_FULL', 'Clã lotado', 409);
+        await repo.addMember(c.id, userId);
+        await progress?.unlock(userId, 'first_clan');
+        res.json({ ok: true });
+    }));
+    api.post('/clans/leave', requireAuth, wrap(async (req, res) => {
+        const userId = accountOnly(req, 'Sem clã');
+        const repo = needClans();
+        const c = await repo.ofUser(userId);
+        if (!c)
+            return res.json({ ok: true });
+        const rest = c.members.filter((m) => m.userId !== userId);
+        if (!rest.length)
+            await repo.remove(c.id);
+        else {
+            await repo.removeMember(c.id, userId);
+            if (c.ownerId === userId)
+                await repo.setOwner(c.id, rest[0].userId);
+        }
+        res.json({ ok: true });
+    }));
+    api.delete('/clans/:tag/members/:userId', requireAuth, wrap(async (req, res) => {
+        const me = accountOnly(req, 'Sem permissão');
+        const repo = needClans();
+        const c = await repo.byTag(String(req.params.tag).toUpperCase());
+        if (!c)
+            throw new AppError('NOT_FOUND', 'Clã não encontrado', 404);
+        if (c.ownerId !== me)
+            throw new AppError('FORBIDDEN', 'Só o líder pode remover', 403);
+        const target = String(req.params.userId);
+        if (target === me)
+            throw new AppError('VALIDATION', 'Use "Sair do clã"');
+        await repo.removeMember(c.id, target);
+        res.json({ ok: true });
     }));
     api.get('/me/history', requireAuth, wrap(async (req, res) => {
         if (req.identity.isGuest)

@@ -1,4 +1,4 @@
-import { GAME_CATALOG, levelInfo, matchXp, } from '@partyverse/shared';
+import { GAME_CATALOG, DAILY_COINS, levelInfo, matchCoins, matchXp, } from '@partyverse/shared';
 /** Calcula XP, nível e conquistas depois de cada partida (só contas registradas). */
 export class ProgressService {
     repo;
@@ -44,7 +44,17 @@ export class ProgressService {
                 if ((await this.repo.distinctGames(p.userId)) >= available)
                     codes.push('all_games');
                 const achievements = await this.repo.addAchievements(p.userId, codes);
-                out.set(p.userId, { xpGained, xp, level, leveledUp: level > before, achievements });
+                const coinsGained = matchCoins(p.place, match.players);
+                const coins = await this.repo.addCoins(p.userId, coinsGained);
+                out.set(p.userId, {
+                    xpGained,
+                    xp,
+                    level,
+                    leveledUp: level > before,
+                    achievements,
+                    coinsGained,
+                    coins,
+                });
             }
             catch {
                 /* progresso nunca impede o resultado da partida */
@@ -53,7 +63,7 @@ export class ProgressService {
         return out;
     }
     /** XP avulso (ex.: desafio diário) com as conquistas que vierem junto. */
-    async grant(userId, xpGained, codes = []) {
+    async grant(userId, xpGained, codes = [], coinsGained = DAILY_COINS) {
         const before = levelInfo(await this.repo.getXp(userId)).level;
         const xp = await this.repo.addXp(userId, xpGained);
         const { level } = levelInfo(xp);
@@ -62,7 +72,8 @@ export class ProgressService {
         if (level >= 10)
             codes.push('level_10');
         const achievements = await this.repo.addAchievements(userId, codes);
-        return { xpGained, xp, level, leveledUp: level > before, achievements };
+        const coins = await this.repo.addCoins(userId, coinsGained);
+        return { xpGained, xp, level, leveledUp: level > before, achievements, coinsGained, coins };
     }
     /** Desbloqueia uma conquista avulsa (ex.: desafio diário, primeiro amigo). */
     async unlock(userId, code) {
@@ -70,6 +81,26 @@ export class ProgressService {
     }
     async profile(userId) {
         const xp = await this.repo.getXp(userId);
-        return { ...levelInfo(xp), achievements: await this.repo.achievements(userId) };
+        return {
+            ...levelInfo(xp),
+            achievements: await this.repo.achievements(userId),
+            coins: await this.repo.getCoins(userId),
+        };
+    }
+    // ---------- loja ----------
+    wallet(userId) {
+        return Promise.all([this.repo.getCoins(userId), this.repo.items(userId)]).then(([coins, items]) => ({ coins, items }));
+    }
+    spend(userId, amount) {
+        return this.repo.spendCoins(userId, amount);
+    }
+    refund(userId, amount) {
+        return this.repo.addCoins(userId, amount);
+    }
+    giveItems(userId, items) {
+        return this.repo.addItems(userId, items);
+    }
+    giveCoins(userId, amount) {
+        return this.repo.addCoins(userId, amount);
     }
 }

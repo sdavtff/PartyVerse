@@ -39,7 +39,12 @@ export interface MatchRepository {
   save(match: MatchInput): Promise<void>;
   historyFor(userId: string, limit: number): Promise<MatchHistoryItem[]>;
   /** Ranking de contas registradas (vitórias, depois pontos), opcionalmente de um jogo. */
-  leaderboard(gameId: string | null, limit: number, since?: Date): Promise<LeaderboardRow[]>;
+  leaderboard(
+    gameId: string | null,
+    limit: number,
+    since?: Date,
+    until?: Date,
+  ): Promise<LeaderboardRow[]>;
   /** Total de partidas e quantas desde `since` (painel de administração). */
   counts?(since: Date): Promise<{ total: number; recent: number; byGame: Record<string, number> }>;
 }
@@ -95,8 +100,14 @@ export class PrismaMatchRepository implements MatchRepository {
     });
   }
 
-  async leaderboard(gameId: string | null, limit: number, since?: Date): Promise<LeaderboardRow[]> {
+  async leaderboard(
+    gameId: string | null,
+    limit: number,
+    since?: Date,
+    until?: Date,
+  ): Promise<LeaderboardRow[]> {
     const from = since ?? new Date(0);
+    const to = until ?? new Date(8.64e15);
     const rows = await this.db.$queryRaw<LeaderboardRow[]>`
       SELECT p."userId" AS "userId", u.nickname, u.avatar,
              COUNT(*)::int AS matches,
@@ -106,7 +117,7 @@ export class PrismaMatchRepository implements MatchRepository {
       JOIN "Match" m ON m.id = p."matchId"
       JOIN "User" u ON u.id = p."userId"
       WHERE p."userId" IS NOT NULL AND (${gameId}::text IS NULL OR m."gameId" = ${gameId})
-        AND m."endedAt" >= ${from}
+        AND m."endedAt" >= ${from} AND m."endedAt" < ${to}
         AND u.banned = false
       GROUP BY p."userId", u.nickname, u.avatar
       ORDER BY wins DESC, score DESC
@@ -139,11 +150,12 @@ export class MemoryMatchRepository implements MatchRepository {
     for (const m of recent) byGame[m.gameId] = (byGame[m.gameId] ?? 0) + 1;
     return { total: this.saved.length, recent: recent.length, byGame };
   }
-  async leaderboard(gameId: string | null, limit: number, since?: Date) {
+  async leaderboard(gameId: string | null, limit: number, since?: Date, until?: Date) {
     const rows = new Map<string, LeaderboardRow>();
     for (const m of this.saved) {
       if (gameId && m.gameId !== gameId) continue;
       if (since && m.endedAt < since) continue;
+      if (until && m.endedAt >= until) continue;
       for (const p of m.participants) {
         if (!p.userId) continue;
         const r = rows.get(p.userId) ?? {

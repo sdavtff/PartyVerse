@@ -97,6 +97,14 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     icon: '🤝',
   },
   { code: 'level_5', name: 'Subindo de nível', description: 'Chegue ao nível 5.', icon: '⭐' },
+  {
+    code: 'weekly_podium',
+    name: 'Pódio da semana',
+    description: 'Termine o torneio da semana entre os 3 primeiros.',
+    icon: '🏅',
+  },
+  { code: 'first_clan', name: 'Família', description: 'Entre ou crie um clã.', icon: '🛡️' },
+  { code: 'first_purchase', name: 'Estiloso', description: 'Compre algo na loja.', icon: '🛍️' },
   { code: 'level_10', name: 'Lenda da festa', description: 'Chegue ao nível 10.', icon: '👑' },
 ];
 
@@ -113,7 +121,7 @@ export const AVATAR_LOCKS = {
 
 /** Nível mínimo para usar o avatar (1 = livre). */
 export function avatarMinLevel(avatar: string): number {
-  const m = /^c-([0-9a-z]{6})$/.exec(avatar);
+  const m = /^c-([0-9a-z]{6})(\.|$)/.exec(avatar);
   if (!m) return 1;
   const d = [...m[1]!].map((c) => parseInt(c, 36));
   return Math.max(1, AVATAR_LOCKS.bg[d[0]!] ?? 1, AVATAR_LOCKS.accessory[d[5]!] ?? 1);
@@ -125,6 +133,9 @@ export type HighlightKey =
   'maxStreak' | 'firstGuesses' | 'allGuessedTurns' | 'impostorWins' | 'uniqueAnswers';
 
 export interface MatchReward {
+  /** moedas ganhas (e saldo atual) */
+  coinsGained?: number;
+  coins?: number;
   xpGained: number;
   xp: number;
   level: number;

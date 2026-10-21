@@ -38,6 +38,16 @@ import {
 import { DailyService } from './modules/daily/daily.service.js';
 import { AiService } from './modules/ai/ai.service.js';
 import {
+  MemoryAwardStore,
+  PrismaAwardStore,
+  TournamentService,
+} from './modules/tournament/tournament.service.js';
+import {
+  MemoryClansRepository,
+  PrismaClansRepository,
+  type ClansRepository,
+} from './modules/clans/clans.repository.js';
+import {
   MemoryReportsRepository,
   PrismaReportsRepository,
   type ReportsRepository,
@@ -89,6 +99,17 @@ export function buildServer(env: Env, opts: BuildOptions = {}) {
     referer: env.PUBLIC_URL,
     baseUrl: env.OPENROUTER_BASE_URL,
   });
+  const tournament = new TournamentService(
+    matches,
+    prisma ? new PrismaAwardStore(prisma) : new MemoryAwardStore(),
+    progress,
+  );
+  if (env.NODE_ENV !== 'test') tournament.start();
+  const clans: ClansRepository = prisma
+    ? new PrismaClansRepository(prisma)
+    : new MemoryClansRepository((id) =>
+        users instanceof MemoryUserRepository ? users.users.get(id) : undefined,
+      );
   const reports: ReportsRepository = prisma
     ? new PrismaReportsRepository(prisma)
     : new MemoryReportsRepository();
@@ -166,6 +187,8 @@ export function buildServer(env: Env, opts: BuildOptions = {}) {
     resets,
     ai,
     reports,
+    tournament,
+    clans,
     disconnectUser: (userId) => {
       for (const sid of presence.socketsOf(userId)) io.sockets.sockets.get(sid)?.disconnect(true);
     },
@@ -175,6 +198,7 @@ export function buildServer(env: Env, opts: BuildOptions = {}) {
   const close = async () => {
     clearInterval(banTimer);
     daily.stop();
+    tournament.stop();
     rooms.shutdown();
     io.close();
     await new Promise<void>((r) => httpServer.close(() => r()));
@@ -193,5 +217,9 @@ export function buildServer(env: Env, opts: BuildOptions = {}) {
     bans,
     mailer,
     daily,
+    ai,
+    reports,
+    tournament,
+    clans,
   };
 }

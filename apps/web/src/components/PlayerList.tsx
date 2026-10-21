@@ -2,7 +2,7 @@ import { EVENTS, type PublicRoom } from '@partyverse/shared';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { emitAck } from '../lib/socket';
 import { AnimatedNumber } from './AnimatedNumber';
-import { Avatar } from './Avatar';
+import { Avatar, NameTag } from './Avatar';
 import { ReportDialog } from './ReportDialog';
 import { useToast } from './Toast';
 
@@ -150,8 +150,8 @@ export function PlayerList({
                 />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="truncate font-bold text-white">
-                  {p.nickname}{' '}
+                <p className="flex min-w-0 items-center gap-1 font-bold text-white">
+                  <NameTag nickname={p.nickname} avatar={p.avatar} />
                   {p.id === myId && (
                     <span className="text-xs font-medium text-ink-400">(você)</span>
                   )}

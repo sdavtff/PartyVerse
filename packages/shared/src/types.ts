@@ -136,7 +136,8 @@ export const GAME_CATALOG: GameMeta[] = [
     maxPlayers: 16,
     available: true,
     color: 'indigo',
-  },  {
+  },
+  {
     id: 'hangman',
     name: 'Forca',
     tagline: 'Letra por letra, em turnos. Errou, a forca cresce para todos.',
@@ -162,7 +163,8 @@ export const GAME_CATALOG: GameMeta[] = [
     maxPlayers: 2,
     available: true,
     color: 'brown',
-  },  {
+  },
+  {
     id: 'telephone',
     name: 'Telefone Sem Fio',
     tagline: 'Escreve, desenha, adivinha… e no fim todo mundo vê o que virou.',
@@ -180,8 +182,6 @@ export const GAME_CATALOG: GameMeta[] = [
     available: true,
     color: 'red',
   },
-
-
 ];
 
 export interface ServerError {
@@ -380,7 +380,11 @@ export interface HangmanView {
   /** palavra completa: só no fim da rodada */
   word: string | null;
   solvedBy: string | null;
-  lastEvent: { playerId: string; kind: 'hit' | 'miss' | 'word-hit' | 'word-miss' | 'timeout'; text: string } | null;
+  lastEvent: {
+    playerId: string;
+    kind: 'hit' | 'miss' | 'word-hit' | 'word-miss' | 'timeout';
+    text: string;
+  } | null;
 }
 
 export interface TicTacToeView {

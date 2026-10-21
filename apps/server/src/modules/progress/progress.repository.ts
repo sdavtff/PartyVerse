@@ -9,6 +9,12 @@ export interface ProgressRepository {
   addAchievements(userId: string, codes: string[]): Promise<string[]>;
   stats(userId: string): Promise<{ matchesPlayed: number; wins: number }>;
   distinctGames(userId: string): Promise<number>;
+  getCoins(userId: string): Promise<number>;
+  addCoins(userId: string, amount: number): Promise<number>;
+  /** Desconta se houver saldo; devolve o novo saldo ou null se não deu. */
+  spendCoins(userId: string, amount: number): Promise<number | null>;
+  items(userId: string): Promise<string[]>;
+  addItems(userId: string, itemIds: string[]): Promise<void>;
 }
 
 export class PrismaProgressRepository implements ProgressRepository {
@@ -48,6 +54,40 @@ export class PrismaProgressRepository implements ProgressRepository {
     const s = await this.db.userStats.findUnique({ where: { userId } });
     return { matchesPlayed: s?.matchesPlayed ?? 0, wins: s?.wins ?? 0 };
   }
+  async getCoins(userId: string) {
+    return (
+      (await this.db.user.findUnique({ where: { id: userId }, select: { coins: true } }))?.coins ??
+      0
+    );
+  }
+  async addCoins(userId: string, amount: number) {
+    const u = await this.db.user.update({
+      where: { id: userId },
+      data: { coins: { increment: amount } },
+      select: { coins: true },
+    });
+    return u.coins;
+  }
+  async spendCoins(userId: string, amount: number) {
+    // atualização condicional: nunca fica negativo, mesmo com cliques duplos
+    const r = await this.db.user.updateMany({
+      where: { id: userId, coins: { gte: amount } },
+      data: { coins: { decrement: amount } },
+    });
+    return r.count ? this.getCoins(userId) : null;
+  }
+  async items(userId: string) {
+    return (await this.db.userItem.findMany({ where: { userId }, select: { itemId: true } })).map(
+      (i) => i.itemId,
+    );
+  }
+  async addItems(userId: string, itemIds: string[]) {
+    if (itemIds.length)
+      await this.db.userItem.createMany({
+        data: itemIds.map((itemId) => ({ userId, itemId })),
+        skipDuplicates: true,
+      });
+  }
   async distinctGames(userId: string) {
     const rows = await this.db.match.findMany({
       where: { participants: { some: { userId } } },
@@ -62,6 +102,30 @@ export class PrismaProgressRepository implements ProgressRepository {
 export class MemoryProgressRepository implements ProgressRepository {
   xp = new Map<string, number>();
   ach = new Map<string, { code: string; unlockedAt: string }[]>();
+  coins = new Map<string, number>();
+  owned = new Map<string, Set<string>>();
+  async getCoins(userId: string) {
+    return this.coins.get(userId) ?? 0;
+  }
+  async addCoins(userId: string, amount: number) {
+    const v = (this.coins.get(userId) ?? 0) + amount;
+    this.coins.set(userId, v);
+    return v;
+  }
+  async spendCoins(userId: string, amount: number) {
+    const v = this.coins.get(userId) ?? 0;
+    if (v < amount) return null;
+    this.coins.set(userId, v - amount);
+    return v - amount;
+  }
+  async items(userId: string) {
+    return [...(this.owned.get(userId) ?? [])];
+  }
+  async addItems(userId: string, itemIds: string[]) {
+    const s = this.owned.get(userId) ?? new Set<string>();
+    for (const i of itemIds) s.add(i);
+    this.owned.set(userId, s);
+  }
   constructor(private matches?: MemoryMatchRepository) {}
   async getXp(userId: string) {
     return this.xp.get(userId) ?? 0;

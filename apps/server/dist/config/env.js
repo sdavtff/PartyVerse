@@ -40,6 +40,8 @@ const envSchema = z.object({
     /** OpenRouter — desafio do dia com IA (opcional: sem chave usa o banco fixo) */
     OPENROUTER_API_KEY: z.string().optional(),
     OPENROUTER_MODEL: z.string().default('minimax/minimax-m3.1-flash:free'),
+    /** (avançado) outro endereço compatível com a API da OpenRouter */
+    OPENROUTER_BASE_URL: z.string().url().optional(),
 });
 export function loadEnv(overrides = {}) {
     // variáveis vazias (comuns em painéis de hospedagem) contam como não definidas

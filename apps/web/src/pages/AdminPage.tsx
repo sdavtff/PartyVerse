@@ -1,4 +1,4 @@
-import { GAME_CATALOG } from '@partyverse/shared';
+import { GAME_CATALOG, REPORT_REASON_LABELS } from '@partyverse/shared';
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Avatar } from '../components/Avatar';
@@ -16,7 +16,22 @@ interface Stats {
   daily: { quiz: number; stop: number; source?: 'ia' | 'banco' | null } | null;
   db: string;
   mail: boolean;
+  reportsOpen?: number;
+  ai?: boolean;
   uptimeMin: number;
+}
+interface Report {
+  id: string;
+  reporterName: string;
+  targetId: string;
+  targetName: string;
+  targetIsGuest: boolean;
+  roomCode: string | null;
+  reason: keyof typeof REPORT_REASON_LABELS;
+  details: string;
+  evidence: { text: string; at: number }[];
+  status: 'open' | 'closed';
+  createdAt: string;
 }
 interface AdminRoom {
   code: string;
@@ -61,6 +76,7 @@ export function AdminPage() {
   const [rooms, setRooms] = useState<AdminRoom[]>([]);
   const [q, setQ] = useState('');
   const [users, setUsers] = useState<AdminUser[]>([]);
+  const [reports, setReports] = useState<Report[]>([]);
 
   const load = useCallback(() => {
     api<Stats>('/admin/stats')
@@ -68,6 +84,9 @@ export function AdminPage() {
       .catch(() => undefined);
     api<AdminRoom[]>('/admin/rooms')
       .then(setRooms)
+      .catch(() => undefined);
+    api<Report[]>('/admin/reports')
+      .then(setReports)
       .catch(() => undefined);
   }, []);
   const search = useCallback(
@@ -127,6 +146,24 @@ export function AdminPage() {
     }
   };
 
+  const closeReport = async (r: Report) => {
+    await api(`/admin/reports/${r.id}`, { method: 'POST', json: { status: 'closed' } }).catch((e) =>
+      toast((e as Error).message, 'error'),
+    );
+    load();
+  };
+  const banFromReport = async (r: Report) => {
+    if (!confirm(`Suspender a conta de ${r.targetName}?`)) return;
+    try {
+      await api(`/admin/users/${r.targetId}/ban`, { method: 'POST', json: { banned: true } });
+      await api(`/admin/reports/${r.id}`, { method: 'POST', json: { status: 'closed' } });
+      toast(`${r.targetName} suspenso`, 'success');
+      load();
+    } catch (e) {
+      toast((e as Error).message, 'error');
+    }
+  };
+
   const topGames = Object.entries(stats?.matches?.byGame ?? {}).sort((a, b) => b[1] - a[1]);
 
   return (
@@ -169,6 +206,12 @@ export function AdminPage() {
           />
           <Stat label="Banco" value={stats.db === 'ok' ? '✅' : stats.db} />
           <Stat
+            label="IA"
+            value={stats.ai ? '✅' : '—'}
+            sub={stats.ai ? 'OpenRouter ligada' : 'sem OPENROUTER_API_KEY'}
+          />
+          <Stat label="Denúncias" value={stats.reportsOpen ?? 0} sub="abertas" />
+          <Stat
             label="E-mail"
             value={stats.mail ? '✅' : '—'}
             sub={stats.mail ? 'SMTP ok' : 'SMTP não configurado'}
@@ -185,6 +228,79 @@ export function AdminPage() {
           {topGames.map(([g, n]) => `${gameName(g)} (${n})`).join(' · ')}
         </p>
       )}
+
+      <section className="mt-10">
+        <h2 className="text-2xl font-extrabold">
+          Denúncias{' '}
+          {reports.length > 0 && (
+            <span className="chip bg-pop-rose align-middle text-night">
+              {reports.length} abertas
+            </span>
+          )}
+        </h2>
+        {reports.length === 0 ? (
+          <p className="mt-3 text-ink-400">Nenhuma denúncia aberta. 🎉</p>
+        ) : (
+          <ul className="mt-3 space-y-3">
+            {reports.map((r) => (
+              <li key={r.id} className="card p-4">
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div>
+                    <p className="font-bold text-white">
+                      {r.targetName}{' '}
+                      <span className="text-xs font-normal text-ink-400">
+                        {r.targetIsGuest ? 'convidado' : 'conta'}
+                      </span>
+                    </p>
+                    <p className="text-sm text-ink-200">
+                      <b className="text-pop-rose">{REPORT_REASON_LABELS[r.reason] ?? r.reason}</b>{' '}
+                      · por {r.reporterName} · {new Date(r.createdAt).toLocaleString('pt-BR')}
+                      {r.roomCode && ` · sala ${r.roomCode}`}
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    {!r.targetIsGuest && (
+                      <button
+                        onClick={() => banFromReport(r)}
+                        className="rounded-lg px-3 py-1.5 text-sm font-bold text-pop-rose hover:bg-ink-800"
+                      >
+                        Suspender
+                      </button>
+                    )}
+                    {r.roomCode && rooms.some((x) => x.code === r.roomCode) && (
+                      <button
+                        onClick={() => void closeRoom(rooms.find((x) => x.code === r.roomCode)!)}
+                        className="rounded-lg px-3 py-1.5 text-sm font-bold text-ink-200 hover:bg-ink-800"
+                      >
+                        Fechar sala
+                      </button>
+                    )}
+                    <button
+                      onClick={() => closeReport(r)}
+                      className="rounded-lg bg-ink-800 px-3 py-1.5 text-sm font-bold hover:bg-ink-700"
+                    >
+                      Resolvida ✓
+                    </button>
+                  </div>
+                </div>
+                {r.details && <p className="mt-2 text-sm text-ink-200">“{r.details}”</p>}
+                {r.evidence.length > 0 && (
+                  <ul className="mt-2 space-y-1 rounded-xl bg-ink-900 p-3 text-sm">
+                    {r.evidence.map((m, i) => (
+                      <li key={i} className="text-ink-200">
+                        <span className="text-xs text-ink-400">
+                          {new Date(m.at).toLocaleTimeString('pt-BR')}
+                        </span>{' '}
+                        {m.text}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
 
       <section className="mt-10">
         <h2 className="text-2xl font-extrabold">Salas abertas</h2>

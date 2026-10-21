@@ -7,6 +7,7 @@ import {
 import { CustomListEditor, lines } from '../../components/CustomListEditor';
 import { useToast } from '../../components/Toast';
 import { emitAck } from '../../lib/socket';
+import { AiThemeBox } from '../../components/AiThemeBox';
 
 function useSave<T>() {
   const toast = useToast();
@@ -100,6 +101,7 @@ export function MostLikelySettingsForm({
   const save = useSave<MostLikelySettings>();
   return (
     <div className="space-y-4">
+      <AiThemeBox kinds={['mostlikely']} editable={editable} />
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         <Select
           label="Rodadas"
@@ -149,6 +151,7 @@ export function TruthDareSettingsForm({
   const save = useSave<TruthDareSettings>();
   return (
     <div className="space-y-4">
+      <AiThemeBox kinds={['truths', 'dares']} editable={editable} />
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         <Select
           label="Vezes por pessoa"

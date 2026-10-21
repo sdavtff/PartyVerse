@@ -1,4 +1,4 @@
-import { achievementByCode, EVENTS, } from '@partyverse/shared';
+import { achievementByCode, GAME_CATALOG, EVENTS, } from '@partyverse/shared';
 import { AppError, notFound } from '../lib/errors.js';
 import { roomCode } from '../lib/ids.js';
 import { logger } from '../lib/logger.js';
@@ -37,7 +37,10 @@ export class RoomManager {
         const room = new Room(code, settings, host, this.transport, {
             onEmpty: (r) => this.rooms.delete(r.code),
             onMatchEnd: (r, result, startedAt, rounds, highlights) => void this.persist(r, result, startedAt, rounds, highlights),
-        }, { reconnectGraceMs: this.opts.reconnectGraceMs });
+        }, {
+            reconnectGraceMs: this.opts.reconnectGraceMs,
+            ai: this.opts.ai?.enabled ? this.opts.ai : undefined,
+        });
         room.password = password.trim();
         this.rooms.set(code, room);
         return room;
@@ -111,6 +114,7 @@ export class RoomManager {
         }
     }
     async persist(room, result, startedAt, rounds, highlights) {
+        void this.narrate(room, result);
         const saved = await this.matches
             .save({
             gameId: result.gameId,
@@ -154,6 +158,21 @@ export class RoomManager {
             }
             if (reward.leveledUp)
                 room.systemMessage(`⭐ ${room.nicknameOf(userId)} subiu para o nível ${reward.level}!`);
+        }
+    }
+    /** Narrador com IA: comenta o fim da partida no chat (se a sala deixar). */
+    async narrate(room, result) {
+        const ai = this.opts.ai;
+        if (!ai?.enabled || room.settings.narrator === false || result.ranking.length < 2)
+            return;
+        try {
+            const game = GAME_CATALOG.find((g) => g.id === result.gameId)?.name ?? result.gameId;
+            const text = await ai.narrate(game, result.ranking.slice(0, 6).map((r) => ({ nickname: r.nickname, score: r.score })), []);
+            if (text && this.rooms.get(room.code) === room)
+                room.narrate(text);
+        }
+        catch {
+            /* narrador é enfeite: nunca atrapalha */
         }
     }
     shutdown() {

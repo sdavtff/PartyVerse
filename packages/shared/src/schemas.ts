@@ -38,6 +38,8 @@ export const stopSettingsSchema = z.object({
     empty: z.number().int().min(0).max(50),
     rejected: z.number().int().min(0).max(50),
   }),
+  /** a IA marca respostas suspeitas na revisão (vale como um voto) */
+  aiJudge: z.boolean().default(false),
 });
 export type StopSettings = z.infer<typeof stopSettingsSchema>;
 
@@ -48,6 +50,10 @@ export const roomSettingsSchema = z.object({
   gameId: z.enum(GAME_IDS),
   isPublic: z.boolean(),
   maxPlayers: z.number().int().min(2).max(MAX_ROOM_PLAYERS),
+  /** narrador com IA comenta o fim da partida */
+  narrator: z.boolean().default(true),
+  /** esconde palavrões no chat */
+  chatFilter: z.boolean().default(true),
 });
 
 /** Avatar: formato antigo "forma-n" ou montado no criador "c-xxxxxx" (6 partes em base 36). */
@@ -117,6 +123,16 @@ export const impostorSettingsSchema = z.object({
   rounds: z.number().int().min(1).max(10),
   discussionSeconds: z.number().int().min(60).max(600),
   voteSeconds: z.number().int().min(15).max(120),
+  /** locais criados pelo anfitrião ou pela IA (tema personalizado) */
+  customLocations: z
+    .array(
+      z.object({
+        name: z.string().trim().min(2).max(30),
+        roles: z.array(z.string().trim().min(2).max(30)).min(3).max(8),
+      }),
+    )
+    .max(30)
+    .default([]),
 });
 export type ImpostorSettings = z.infer<typeof impostorSettingsSchema>;
 
@@ -329,3 +345,35 @@ export const twoTruthsActionSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('guess'), index: z.number().int().min(0).max(2) }),
 ]);
 export type TwoTruthsAction = z.infer<typeof twoTruthsActionSchema>;
+
+// ---------- IA nas salas ----------
+export const AI_KINDS = ['quiz', 'words', 'locations', 'mostlikely', 'truths', 'dares'] as const;
+export type AiKind = (typeof AI_KINDS)[number];
+export const aiGenerateSchema = z.object({
+  kind: z.enum(AI_KINDS),
+  theme: z.string().trim().min(2, 'Escreva um tema').max(60, 'Tema muito longo'),
+});
+
+// ---------- denúncias ----------
+export const REPORT_REASONS = [
+  'ofensa',
+  'palavrao',
+  'spam',
+  'trapaca',
+  'nome_improprio',
+  'outro',
+] as const;
+export const REPORT_REASON_LABELS: Record<(typeof REPORT_REASONS)[number], string> = {
+  ofensa: 'Ofensa ou assédio',
+  palavrao: 'Palavrões',
+  spam: 'Spam / flood',
+  trapaca: 'Trapaça',
+  nome_improprio: 'Nome ou avatar impróprio',
+  outro: 'Outro motivo',
+};
+export const reportSchema = z.object({
+  targetId: z.string().min(1).max(64),
+  roomCode: z.string().max(8).optional(),
+  reason: z.enum(REPORT_REASONS),
+  details: z.string().trim().max(300).default(''),
+});

@@ -431,6 +431,9 @@ function CategoryReview({
             ),
           );
           const bad = !startsOk(g.text);
+          const aiSuspects = g.authors.some((a) =>
+            view.review.find((r) => r.playerId === a)?.aiFlags?.includes(cat),
+          );
           return (
             <li key={g.text}>
               <div
@@ -438,6 +441,11 @@ function CategoryReview({
               >
                 {g.text}
               </div>
+              {aiSuspects && !bad && (
+                <p className="mt-1 text-center text-xs font-bold text-pop-violet">
+                  🤖 A IA achou suspeita
+                </p>
+              )}
               <div className="mt-1.5 flex items-center justify-between gap-2 px-1">
                 <span className="flex -space-x-1.5" title={g.authors.map(nick).join(', ')}>
                   {g.authors.slice(0, 5).map((a) => (

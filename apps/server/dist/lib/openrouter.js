@@ -3,13 +3,14 @@ import { logger } from './logger.js';
 /** Um cliente por chave (o SDK guarda configuração e conexões). */
 const clients = new Map();
 function clientFor(cfg, timeoutMs) {
-    const key = `${cfg.apiKey}|${cfg.referer ?? ''}|${timeoutMs}`;
+    const key = `${cfg.apiKey}|${cfg.referer ?? ''}|${cfg.baseUrl ?? ''}|${timeoutMs}`;
     let c = cfg.fetchFn ? undefined : clients.get(key);
     if (!c) {
         c = new OpenRouter({
             apiKey: cfg.apiKey,
             httpReferer: cfg.referer ?? 'https://partyverse.app',
-            appTitle: 'PartyVerse Daily',
+            appTitle: 'PartyVerse',
+            ...(cfg.baseUrl ? { serverURL: cfg.baseUrl } : {}),
             timeoutMs,
             // quem tenta de novo é o gerador do desafio (2 tentativas); aqui falha rápido
             retryConfig: { strategy: 'none' },

@@ -4,6 +4,7 @@ import { Link, useParams } from 'react-router-dom';
 import { Avatar } from '../components/Avatar';
 import { AchievementsGrid, LevelBar, type ProgressData } from '../components/Progress';
 import { FriendButton } from '../components/FriendButton';
+import { ReportDialog } from '../components/ReportDialog';
 import { api } from '../lib/api';
 import { useSession } from '../lib/session';
 import { usePageTitle } from '../lib/usePageTitle';
@@ -22,6 +23,7 @@ export function PublicProfilePage() {
   const { user } = useSession();
   const [p, setP] = useState<PublicProfile | null>(null);
   const [error, setError] = useState('');
+  const [reporting, setReporting] = useState(false);
   usePageTitle(p?.user.nickname ?? 'Jogador');
 
   useEffect(() => {
@@ -77,7 +79,18 @@ export function PublicProfilePage() {
                 Editar perfil
               </Link>
             ) : (
-              <FriendButton userId={p.user.id} />
+              <>
+                <FriendButton userId={p.user.id} />
+                {user && (
+                  <button
+                    onClick={() => setReporting(true)}
+                    className="rounded-xl px-3 py-2 text-sm font-bold text-ink-400 hover:bg-ink-800 hover:text-pop-rose"
+                  >
+                    ⚑ Denunciar
+                  </button>
+                )}
+                {reporting && <ReportDialog target={p.user} onClose={() => setReporting(false)} />}
+              </>
             )}
           </div>
         </div>

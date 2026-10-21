@@ -49,6 +49,7 @@ import { QuizGame } from '../games/quiz/QuizGame';
 import { QuizSettingsForm } from '../games/quiz/QuizSettingsForm';
 import { StopGame } from '../games/stop/StopGame';
 import { StopSettingsForm } from '../games/stop/StopSettingsForm';
+import { useHealth } from '../lib/health';
 import { useSession } from '../lib/session';
 import { emitAck } from '../lib/socket';
 import { sfx } from '../lib/sound';
@@ -381,6 +382,7 @@ function Lobby({ room, amHost }: { room: PublicRoom; amHost: boolean }) {
               <option value="1">Pública</option>
             </select>
           </label>
+          <RoomToggles room={room} save={saveRoom} />
         </div>
       )}
 
@@ -745,5 +747,47 @@ export function Notice({
         </div>
       </div>
     </div>
+  );
+}
+
+/** Opções da sala: filtro de palavrões e narrador com IA. */
+function RoomToggles({
+  room,
+  save,
+}: {
+  room: PublicRoom;
+  save: (r: Partial<PublicRoom['settings']>) => unknown;
+}) {
+  const health = useHealth();
+  const box = (on: boolean, label: string, hint: string, onChange: (v: boolean) => void) => (
+    <label className="flex items-center justify-between gap-3 rounded-2xl bg-ink-900 px-3 py-2.5 sm:col-span-2">
+      <span>
+        <span className="block text-sm font-bold text-white">{label}</span>
+        <span className="block text-xs text-ink-400">{hint}</span>
+      </span>
+      <input
+        type="checkbox"
+        className="h-5 w-5 accent-lime-400"
+        checked={on}
+        onChange={(e) => onChange(e.target.checked)}
+      />
+    </label>
+  );
+  return (
+    <>
+      {box(
+        room.settings.chatFilter !== false,
+        '🧼 Filtro de palavrões',
+        'Esconde palavrões no chat (ex.: p****).',
+        (v) => save({ chatFilter: v }),
+      )}
+      {health?.ai &&
+        box(
+          room.settings.narrator !== false,
+          '🎙️ Narrador com IA',
+          'Um comentário divertido no chat quando a partida acaba.',
+          (v) => save({ narrator: v }),
+        )}
+    </>
   );
 }

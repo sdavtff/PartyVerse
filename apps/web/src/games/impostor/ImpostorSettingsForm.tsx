@@ -1,6 +1,32 @@
 import { EVENTS, type ImpostorSettings } from '@partyverse/shared';
 import { useToast } from '../../components/Toast';
 import { emitAck } from '../../lib/socket';
+import { AiThemeBox } from '../../components/AiThemeBox';
+import { CustomListEditor, lines } from '../../components/CustomListEditor';
+
+/** "Local: papel, papel, papel" por linha */
+export function parseLocations(text: string) {
+  const items: { name: string; roles: string[] }[] = [];
+  const errors: string[] = [];
+  lines(text).forEach((l, i) => {
+    const [name = '', rest = ''] = l.split(':');
+    const roles = [
+      ...new Set(
+        rest
+          .split(',')
+          .map((r) => r.trim())
+          .filter((r) => r.length >= 2),
+      ),
+    ];
+    if (name.trim().length < 2 || name.trim().length > 30)
+      return void errors.push(`Linha ${i + 1}: nome do local com 2 a 30 letras`);
+    if (roles.length < 3) return void errors.push(`Linha ${i + 1}: escreva pelo menos 3 papéis`);
+    if (roles.some((r) => r.length > 30))
+      return void errors.push(`Linha ${i + 1}: papel muito longo`);
+    items.push({ name: name.trim(), roles: roles.slice(0, 8) });
+  });
+  return { items: items.slice(0, 30), errors };
+}
 
 export function ImpostorSettingsForm({
   settings,
@@ -14,7 +40,7 @@ export function ImpostorSettingsForm({
     emitAck(EVENTS.ROOM_UPDATE_SETTINGS, { game }).catch((e) => toast(e.message, 'error'));
 
   const select = (
-    key: keyof ImpostorSettings,
+    key: 'rounds' | 'discussionSeconds' | 'voteSeconds',
     label: string,
     values: number[],
     fmt: (v: number) => string = String,
@@ -52,6 +78,23 @@ export function ImpostorSettingsForm({
           Melhor com 4 ou mais pessoas, de preferência em chamada de voz.
         </p>
       </div>
+      <AiThemeBox kinds={['locations']} editable={editable} />
+      <CustomListEditor
+        id="locations"
+        title="Locais personalizados (opcional)"
+        hint="Um por linha: Local: papel, papel, papel (mínimo 3 papéis). Com 4 ou mais locais, a partida usa só os seus."
+        placeholder={
+          'Nave espacial: Capitã, Piloto, Robô, Passageiro clandestino\nCasa da vó: Vó, Neto, Gato, Vizinha fofoqueira'
+        }
+        savedCount={Number((settings as Record<string, unknown>).customLocationsCount ?? 0)}
+        parse={parseLocations}
+        editable={editable}
+        onSave={(customLocations) =>
+          emitAck(EVENTS.ROOM_UPDATE_SETTINGS, { game: { customLocations } })
+            .then(() => toast('Locais salvos!', 'success'))
+            .catch((e) => toast((e as Error).message, 'error'))
+        }
+      />
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         {select('rounds', 'Rodadas', [1, 2, 3, 4, 5, 6, 7, 8, 9, 10])}
         {select('discussionSeconds', 'Discussão', [60, 90, 120, 180, 240, 300, 420, 600], mins)}

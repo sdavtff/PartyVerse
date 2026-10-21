@@ -1,5 +1,6 @@
 import type { GameId, Highlights } from '@partyverse/shared';
 import type { ZodType, ZodTypeDef } from 'zod';
+import type { GameAi } from '../modules/ai/ai.service.js';
 
 export interface GamePlayer {
   id: string;
@@ -28,6 +29,8 @@ export interface GameContext {
   isOnline(playerId: string): boolean;
   /** Sinaliza que a partida terminou; a sala calcula o ranking e persiste. */
   finish(): void;
+  /** IA (opcional; só existe quando a chave está configurada). */
+  ai?: GameAi;
 }
 
 /**

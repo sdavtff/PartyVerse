@@ -13,6 +13,8 @@ import { MemoryFriendsRepository, PrismaFriendsRepository, } from './modules/soc
 import { Presence } from './modules/social/presence.js';
 import { MemoryChallengeStore, MemoryDailyRepository, PrismaChallengeStore, PrismaDailyRepository, } from './modules/daily/daily.repository.js';
 import { DailyService } from './modules/daily/daily.service.js';
+import { AiService } from './modules/ai/ai.service.js';
+import { MemoryReportsRepository, PrismaReportsRepository, } from './modules/moderation/reports.repository.js';
 import { BanList } from './modules/admin/bans.js';
 import { SmtpMailer } from './modules/mail/mailer.js';
 import { MemoryResetRepository, PrismaResetRepository, } from './modules/auth/reset.repository.js';
@@ -32,10 +34,26 @@ export function buildServer(env, opts = {}) {
                 : null);
     const progress = progressRepo ? new ProgressService(progressRepo) : undefined;
     const presence = new Presence();
+    const ai = new AiService({
+        apiKey: env.OPENROUTER_API_KEY,
+        model: env.OPENROUTER_MODEL,
+        fetchFn: opts.aiFetch,
+        referer: env.PUBLIC_URL,
+        baseUrl: env.OPENROUTER_BASE_URL,
+    });
+    const reports = prisma
+        ? new PrismaReportsRepository(prisma)
+        : new MemoryReportsRepository();
     const dailyRepo = prisma
         ? new PrismaDailyRepository(prisma)
         : new MemoryDailyRepository((id) => users instanceof MemoryUserRepository ? users.users.get(id) : undefined);
-    const daily = new DailyService(dailyRepo, prisma ? new PrismaChallengeStore(prisma) : new MemoryChallengeStore(), { apiKey: env.OPENROUTER_API_KEY, model: env.OPENROUTER_MODEL, fetchFn: opts.aiFetch });
+    const daily = new DailyService(dailyRepo, prisma ? new PrismaChallengeStore(prisma) : new MemoryChallengeStore(), {
+        apiKey: env.OPENROUTER_API_KEY,
+        model: env.OPENROUTER_MODEL,
+        fetchFn: opts.aiFetch,
+        referer: env.PUBLIC_URL,
+        baseUrl: env.OPENROUTER_BASE_URL,
+    });
     if (env.NODE_ENV !== 'test')
         daily.startWarmup();
     const mailer = opts.mailer ?? new SmtpMailer(env);
@@ -69,6 +87,7 @@ export function buildServer(env, opts = {}) {
     const rooms = new RoomManager(createTransport(io), matches, {
         idleTtlMs: env.ROOM_IDLE_TTL_MS,
         reconnectGraceMs: env.RECONNECT_GRACE_MS,
+        ai,
     }, progress);
     const app = (ref.app = createApp({
         env,
@@ -84,6 +103,8 @@ export function buildServer(env, opts = {}) {
         bans,
         mailer,
         resets,
+        ai,
+        reports,
         disconnectUser: (userId) => {
             for (const sid of presence.socketsOf(userId))
                 io.sockets.sockets.get(sid)?.disconnect(true);

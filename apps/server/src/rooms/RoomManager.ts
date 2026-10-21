@@ -1,5 +1,7 @@
+import type { AiService } from '../modules/ai/ai.service.js';
 import {
   achievementByCode,
+  GAME_CATALOG,
   EVENTS,
   type Highlights,
   type MatchResult,
@@ -18,6 +20,7 @@ export interface RoomManagerOptions {
   idleTtlMs: number;
   reconnectGraceMs: number;
   maxRooms?: number;
+  ai?: AiService;
 }
 
 export interface PublicRoomSummary {
@@ -68,7 +71,10 @@ export class RoomManager {
         onMatchEnd: (r, result, startedAt, rounds, highlights) =>
           void this.persist(r, result, startedAt, rounds, highlights),
       },
-      { reconnectGraceMs: this.opts.reconnectGraceMs },
+      {
+        reconnectGraceMs: this.opts.reconnectGraceMs,
+        ai: this.opts.ai?.enabled ? this.opts.ai : undefined,
+      },
     );
     room.password = password.trim();
     this.rooms.set(code, room);
@@ -157,6 +163,7 @@ export class RoomManager {
     rounds: number,
     highlights: Highlights,
   ) {
+    void this.narrate(room, result);
     const saved = await this.matches
       .save({
         gameId: result.gameId,
@@ -197,6 +204,23 @@ export class RoomManager {
       }
       if (reward.leveledUp)
         room.systemMessage(`⭐ ${room.nicknameOf(userId)} subiu para o nível ${reward.level}!`);
+    }
+  }
+
+  /** Narrador com IA: comenta o fim da partida no chat (se a sala deixar). */
+  private async narrate(room: Room, result: MatchResult) {
+    const ai = this.opts.ai;
+    if (!ai?.enabled || room.settings.narrator === false || result.ranking.length < 2) return;
+    try {
+      const game = GAME_CATALOG.find((g) => g.id === result.gameId)?.name ?? result.gameId;
+      const text = await ai.narrate(
+        game,
+        result.ranking.slice(0, 6).map((r) => ({ nickname: r.nickname, score: r.score })),
+        [],
+      );
+      if (text && this.rooms.get(room.code) === room) room.narrate(text);
+    } catch {
+      /* narrador é enfeite: nunca atrapalha */
     }
   }
 

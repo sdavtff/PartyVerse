@@ -6,6 +6,8 @@ import { scoreRound, startsWithLetter } from './stop.scoring.js';
 /** Letras com boa cobertura em português (sem K, Q, W, X, Y, Z). */
 export const STOP_LETTERS = 'ABCDEFGHIJLMNOPRSTUV'.split('');
 const ROUND_RESULTS_SECONDS = 12;
+/** O juiz IA conta como um eleitor a mais. */
+export const AI_VOTER = 'ia';
 function drawLetter(used) {
     const pool = STOP_LETTERS.filter((l) => !used.includes(l));
     const from = pool.length ? pool : STOP_LETTERS;
@@ -20,17 +22,48 @@ function onlineVoters(state, ctx, exclude) {
 }
 function isRejected(state, ctx, target, cat) {
     const votes = (state.rejections[target]?.[cat] ?? []).length;
-    // maioria estrita dos demais jogadores online (mínimo 1 eleitor)
-    const eligible = Math.max(1, onlineVoters(state, ctx, target).length);
+    // maioria estrita dos demais jogadores online (mínimo 1 eleitor); o juiz IA é mais um
+    const eligible = Math.max(1, onlineVoters(state, ctx, target).length) + (state.settings.aiJudge ? 1 : 0);
     return votes * 2 > eligible;
 }
 function goToReview(state, ctx) {
     state.phase = 'review';
     state.ready = [];
     state.rejections = Object.fromEntries(state.players.map((p) => [p, {}]));
+    state.aiFlags = {};
     state.deadline = ctx.now() + state.settings.reviewSeconds * 1000;
     ctx.setTimer('phase', state.settings.reviewSeconds * 1000, () => stopGame.advancePhase(state, ctx));
     ctx.sync();
+    if (state.settings.aiJudge && ctx.ai)
+        void askAiJudge(state, ctx);
+}
+/** Pede à IA as respostas suspeitas; o resultado só vale se ainda estivermos na mesma revisão. */
+async function askAiJudge(state, ctx) {
+    const round = state.round;
+    try {
+        const flags = await ctx.ai.judgeStop(state.letter, state.settings.categories, state.answers);
+        if (state.phase !== 'review' || state.round !== round)
+            return;
+        let n = 0;
+        for (const [player, cats] of Object.entries(flags)) {
+            if (!state.players.includes(player))
+                continue;
+            state.aiFlags[player] = cats;
+            for (const c of cats) {
+                const list = ((state.rejections[player] ??= {})[c] ??= []);
+                if (!list.includes(AI_VOTER))
+                    list.push(AI_VOTER);
+                n++;
+            }
+        }
+        ctx.notice(n
+            ? `🤖 O juiz IA marcou ${n} ${n === 1 ? 'resposta suspeita' : 'respostas suspeitas'}. Confiram!`
+            : '🤖 O juiz IA não viu problema nas respostas.');
+        ctx.sync();
+    }
+    catch {
+        /* sem IA: segue só com os votos da turma */
+    }
 }
 function goToRoundResults(state, ctx) {
     const res = scoreRound({
@@ -69,6 +102,7 @@ export const stopGame = {
         reviewSeconds: 45,
         stopCountdownSeconds: 5,
         points: { unique: 10, repeated: 5, empty: 0, rejected: 0 },
+        aiJudge: false,
     }),
     createInitialState(players, settings) {
         // categorias duplicadas (ignorando acentos) quebrariam a pontuação
@@ -96,6 +130,7 @@ export const stopGame = {
             statuses: null,
             totals: Object.fromEntries(players.map((p) => [p.id, 0])),
             uniques: {},
+            aiFlags: {},
         };
     },
     startRound(state, ctx) {
@@ -251,6 +286,7 @@ export const stopGame = {
                     myRejections: playerId
                         ? state.settings.categories.filter((c) => (state.rejections[p]?.[c] ?? []).includes(playerId))
                         : [],
+                    aiFlags: state.aiFlags[p] ?? [],
                     statuses: state.statuses?.[p] ?? null,
                 }))
                 : [],

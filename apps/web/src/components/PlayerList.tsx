@@ -3,6 +3,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { emitAck } from '../lib/socket';
 import { AnimatedNumber } from './AnimatedNumber';
 import { Avatar } from './Avatar';
+import { ReportDialog } from './ReportDialog';
 import { useToast } from './Toast';
 
 const MEDALS = ['🥇', '🥈', '🥉'];
@@ -21,6 +22,7 @@ export function PlayerList({
   showScores?: boolean;
 }) {
   const toast = useToast();
+  const [reporting, setReporting] = useState<{ id: string; nickname: string } | null>(null);
   const amHost = room.hostId === myId;
   const act = (event: string, playerId: string, okMsg: string) =>
     emitAck(event, { playerId })
@@ -88,6 +90,9 @@ export function PlayerList({
 
   return (
     <section className="card p-4" aria-label={showScores ? 'Placar ao vivo' : 'Jogadores'}>
+      {reporting && (
+        <ReportDialog target={reporting} roomCode={room.code} onClose={() => setReporting(null)} />
+      )}
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-extrabold">
           {showScores ? (
@@ -169,11 +174,19 @@ export function PlayerList({
                   )}
                 </span>
               )}
-              {amHost && p.id === myId && !showScores && (
-                <div className="w-[3.75rem]" aria-hidden />
+              {!amHost && p.id !== myId && (
+                <button
+                  className="rounded-lg px-2 py-1 text-xs font-bold text-ink-400 opacity-100 transition hover:bg-ink-700 hover:text-pop-rose sm:opacity-0 sm:group-focus-within:opacity-100 sm:group-hover:opacity-100"
+                  onClick={() => setReporting({ id: p.id, nickname: p.nickname })}
+                  title={`Denunciar ${p.nickname}`}
+                  aria-label={`Denunciar ${p.nickname}`}
+                >
+                  ⚑
+                </button>
               )}
+              {amHost && p.id === myId && !showScores && <div className="w-[5.5rem]" aria-hidden />}
               {amHost && p.id !== myId && (
-                <div className="flex w-[3.75rem] justify-end gap-1 opacity-100 transition sm:opacity-0 sm:group-focus-within:opacity-100 sm:group-hover:opacity-100">
+                <div className="flex w-[5.5rem] justify-end gap-1 opacity-100 transition sm:opacity-0 sm:group-focus-within:opacity-100 sm:group-hover:opacity-100">
                   <button
                     className="rounded-lg px-2 py-1 text-xs font-bold text-pop-amber hover:bg-ink-700 disabled:opacity-40"
                     disabled={p.status !== 'online'}
@@ -183,6 +196,14 @@ export function PlayerList({
                     title="Passar liderança"
                   >
                     ★
+                  </button>
+                  <button
+                    className="rounded-lg px-2 py-1 text-xs font-bold text-ink-400 hover:bg-ink-700 hover:text-pop-rose"
+                    onClick={() => setReporting({ id: p.id, nickname: p.nickname })}
+                    title="Denunciar"
+                    aria-label={`Denunciar ${p.nickname}`}
+                  >
+                    ⚑
                   </button>
                   <button
                     className="rounded-lg px-2 py-1 text-xs font-bold text-pop-rose hover:bg-ink-700"

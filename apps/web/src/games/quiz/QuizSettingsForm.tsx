@@ -7,6 +7,7 @@ import {
 import { CustomListEditor, lines } from '../../components/CustomListEditor';
 import { useToast } from '../../components/Toast';
 import { emitAck } from '../../lib/socket';
+import { AiThemeBox } from '../../components/AiThemeBox';
 
 const LABELS: Record<QuizSettings['category'], string> = {
   misto: 'Misto',
@@ -56,6 +57,7 @@ export function QuizSettingsForm({
 
   return (
     <div className="space-y-5">
+      <AiThemeBox kinds={['quiz']} editable={editable} />
       <div>
         <p className="label">Tema</p>
         <div className="flex flex-wrap gap-2">

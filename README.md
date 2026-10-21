@@ -4,6 +4,14 @@ Plataforma web de minijogos multiplayer em tempo real. **Versão 0.6:** página 
 
 > **Publicar na Hostinger:** veja [DEPLOY-HOSTINGER.md](DEPLOY-HOSTINGER.md).
 
+## Novidades da 0.7 (em andamento)
+
+- **IA nas salas** (com `OPENROUTER_API_KEY`): o anfitrião escreve um tema e a IA cria perguntas do Quiz, palavras do Rabisco/Mímica/Palavra Secreta, locais do Impostor e frases de Quem é Mais Provável e Verdade ou Desafio. Ninguém vê as respostas antes.
+- **Juiz IA na Adedonha**: marca respostas suspeitas na revisão (vale como um voto; a turma decide).
+- **Narrador com IA**: um comentário divertido no chat quando a partida acaba (dá para desligar na sala).
+- **Filtro de palavrões** no chat (ligado por padrão), em nomes de sala e apelidos.
+- **Denunciar jogador** (na lista da sala ou no perfil), com as últimas mensagens anexadas; denúncias aparecem no **/admin**.
+
 ## Novidades da 0.6.1
 
 - **Desafio do dia com IA** (OpenRouter, `OPENROUTER_API_KEY`): perguntas e categorias novas todo dia, guardadas no banco (iguais para todos, mesmo se o servidor reiniciar), sem repetir as dos dias anteriores.

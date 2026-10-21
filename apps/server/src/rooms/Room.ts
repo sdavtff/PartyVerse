@@ -11,7 +11,9 @@ import {
 import { AppError, forbidden, invalidState } from '../lib/errors.js';
 import { uid } from '../lib/ids.js';
 import { cleanText } from '../lib/text.js';
+import type { GameAi } from '../modules/ai/ai.service.js';
 import type { Identity } from '../modules/auth/token.js';
+import { maskProfanity } from '../modules/moderation/profanity.js';
 import type { AnyGameModule, GameContext } from '../games/GameModule.js';
 import { getGameModule } from '../games/registry.js';
 
@@ -44,6 +46,7 @@ export interface RoomHooks {
 
 export interface RoomOptions {
   reconnectGraceMs: number;
+  ai?: GameAi;
   now?: () => number;
 }
 
@@ -81,6 +84,7 @@ export class Room {
     this.now = opts.now ?? Date.now;
     this.createdAt = this.lastActivity = this.now();
     this.hostId = host.id;
+    this.settings = { ...settings, name: maskProfanity(settings.name) };
     this.gameSettings = getGameModule(settings.gameId).defaultSettings();
   }
 
@@ -307,6 +311,7 @@ export class Room {
     if (this.phase === 'playing') throw invalidState('Não é possível alterar durante a partida');
     if (room) {
       const next = { ...this.settings, ...room };
+      next.name = maskProfanity(next.name);
       if (next.maxPlayers < this.activeCount)
         throw new AppError('VALIDATION', 'Limite menor que o número de jogadores na sala');
       if (next.gameId !== this.settings.gameId)
@@ -435,10 +440,30 @@ export class Room {
       id: uid(),
       playerId,
       nickname: p.nickname,
-      text: clean,
+      text: this.settings.chatFilter === false ? clean : maskProfanity(clean),
       at: this.now(),
       kind: 'chat',
     });
+  }
+
+  /** Mensagem do narrador (IA) no chat. */
+  narrate(text: string) {
+    this.pushChat({
+      id: uid(),
+      playerId: null,
+      nickname: '🎙️ Narrador',
+      text,
+      at: this.now(),
+      kind: 'guess-correct',
+    });
+  }
+
+  /** Últimas mensagens de alguém (anexadas a uma denúncia). */
+  recentChatOf(playerId: string, limit = 10) {
+    return this.chatLog
+      .filter((m) => m.playerId === playerId)
+      .slice(-limit)
+      .map((m) => ({ text: m.text, at: m.at }));
   }
 
   systemMessage(text: string) {
@@ -582,6 +607,7 @@ export class Room {
       nickname: (id) => this.players.get(id)?.nickname ?? this.known.get(id)?.nickname ?? 'Alguém',
       isOnline: (id) => this.players.get(id)?.status === 'online',
       finish: () => this.endMatch(true),
+      ai: this.opts.ai,
     };
   }
 

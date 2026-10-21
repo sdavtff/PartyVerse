@@ -12,7 +12,7 @@ import {
   type Ack,
 } from '@partyverse/shared';
 import type { Server, Socket } from 'socket.io';
-import type { ZodType } from 'zod';
+import type { ZodType, ZodTypeDef } from 'zod';
 import { AppError, toServerError } from '../lib/errors.js';
 import { logger } from '../lib/logger.js';
 import { RateLimiter } from '../lib/rateLimiter.js';
@@ -91,7 +91,7 @@ export function attachGateway(
     function on<T>(
       event: string,
       bucket: keyof typeof limits,
-      schema: ZodType<T>,
+      schema: ZodType<T, ZodTypeDef, unknown>,
       fn: (data: T) => unknown,
     ) {
       socket.on(

@@ -48,7 +48,8 @@ export const ModelName = {
     Match: 'Match',
     MatchParticipant: 'MatchParticipant',
     ModerationLog: 'ModerationLog',
-    DailyChallenge: 'DailyChallenge'
+    DailyChallenge: 'DailyChallenge',
+    Report: 'Report'
 };
 /*
  * Enums
@@ -141,6 +142,20 @@ export const DailyChallengeScalarFieldEnum = {
     day: 'day',
     source: 'source',
     data: 'data',
+    createdAt: 'createdAt'
+};
+export const ReportScalarFieldEnum = {
+    id: 'id',
+    reporterId: 'reporterId',
+    reporterName: 'reporterName',
+    targetId: 'targetId',
+    targetName: 'targetName',
+    targetIsGuest: 'targetIsGuest',
+    roomCode: 'roomCode',
+    reason: 'reason',
+    details: 'details',
+    evidence: 'evidence',
+    status: 'status',
     createdAt: 'createdAt'
 };
 export const SortOrder = {

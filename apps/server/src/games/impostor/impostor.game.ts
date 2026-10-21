@@ -142,12 +142,21 @@ function checkProgress(s: ImpostorState, ctx: GameContext) {
   ctx.sync();
 }
 
+/** Locais da partida: os do tema (anfitrião/IA), se houver ao menos 4; senão os padrão. */
+const deckOf = (s: ImpostorState) =>
+  (s.settings.customLocations?.length ?? 0) >= 4 ? s.settings.customLocations : IMPOSTOR_LOCATIONS;
+
 export const impostorGame: GameModule<ImpostorState, ImpostorSettings, ImpostorAction> = {
   id: 'impostor',
   minPlayers: 3,
   settingsSchema: impostorSettingsSchema,
 
-  defaultSettings: () => ({ rounds: 5, discussionSeconds: 180, voteSeconds: 45 }),
+  defaultSettings: () => ({
+    rounds: 5,
+    discussionSeconds: 180,
+    voteSeconds: 45,
+    customLocations: [],
+  }),
 
   createInitialState(players: GamePlayer[], settings: ImpostorSettings): ImpostorState {
     return {
@@ -174,13 +183,19 @@ export const impostorGame: GameModule<ImpostorState, ImpostorSettings, ImpostorA
 
   startRound(s, ctx) {
     s.round += 1;
-    const pool = IMPOSTOR_LOCATIONS.filter((l) => !s.usedLocations.includes(l.name));
-    const loc = pickOne(pool.length ? pool : IMPOSTOR_LOCATIONS);
+    const pool = deckOf(s).filter((l) => !s.usedLocations.includes(l.name));
+    const loc = pickOne(pool.length ? pool : deckOf(s));
     s.location = loc.name;
     s.usedLocations.push(loc.name);
-    const others = shuffle(
-      IMPOSTOR_LOCATIONS.filter((l) => l.name !== loc.name).map((l) => l.name),
-    );
+    // opções do impostor: os do tema primeiro, completando com os padrão
+    const others = [
+      ...shuffle(
+        deckOf(s)
+          .filter((l) => l.name !== loc.name)
+          .map((l) => l.name),
+      ),
+      ...shuffle(IMPOSTOR_LOCATIONS.filter((l) => l.name !== loc.name).map((l) => l.name)),
+    ].filter((n, i, a) => a.indexOf(n) === i);
     s.options = [loc.name, ...others.slice(0, LOCATIONS_SHOWN - 1)].sort((a, b) =>
       a.localeCompare(b, 'pt-BR'),
     );

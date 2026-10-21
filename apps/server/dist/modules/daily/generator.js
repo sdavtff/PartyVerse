@@ -167,7 +167,13 @@ export async function generateChallenge(day, ai, avoid = []) {
     const letter = letterFor(day);
     const prompt = buildPrompt(day, letter, avoid);
     for (let attempt = 1; attempt <= 2; attempt++) {
-        const raw = await chatJson({ apiKey: ai.apiKey, model: ai.model, fetchFn: ai.fetchFn, referer: ai.referer }, SYSTEM, prompt, ai.timeoutMs ?? 60_000);
+        const raw = await chatJson({
+            apiKey: ai.apiKey,
+            model: ai.model,
+            fetchFn: ai.fetchFn,
+            referer: ai.referer,
+            baseUrl: ai.baseUrl,
+        }, SYSTEM, prompt, ai.timeoutMs ?? 60_000);
         if (!raw)
             continue;
         try {

@@ -1,4 +1,8 @@
 import {
+  aiGenerateSchema,
+  reportSchema,
+  type AiKind,
+  type GameId,
   avatarMinLevel,
   EVENTS,
   GAME_CATALOG,
@@ -29,6 +33,9 @@ import type { BanList } from '../modules/admin/bans.js';
 import type { Mailer } from '../modules/mail/mailer.js';
 import type { ResetRepository } from '../modules/auth/reset.repository.js';
 import { PasswordResetService } from '../modules/auth/reset.service.js';
+import type { AiService } from '../modules/ai/ai.service.js';
+import { containsProfanity } from '../modules/moderation/profanity.js';
+import type { ReportsRepository } from '../modules/moderation/reports.repository.js';
 import { z } from 'zod';
 import { TOKEN_COOKIE, TokenService, type Identity } from '../modules/auth/token.js';
 import type { MatchRepository } from '../modules/matches/match.repository.js';
@@ -36,6 +43,8 @@ import type { UserRepository } from '../modules/users/users.repository.js';
 import type { RoomManager } from '../rooms/RoomManager.js';
 
 export interface AppDeps {
+  ai?: AiService;
+  reports?: ReportsRepository;
   bans?: BanList;
   mailer?: Mailer;
   resets?: ResetRepository;
@@ -74,6 +83,8 @@ export function createApp({
   mailer,
   resets,
   disconnectUser,
+  ai,
+  reports,
 }: AppDeps) {
   const app = express();
   const auth = new AuthService(users);
@@ -104,6 +115,11 @@ export function createApp({
       maxAge: TokenService.maxAgeMs,
       path: '/',
     });
+  };
+
+  const checkNickname = (nick: string) => {
+    if (containsProfanity(nick))
+      throw new AppError('VALIDATION', 'Escolha um apelido sem palavrões 🙂', 400);
   };
 
   /** Itens de avatar travados por nível. */
@@ -153,11 +169,96 @@ export function createApp({
       dbHint: dbStatus.state === 'error' ? dbStatus.hint : null,
       google: google.enabled,
       mail: Boolean(mailer?.enabled),
+      ai: Boolean(ai?.enabled),
     }),
   );
   api.get('/games', (_req, res) => res.json(GAME_CATALOG));
   api.get('/stats', (_req, res) => res.json({ online: rooms.onlineCount, rooms: rooms.size }));
   api.get('/rooms', (_req, res) => res.json(rooms.listPublic()));
+
+  // ---------- IA no lobby: gerar conteúdo por tema ----------
+  const aiLimiter = rateLimit({
+    windowMs: 10 * 60_000,
+    limit: env.NODE_ENV === 'test' ? 1000 : 12,
+  });
+  const AI_FITS: Record<AiKind, GameId[]> = {
+    quiz: ['quiz'],
+    words: ['draw', 'charades', 'secretword'],
+    locations: ['impostor'],
+    mostlikely: ['mostlikely'],
+    truths: ['truthdare'],
+    dares: ['truthdare'],
+  };
+  api.post(
+    '/rooms/:code/ai',
+    requireAuth,
+    aiLimiter,
+    wrap(async (req, res) => {
+      if (!ai?.enabled)
+        throw new AppError('INTERNAL', 'A IA não está configurada neste site.', 503);
+      const { kind, theme } = aiGenerateSchema.parse(req.body);
+      if (containsProfanity(theme)) throw new AppError('VALIDATION', 'Escolha outro tema 🙂');
+      const room = rooms.get(String(req.params.code));
+      if (room.hostId !== req.identity!.id)
+        throw new AppError('FORBIDDEN', 'Só o anfitrião pode gerar conteúdo', 403);
+      if (room.phase === 'playing')
+        throw new AppError('INVALID_STATE', 'Espere a partida acabar', 409);
+      if (!AI_FITS[kind].includes(room.settings.gameId))
+        throw new AppError('VALIDATION', 'Esse conteúdo não serve para o jogo escolhido');
+      let data: Record<string, unknown>;
+      try {
+        data = await ai.forRoom(kind, theme);
+      } catch (err) {
+        throw new AppError(
+          'INTERNAL',
+          (err as Error).message || 'A IA falhou. Tente de novo.',
+          502,
+        );
+      }
+      if (rooms.find(room.code) !== room || (room.phase as string) === 'playing')
+        throw new AppError('INVALID_STATE', 'A sala mudou enquanto a IA trabalhava', 409);
+      room.updateSettings(room.hostId, undefined, data);
+      room.systemMessage(`✨ A IA preparou o tema "${theme}"`);
+      const count = Object.values(data).find(Array.isArray)?.length ?? 0;
+      res.json({ ok: true, count });
+    }),
+  );
+
+  // ---------- denúncias ----------
+  const reportLimiter = rateLimit({
+    windowMs: 60 * 60_000,
+    limit: env.NODE_ENV === 'test' ? 1000 : 10,
+  });
+  api.post(
+    '/reports',
+    requireAuth,
+    reportLimiter,
+    wrap(async (req, res) => {
+      if (!reports) throw new AppError('INTERNAL', 'Denúncias indisponíveis', 503);
+      const r = reportSchema.parse(req.body);
+      const me = req.identity!;
+      if (r.targetId === me.id)
+        throw new AppError('VALIDATION', 'Você não pode denunciar a si mesmo');
+      const room = r.roomCode ? rooms.find(r.roomCode) : undefined;
+      const inRoom = room?.players.get(r.targetId);
+      const account = inRoom ? null : await users?.findById(r.targetId).catch(() => null);
+      if (!inRoom && !account) throw new AppError('NOT_FOUND', 'Jogador não encontrado', 404);
+      if (await reports.recentDuplicate(me.id, r.targetId, new Date(Date.now() - 10 * 60_000)))
+        throw new AppError('INVALID_STATE', 'Você já denunciou essa pessoa agora há pouco', 409);
+      await reports.create({
+        reporterId: me.id,
+        reporterName: me.nickname,
+        targetId: r.targetId,
+        targetName: inRoom?.nickname ?? account!.nickname,
+        targetIsGuest: inRoom ? room!.isGuestPlayer(r.targetId) : false,
+        roomCode: room?.code ?? null,
+        reason: r.reason,
+        details: r.details,
+        evidence: room ? room.recentChatOf(r.targetId) : [],
+      });
+      res.status(201).json({ ok: true });
+    }),
+  );
 
   // ranking com cache curto (a consulta agrega todas as partidas)
   const boardCache = new Map<string, { at: number; data: unknown }>();
@@ -201,6 +302,7 @@ export function createApp({
     authLimiter,
     wrap((req, res) => {
       const { nickname, avatar } = guestSchema.parse(req.body);
+      checkNickname(nickname);
       checkAvatar(avatar, 1);
       const id = auth.guest(nickname, avatar);
       setSession(res, id);
@@ -212,6 +314,7 @@ export function createApp({
     authLimiter,
     wrap(async (req, res) => {
       const { email, password, nickname, avatar } = registerSchema.parse(req.body);
+      checkNickname(nickname);
       checkAvatar(avatar, 1);
       const id = await auth.register(email, password, nickname, avatar);
       setSession(res, id);
@@ -346,10 +449,30 @@ export function createApp({
         users: users ? await users.counts(since) : null,
         matches: (await matches.counts?.(since)) ?? null,
         daily: daily ? await daily.counts() : null,
+        reportsOpen: reports ? await reports.openCount() : 0,
+        ai: Boolean(ai?.enabled),
         db: dbStatus.state,
         mail: Boolean(mailer?.enabled),
         uptimeMin: Math.round(process.uptime() / 60),
       });
+    }),
+  );
+  api.get(
+    '/admin/reports',
+    requireAdmin,
+    wrap(async (req, res) => {
+      const st =
+        req.query.status === 'closed' || req.query.status === 'all' ? req.query.status : 'open';
+      res.json(reports ? await reports.list(st, 100) : []);
+    }),
+  );
+  api.post(
+    '/admin/reports/:id',
+    requireAdmin,
+    wrap(async (req, res) => {
+      const { status } = z.object({ status: z.enum(['open', 'closed']) }).parse(req.body);
+      await reports?.setStatus(String(req.params.id), status);
+      res.json({ ok: true });
     }),
   );
   api.get('/admin/rooms', requireAdmin, (_req, res) => res.json(rooms.adminList()));
@@ -423,6 +546,7 @@ export function createApp({
     requireAuth,
     wrap(async (req, res) => {
       const data = profileUpdateSchema.parse(req.body);
+      if (data.nickname) checkNickname(data.nickname);
       const id = req.identity!;
       checkAvatar(data.avatar, id.isGuest || !users ? 1 : await levelOf(id.id));
       if (id.isGuest || !users) {

@@ -36,6 +36,12 @@ import {
   type DailyRepository,
 } from './modules/daily/daily.repository.js';
 import { DailyService } from './modules/daily/daily.service.js';
+import { AiService } from './modules/ai/ai.service.js';
+import {
+  MemoryReportsRepository,
+  PrismaReportsRepository,
+  type ReportsRepository,
+} from './modules/moderation/reports.repository.js';
 import { BanList } from './modules/admin/bans.js';
 import { SmtpMailer, type Mailer } from './modules/mail/mailer.js';
 import {
@@ -76,6 +82,16 @@ export function buildServer(env: Env, opts: BuildOptions = {}) {
         : null);
   const progress = progressRepo ? new ProgressService(progressRepo) : undefined;
   const presence = new Presence();
+  const ai = new AiService({
+    apiKey: env.OPENROUTER_API_KEY,
+    model: env.OPENROUTER_MODEL,
+    fetchFn: opts.aiFetch,
+    referer: env.PUBLIC_URL,
+    baseUrl: env.OPENROUTER_BASE_URL,
+  });
+  const reports: ReportsRepository = prisma
+    ? new PrismaReportsRepository(prisma)
+    : new MemoryReportsRepository();
   const dailyRepo: DailyRepository = prisma
     ? new PrismaDailyRepository(prisma)
     : new MemoryDailyRepository((id) =>
@@ -84,7 +100,13 @@ export function buildServer(env: Env, opts: BuildOptions = {}) {
   const daily = new DailyService(
     dailyRepo,
     prisma ? new PrismaChallengeStore(prisma) : new MemoryChallengeStore(),
-    { apiKey: env.OPENROUTER_API_KEY, model: env.OPENROUTER_MODEL, fetchFn: opts.aiFetch },
+    {
+      apiKey: env.OPENROUTER_API_KEY,
+      model: env.OPENROUTER_MODEL,
+      fetchFn: opts.aiFetch,
+      referer: env.PUBLIC_URL,
+      baseUrl: env.OPENROUTER_BASE_URL,
+    },
   );
   if (env.NODE_ENV !== 'test') daily.startWarmup();
   const mailer = opts.mailer ?? new SmtpMailer(env);
@@ -124,6 +146,7 @@ export function buildServer(env: Env, opts: BuildOptions = {}) {
     {
       idleTtlMs: env.ROOM_IDLE_TTL_MS,
       reconnectGraceMs: env.RECONNECT_GRACE_MS,
+      ai,
     },
     progress,
   );
@@ -141,6 +164,8 @@ export function buildServer(env: Env, opts: BuildOptions = {}) {
     bans,
     mailer,
     resets,
+    ai,
+    reports,
     disconnectUser: (userId) => {
       for (const sid of presence.socketsOf(userId)) io.sockets.sockets.get(sid)?.disconnect(true);
     },

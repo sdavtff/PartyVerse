@@ -186,6 +186,7 @@ export interface AiOptions {
   fetchFn?: typeof fetch;
   timeoutMs?: number;
   referer?: string;
+  baseUrl?: string;
 }
 
 const SYSTEM =
@@ -203,7 +204,13 @@ export async function generateChallenge(
   const prompt = buildPrompt(day, letter, avoid);
   for (let attempt = 1; attempt <= 2; attempt++) {
     const raw = await chatJson<unknown>(
-      { apiKey: ai.apiKey, model: ai.model, fetchFn: ai.fetchFn, referer: ai.referer },
+      {
+        apiKey: ai.apiKey,
+        model: ai.model,
+        fetchFn: ai.fetchFn,
+        referer: ai.referer,
+        baseUrl: ai.baseUrl,
+      },
       SYSTEM,
       prompt,
       ai.timeoutMs ?? 60_000,

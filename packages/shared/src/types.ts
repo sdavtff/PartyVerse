@@ -175,6 +175,8 @@ export interface StopView {
     rejections: Record<string, number>;
     /** categorias que EU marquei como inválidas para este jogador */
     myRejections: string[];
+    /** categorias que o juiz IA achou suspeitas */
+    aiFlags: string[];
     /** preenchido em round-results */
     statuses: Record<string, StopAnswerStatus> | null;
   }[];

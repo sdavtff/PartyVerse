@@ -1,6 +1,7 @@
 import { EVENTS, type StopSettings } from '@partyverse/shared';
 import { useState } from 'react';
 import { useToast } from '../../components/Toast';
+import { useHealth } from '../../lib/health';
 import { emitAck } from '../../lib/socket';
 
 const SUGGESTED = [
@@ -27,6 +28,7 @@ export function StopSettingsForm({
 }) {
   const toast = useToast();
   const [newCat, setNewCat] = useState('');
+  const health = useHealth();
   const save = (game: Partial<StopSettings>) =>
     emitAck(EVENTS.ROOM_UPDATE_SETTINGS, { game }).catch((e) => toast(e.message, 'error'));
 
@@ -157,6 +159,24 @@ export function StopSettingsForm({
           ))}
         </div>
       </div>
+      {health?.ai && (
+        <label className="flex items-center justify-between gap-3 rounded-2xl border-2 border-pop-violet/50 bg-pop-violet/10 px-4 py-3">
+          <span>
+            <span className="block font-bold text-white">🤖 Juiz IA</span>
+            <span className="block text-xs text-ink-200">
+              Na revisão, a IA marca respostas que parecem não existir ou não servir. Vale como um
+              voto — a turma decide.
+            </span>
+          </span>
+          <input
+            type="checkbox"
+            className="h-5 w-5 accent-lime-400"
+            disabled={!editable}
+            checked={Boolean(settings.aiJudge)}
+            onChange={(e) => save({ aiJudge: e.target.checked })}
+          />
+        </label>
+      )}
     </div>
   );
 }

@@ -9,18 +9,21 @@ export interface OpenRouterConfig {
   fetchFn?: typeof fetch;
   /** endereço do site (a OpenRouter mostra no painel de uso) */
   referer?: string;
+  /** outro endereço da API (testes / proxy) */
+  baseUrl?: string;
 }
 
 /** Um cliente por chave (o SDK guarda configuração e conexões). */
 const clients = new Map<string, OpenRouter>();
 function clientFor(cfg: OpenRouterConfig, timeoutMs: number) {
-  const key = `${cfg.apiKey}|${cfg.referer ?? ''}|${timeoutMs}`;
+  const key = `${cfg.apiKey}|${cfg.referer ?? ''}|${cfg.baseUrl ?? ''}|${timeoutMs}`;
   let c = cfg.fetchFn ? undefined : clients.get(key);
   if (!c) {
     c = new OpenRouter({
       apiKey: cfg.apiKey,
       httpReferer: cfg.referer ?? 'https://partyverse.app',
-      appTitle: 'PartyVerse Daily',
+      appTitle: 'PartyVerse',
+      ...(cfg.baseUrl ? { serverURL: cfg.baseUrl } : {}),
       timeoutMs,
       // quem tenta de novo é o gerador do desafio (2 tentativas); aqui falha rápido
       retryConfig: { strategy: 'none' },

@@ -138,3 +138,21 @@ model DailyChallenge {
   data      Json
   createdAt DateTime @default(now())
 }
+
+/// Denúncias de jogadores
+model Report {
+  id            String   @id @default(cuid())
+  reporterId    String
+  reporterName  String
+  targetId      String
+  targetName    String
+  targetIsGuest Boolean  @default(false)
+  roomCode      String?
+  reason        String
+  details       String   @default("")
+  evidence      Json     @default("[]")
+  status        String   @default("open")
+  createdAt     DateTime @default(now())
+
+  @@index([status, createdAt])
+}

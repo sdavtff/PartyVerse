@@ -2,6 +2,7 @@ import { EVENTS, WORD_CATEGORIES, type GameId, type GuessSettings } from '@party
 import { CustomListEditor, lines } from '../../components/CustomListEditor';
 import { useToast } from '../../components/Toast';
 import { emitAck } from '../../lib/socket';
+import { AiThemeBox } from '../../components/AiThemeBox';
 
 const CAT_LABEL: Record<GuessSettings['category'], string> = {
   misto: 'Misto',
@@ -76,6 +77,7 @@ export function GuessSettingsForm({
           ))}
         </ul>
       </div>
+      <AiThemeBox kinds={['words']} editable={editable} />
       <div>
         <p className="label">Tema das palavras</p>
         <div className="flex flex-wrap gap-2">

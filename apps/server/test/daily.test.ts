@@ -125,14 +125,41 @@ describe('conteúdo do desafio', () => {
     })),
     categorias: ['Fruta', 'Cor', 'Doce', 'Animal', 'Lugar', 'Bebida', 'Hobby'],
   });
+  /** Imita a OpenRouter respondendo em streaming (SSE), em pedaços. */
   const fakeFetch = (body: unknown, status = 200) =>
-    (async () =>
-      new Response(
-        JSON.stringify({
-          choices: [{ message: { content: '```json\n' + JSON.stringify(body) + '\n```' } }],
-        }),
-        { status },
-      )) as unknown as typeof fetch;
+    (async () => {
+      if (status !== 200)
+        return new Response(JSON.stringify({ error: { message: 'falhou', code: status } }), {
+          status,
+          headers: { 'content-type': 'application/json' },
+        });
+      const text = '```json\n' + JSON.stringify(body) + '\n```';
+      const parts = text.match(/[\s\S]{1,40}/g)!;
+      const chunk = (delta: object, extra: object = {}) =>
+        `data: ${JSON.stringify({
+          id: 'gen-1',
+          object: 'chat.completion.chunk',
+          created: 1,
+          model: 'teste',
+          choices: [{ index: 0, delta, finish_reason: null }],
+          ...extra,
+        })}\n\n`;
+      const sse =
+        parts.map((p) => chunk({ role: 'assistant', content: p })).join('') +
+        chunk(
+          {},
+          {
+            usage: {
+              prompt_tokens: 10,
+              completion_tokens: 20,
+              total_tokens: 30,
+              completion_tokens_details: { reasoning_tokens: 5 },
+            },
+          },
+        ) +
+        'data: [DONE]\n\n';
+      return new Response(sse, { status: 200, headers: { 'content-type': 'text/event-stream' } });
+    }) as unknown as typeof fetch;
 
   it('gera com IA quando há chave, e cai para o banco se a IA falhar', async () => {
     const ok = await generateChallenge('2026-11-05', {

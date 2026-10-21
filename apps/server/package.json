@@ -17,6 +17,7 @@
     "postinstall": "prisma generate || echo \"prisma generate falhou; rode npm run db:generate\""
   },
   "dependencies": {
+    "@openrouter/sdk": "^1.4.25",
     "@partyverse/shared": "*",
     "@prisma/adapter-pg": "^7.10.1",
     "@prisma/client": "^7.10.1",

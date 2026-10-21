@@ -12,6 +12,7 @@ Plataforma web de minijogos multiplayer em tempo real. **Versão 0.6:** página 
 - **Filtro de palavrões** no chat (ligado por padrão), em nomes de sala e apelidos.
 - **Denunciar jogador** (na lista da sala ou no perfil), com as últimas mensagens anexadas; denúncias aparecem no **/admin**.
 - **Termo do dia** no `/desafio`: a palavra de 5 letras em 6 tentativas, teclado na tela, resultado para compartilhar e ranking do dia.
+- **Telefone Sem Fio** desenhado (escreve → desenha → descreve, revelação com curtidas) e **Espiões** (dois times, mestres com a chave, dica de uma palavra, assassino).
 - **Forca** (em turnos, dá para jogar sozinho; palavras por tema, suas ou da IA), **Jogo da Velha** (melhor de N) e **Damas** com regras brasileiras (captura obrigatória, lei da maioria, dama voadora).
 
 ## Novidades da 0.6.1

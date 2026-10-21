@@ -104,7 +104,7 @@ export function createApp({ env, tokens, users, matches, rooms, google: googleDe
     });
     const AI_FITS = {
         quiz: ['quiz'],
-        words: ['draw', 'charades', 'secretword', 'hangman'],
+        words: ['draw', 'charades', 'secretword', 'hangman', 'spies'],
         locations: ['impostor'],
         mostlikely: ['mostlikely'],
         truths: ['truthdare'],

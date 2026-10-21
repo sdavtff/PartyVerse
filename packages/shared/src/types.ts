@@ -162,7 +162,25 @@ export const GAME_CATALOG: GameMeta[] = [
     maxPlayers: 2,
     available: true,
     color: 'brown',
+  },  {
+    id: 'telephone',
+    name: 'Telefone Sem Fio',
+    tagline: 'Escreve, desenha, adivinha… e no fim todo mundo vê o que virou.',
+    minPlayers: 3,
+    maxPlayers: 16,
+    available: true,
+    color: 'pink',
   },
+  {
+    id: 'spies',
+    name: 'Espiões',
+    tagline: 'Dois times, 25 palavras e um mestre que só pode dar uma dica.',
+    minPlayers: 4,
+    maxPlayers: 16,
+    available: true,
+    color: 'red',
+  },
+
 
 ];
 
@@ -400,6 +418,61 @@ export interface CheckersView {
   lastMove: number[] | null;
   winner: 'w' | 'b' | 'draw' | null;
   reason: string | null;
+  totals: Record<string, number>;
+}
+
+export type TelephoneEntry =
+  | { kind: 'text'; author: string; text: string }
+  | { kind: 'drawing'; author: string; ops: DrawOp[] };
+
+export interface TelephoneView {
+  phase: 'write' | 'draw' | 'describe' | 'reveal' | 'finished';
+  step: number;
+  totalSteps: number;
+  deadline: number | null;
+  participants: string[];
+  /** quem já terminou o passo atual */
+  doneStep: string[];
+  /** minha tarefa neste passo */
+  task:
+    | { kind: 'write' }
+    | { kind: 'draw'; prompt: string }
+    | { kind: 'describe'; ops: DrawOp[] }
+    | null;
+  /** o que eu já mandei neste passo (para continuar após recarregar) */
+  myDraft: { text: string | null; ops: DrawOp[] };
+  /** na revelação: o caderno atual e quantas páginas já apareceram */
+  reveal: {
+    book: number;
+    totalBooks: number;
+    owner: string;
+    shown: number;
+    entries: (TelephoneEntry & { likes: number; likedByMe: boolean })[];
+  } | null;
+  totals: Record<string, number>;
+}
+
+export type SpiesColor = 'red' | 'blue' | 'neutral' | 'assassin';
+export interface SpiesView {
+  phase: 'clue' | 'guess' | 'game-end' | 'finished';
+  game: number;
+  totalGames: number;
+  deadline: number | null;
+  participants: string[];
+  teams: { red: string[]; blue: string[] };
+  spymasters: { red: string; blue: string };
+  turn: 'red' | 'blue';
+  words: string[];
+  /** cor revelada de cada carta (null = ainda escondida) */
+  revealed: (SpiesColor | null)[];
+  /** chave completa: só para os mestres (e para todos no fim) */
+  key: SpiesColor[] | null;
+  clue: { word: string; count: number } | null;
+  guessesLeft: number;
+  remaining: { red: number; blue: number };
+  winner: 'red' | 'blue' | null;
+  reason: string | null;
+  log: string[];
   totals: Record<string, number>;
 }
 

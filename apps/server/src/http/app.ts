@@ -183,7 +183,7 @@ export function createApp({
   });
   const AI_FITS: Record<AiKind, GameId[]> = {
     quiz: ['quiz'],
-    words: ['draw', 'charades', 'secretword', 'hangman'],
+    words: ['draw', 'charades', 'secretword', 'hangman', 'spies'],
     locations: ['impostor'],
     mostlikely: ['mostlikely'],
     truths: ['truthdare'],

@@ -13,6 +13,8 @@ export const GAME_IDS = [
   'hangman',
   'tictactoe',
   'checkers',
+  'telephone',
+  'spies',
 ] as const;
 export type GameId = (typeof GAME_IDS)[number];
 
@@ -420,3 +422,40 @@ export const checkersActionSchema = z.object({
   path: z.array(z.number().int().min(0).max(63)).min(2).max(14),
 });
 export type CheckersAction = z.infer<typeof checkersActionSchema>;
+
+// ---------- Telefone sem fio desenhado ----------
+export const telephoneSettingsSchema = z.object({
+  writeSeconds: z.number().int().min(20).max(120),
+  drawSeconds: z.number().int().min(30).max(180),
+  /** passos por caderno (0 = um por jogador) */
+  steps: z.number().int().min(0).max(12),
+});
+export type TelephoneSettings = z.infer<typeof telephoneSettingsSchema>;
+export const telephoneActionSchema = z.discriminatedUnion('type', [
+  z.object({ type: z.literal('text'), text: z.string().trim().min(1).max(80) }),
+  z.object({ type: z.literal('draw'), ops: z.array(drawOpSchema).min(1).max(40) }),
+  z.object({ type: z.literal('done') }),
+  z.object({ type: z.literal('like'), book: z.number().int().min(0).max(60), entry: z.number().int().min(0).max(20) }),
+  z.object({ type: z.literal('next') }),
+]);
+export type TelephoneAction = z.infer<typeof telephoneActionSchema>;
+
+// ---------- Espiões ----------
+export const spiesSettingsSchema = z.object({
+  games: z.number().int().min(1).max(3),
+  clueSeconds: z.number().int().min(30).max(240),
+  guessSeconds: z.number().int().min(30).max(300),
+  category: z.enum(WORD_CATEGORIES),
+  customWords: customListSchema(200, 30),
+});
+export type SpiesSettings = z.infer<typeof spiesSettingsSchema>;
+export const spiesActionSchema = z.discriminatedUnion('type', [
+  z.object({
+    type: z.literal('clue'),
+    word: z.string().trim().min(2).max(24),
+    count: z.number().int().min(0).max(9),
+  }),
+  z.object({ type: z.literal('reveal'), card: z.number().int().min(0).max(24) }),
+  z.object({ type: z.literal('pass') }),
+]);
+export type SpiesAction = z.infer<typeof spiesActionSchema>;

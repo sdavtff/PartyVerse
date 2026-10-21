@@ -13,6 +13,8 @@ const ACCENTS: Record<GameId, string> = {
   hangman: '#ffd84d',
   tictactoe: '#4de8ff',
   checkers: '#d49a6a',
+  telephone: '#ff8fc8',
+  spies: '#ff5c5c',
 };
 export const gameAccent = (id: GameId) => ACCENTS[id];
 
@@ -119,6 +121,21 @@ const GLYPHS: Record<GameId, JSX.Element> = {
     <g stroke="#0f0b17" strokeWidth="4">
       <circle cx="26" cy="38" r="9" fill="#fff8ec" />
       <circle cx="38" cy="26" r="9" fill="#3a2c48" />
+    </g>
+  ),
+  telephone: (
+    <g fill="none" stroke="#0f0b17" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M18 22c0-4 3-6 7-6h14c4 0 7 2 7 6v4H38v-3H26v3H18z" />
+      <path d="M22 30h20l4 16H18z" />
+      <circle cx="32" cy="38" r="3" />
+    </g>
+  ),
+  spies: (
+    <g fill="#0f0b17">
+      <path d="M14 30c4-8 32-8 36 0z" />
+      <rect x="18" y="32" width="11" height="7" rx="3.5" />
+      <rect x="35" y="32" width="11" height="7" rx="3.5" />
+      <rect x="28" y="34" width="8" height="2" />
     </g>
   ),
 };

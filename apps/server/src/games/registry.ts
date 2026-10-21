@@ -8,6 +8,8 @@ import { mostLikelyGame } from './party/mostlikely.game.js';
 import { truthDareGame } from './party/truthdare.game.js';
 import { twoTruthsGame } from './party/twotruths.game.js';
 import { stopGame } from './stop/stop.game.js';
+import { spiesGame } from './spies/spies.game.js';
+import { telephoneGame } from './telephone/telephone.game.js';
 import { checkersGame } from './classic/checkers.game.js';
 import { hangmanGame } from './classic/hangman.game.js';
 import { ticTacToeGame } from './classic/tictactoe.game.js';
@@ -26,6 +28,8 @@ const modules = new Map<GameId, AnyGameModule>(
     hangmanGame,
     ticTacToeGame,
     checkersGame,
+    telephoneGame,
+    spiesGame,
   ].map((m) => [m.id, m as AnyGameModule]),
 );
 

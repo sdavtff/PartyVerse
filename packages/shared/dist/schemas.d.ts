@@ -1,5 +1,5 @@
 import { z } from 'zod';
-export declare const GAME_IDS: readonly ["stop", "draw", "charades", "quiz", "secretword", "impostor", "mostlikely", "truthdare", "twotruths", "hangman", "tictactoe", "checkers"];
+export declare const GAME_IDS: readonly ["stop", "draw", "charades", "quiz", "secretword", "impostor", "mostlikely", "truthdare", "twotruths", "hangman", "tictactoe", "checkers", "telephone", "spies"];
 export type GameId = (typeof GAME_IDS)[number];
 export declare const nicknameSchema: z.ZodString;
 export declare const roomCodeSchema: z.ZodString;
@@ -58,7 +58,7 @@ export type StopSettings = z.infer<typeof stopSettingsSchema>;
 export declare const MAX_ROOM_PLAYERS = 50;
 export declare const roomSettingsSchema: z.ZodObject<{
     name: z.ZodString;
-    gameId: z.ZodEnum<["stop", "draw", "charades", "quiz", "secretword", "impostor", "mostlikely", "truthdare", "twotruths", "hangman", "tictactoe", "checkers"]>;
+    gameId: z.ZodEnum<["stop", "draw", "charades", "quiz", "secretword", "impostor", "mostlikely", "truthdare", "twotruths", "hangman", "tictactoe", "checkers", "telephone", "spies"]>;
     isPublic: z.ZodBoolean;
     maxPlayers: z.ZodNumber;
     /** narrador com IA comenta o fim da partida */
@@ -67,14 +67,14 @@ export declare const roomSettingsSchema: z.ZodObject<{
     chatFilter: z.ZodDefault<z.ZodBoolean>;
 }, "strip", z.ZodTypeAny, {
     name: string;
-    gameId: "stop" | "draw" | "charades" | "quiz" | "secretword" | "impostor" | "mostlikely" | "truthdare" | "twotruths" | "hangman" | "tictactoe" | "checkers";
+    gameId: "stop" | "draw" | "charades" | "quiz" | "secretword" | "impostor" | "mostlikely" | "truthdare" | "twotruths" | "hangman" | "tictactoe" | "checkers" | "telephone" | "spies";
     isPublic: boolean;
     maxPlayers: number;
     narrator: boolean;
     chatFilter: boolean;
 }, {
     name: string;
-    gameId: "stop" | "draw" | "charades" | "quiz" | "secretword" | "impostor" | "mostlikely" | "truthdare" | "twotruths" | "hangman" | "tictactoe" | "checkers";
+    gameId: "stop" | "draw" | "charades" | "quiz" | "secretword" | "impostor" | "mostlikely" | "truthdare" | "twotruths" | "hangman" | "tictactoe" | "checkers" | "telephone" | "spies";
     isPublic: boolean;
     maxPlayers: number;
     narrator?: boolean | undefined;
@@ -90,7 +90,7 @@ export type RoomSettings = z.infer<typeof roomSettingsSchema>;
 export declare const createRoomSchema: z.ZodObject<{
     settings: z.ZodObject<{
         name: z.ZodString;
-        gameId: z.ZodEnum<["stop", "draw", "charades", "quiz", "secretword", "impostor", "mostlikely", "truthdare", "twotruths", "hangman", "tictactoe", "checkers"]>;
+        gameId: z.ZodEnum<["stop", "draw", "charades", "quiz", "secretword", "impostor", "mostlikely", "truthdare", "twotruths", "hangman", "tictactoe", "checkers", "telephone", "spies"]>;
         isPublic: z.ZodBoolean;
         maxPlayers: z.ZodNumber;
         /** narrador com IA comenta o fim da partida */
@@ -99,14 +99,14 @@ export declare const createRoomSchema: z.ZodObject<{
         chatFilter: z.ZodDefault<z.ZodBoolean>;
     }, "strip", z.ZodTypeAny, {
         name: string;
-        gameId: "stop" | "draw" | "charades" | "quiz" | "secretword" | "impostor" | "mostlikely" | "truthdare" | "twotruths" | "hangman" | "tictactoe" | "checkers";
+        gameId: "stop" | "draw" | "charades" | "quiz" | "secretword" | "impostor" | "mostlikely" | "truthdare" | "twotruths" | "hangman" | "tictactoe" | "checkers" | "telephone" | "spies";
         isPublic: boolean;
         maxPlayers: number;
         narrator: boolean;
         chatFilter: boolean;
     }, {
         name: string;
-        gameId: "stop" | "draw" | "charades" | "quiz" | "secretword" | "impostor" | "mostlikely" | "truthdare" | "twotruths" | "hangman" | "tictactoe" | "checkers";
+        gameId: "stop" | "draw" | "charades" | "quiz" | "secretword" | "impostor" | "mostlikely" | "truthdare" | "twotruths" | "hangman" | "tictactoe" | "checkers" | "telephone" | "spies";
         isPublic: boolean;
         maxPlayers: number;
         narrator?: boolean | undefined;
@@ -116,7 +116,7 @@ export declare const createRoomSchema: z.ZodObject<{
 }, "strip", z.ZodTypeAny, {
     settings: {
         name: string;
-        gameId: "stop" | "draw" | "charades" | "quiz" | "secretword" | "impostor" | "mostlikely" | "truthdare" | "twotruths" | "hangman" | "tictactoe" | "checkers";
+        gameId: "stop" | "draw" | "charades" | "quiz" | "secretword" | "impostor" | "mostlikely" | "truthdare" | "twotruths" | "hangman" | "tictactoe" | "checkers" | "telephone" | "spies";
         isPublic: boolean;
         maxPlayers: number;
         narrator: boolean;
@@ -126,7 +126,7 @@ export declare const createRoomSchema: z.ZodObject<{
 }, {
     settings: {
         name: string;
-        gameId: "stop" | "draw" | "charades" | "quiz" | "secretword" | "impostor" | "mostlikely" | "truthdare" | "twotruths" | "hangman" | "tictactoe" | "checkers";
+        gameId: "stop" | "draw" | "charades" | "quiz" | "secretword" | "impostor" | "mostlikely" | "truthdare" | "twotruths" | "hangman" | "tictactoe" | "checkers" | "telephone" | "spies";
         isPublic: boolean;
         maxPlayers: number;
         narrator?: boolean | undefined;
@@ -189,21 +189,21 @@ export declare const transferHostSchema: z.ZodObject<{
 export declare const updateSettingsSchema: z.ZodObject<{
     room: z.ZodOptional<z.ZodObject<{
         name: z.ZodOptional<z.ZodString>;
-        gameId: z.ZodOptional<z.ZodEnum<["stop", "draw", "charades", "quiz", "secretword", "impostor", "mostlikely", "truthdare", "twotruths", "hangman", "tictactoe", "checkers"]>>;
+        gameId: z.ZodOptional<z.ZodEnum<["stop", "draw", "charades", "quiz", "secretword", "impostor", "mostlikely", "truthdare", "twotruths", "hangman", "tictactoe", "checkers", "telephone", "spies"]>>;
         isPublic: z.ZodOptional<z.ZodBoolean>;
         maxPlayers: z.ZodOptional<z.ZodNumber>;
         narrator: z.ZodOptional<z.ZodDefault<z.ZodBoolean>>;
         chatFilter: z.ZodOptional<z.ZodDefault<z.ZodBoolean>>;
     }, "strip", z.ZodTypeAny, {
         name?: string | undefined;
-        gameId?: "stop" | "draw" | "charades" | "quiz" | "secretword" | "impostor" | "mostlikely" | "truthdare" | "twotruths" | "hangman" | "tictactoe" | "checkers" | undefined;
+        gameId?: "stop" | "draw" | "charades" | "quiz" | "secretword" | "impostor" | "mostlikely" | "truthdare" | "twotruths" | "hangman" | "tictactoe" | "checkers" | "telephone" | "spies" | undefined;
         isPublic?: boolean | undefined;
         maxPlayers?: number | undefined;
         narrator?: boolean | undefined;
         chatFilter?: boolean | undefined;
     }, {
         name?: string | undefined;
-        gameId?: "stop" | "draw" | "charades" | "quiz" | "secretword" | "impostor" | "mostlikely" | "truthdare" | "twotruths" | "hangman" | "tictactoe" | "checkers" | undefined;
+        gameId?: "stop" | "draw" | "charades" | "quiz" | "secretword" | "impostor" | "mostlikely" | "truthdare" | "twotruths" | "hangman" | "tictactoe" | "checkers" | "telephone" | "spies" | undefined;
         isPublic?: boolean | undefined;
         maxPlayers?: number | undefined;
         narrator?: boolean | undefined;
@@ -216,7 +216,7 @@ export declare const updateSettingsSchema: z.ZodObject<{
     password?: string | undefined;
     room?: {
         name?: string | undefined;
-        gameId?: "stop" | "draw" | "charades" | "quiz" | "secretword" | "impostor" | "mostlikely" | "truthdare" | "twotruths" | "hangman" | "tictactoe" | "checkers" | undefined;
+        gameId?: "stop" | "draw" | "charades" | "quiz" | "secretword" | "impostor" | "mostlikely" | "truthdare" | "twotruths" | "hangman" | "tictactoe" | "checkers" | "telephone" | "spies" | undefined;
         isPublic?: boolean | undefined;
         maxPlayers?: number | undefined;
         narrator?: boolean | undefined;
@@ -227,7 +227,7 @@ export declare const updateSettingsSchema: z.ZodObject<{
     password?: string | undefined;
     room?: {
         name?: string | undefined;
-        gameId?: "stop" | "draw" | "charades" | "quiz" | "secretword" | "impostor" | "mostlikely" | "truthdare" | "twotruths" | "hangman" | "tictactoe" | "checkers" | undefined;
+        gameId?: "stop" | "draw" | "charades" | "quiz" | "secretword" | "impostor" | "mostlikely" | "truthdare" | "twotruths" | "hangman" | "tictactoe" | "checkers" | "telephone" | "spies" | undefined;
         isPublic?: boolean | undefined;
         maxPlayers?: number | undefined;
         narrator?: boolean | undefined;
@@ -1014,3 +1014,256 @@ export declare const checkersActionSchema: z.ZodObject<{
     type: "move";
 }>;
 export type CheckersAction = z.infer<typeof checkersActionSchema>;
+export declare const telephoneSettingsSchema: z.ZodObject<{
+    writeSeconds: z.ZodNumber;
+    drawSeconds: z.ZodNumber;
+    /** passos por caderno (0 = um por jogador) */
+    steps: z.ZodNumber;
+}, "strip", z.ZodTypeAny, {
+    writeSeconds: number;
+    drawSeconds: number;
+    steps: number;
+}, {
+    writeSeconds: number;
+    drawSeconds: number;
+    steps: number;
+}>;
+export type TelephoneSettings = z.infer<typeof telephoneSettingsSchema>;
+export declare const telephoneActionSchema: z.ZodDiscriminatedUnion<"type", [z.ZodObject<{
+    type: z.ZodLiteral<"text">;
+    text: z.ZodString;
+}, "strip", z.ZodTypeAny, {
+    type: "text";
+    text: string;
+}, {
+    type: "text";
+    text: string;
+}>, z.ZodObject<{
+    type: z.ZodLiteral<"draw">;
+    ops: z.ZodArray<z.ZodDiscriminatedUnion<"t", [z.ZodObject<{
+        t: z.ZodLiteral<"s">;
+        id: z.ZodString;
+        c: z.ZodString;
+        w: z.ZodNumber;
+        e: z.ZodOptional<z.ZodBoolean>;
+        p: z.ZodArray<z.ZodNumber, "many">;
+    }, "strip", z.ZodTypeAny, {
+        w: number;
+        t: "s";
+        id: string;
+        c: string;
+        p: number[];
+        e?: boolean | undefined;
+    }, {
+        w: number;
+        t: "s";
+        id: string;
+        c: string;
+        p: number[];
+        e?: boolean | undefined;
+    }>, z.ZodObject<{
+        t: z.ZodLiteral<"a">;
+        id: z.ZodString;
+        p: z.ZodArray<z.ZodNumber, "many">;
+    }, "strip", z.ZodTypeAny, {
+        t: "a";
+        id: string;
+        p: number[];
+    }, {
+        t: "a";
+        id: string;
+        p: number[];
+    }>, z.ZodObject<{
+        t: z.ZodLiteral<"sh">;
+        id: z.ZodString;
+        k: z.ZodEnum<["line", "rect", "ellipse"]>;
+        c: z.ZodString;
+        w: z.ZodNumber;
+        f: z.ZodBoolean;
+        p: z.ZodTuple<[z.ZodNumber, z.ZodNumber, z.ZodNumber, z.ZodNumber], null>;
+    }, "strip", z.ZodTypeAny, {
+        w: number;
+        t: "sh";
+        id: string;
+        c: string;
+        p: [number, number, number, number];
+        k: "line" | "rect" | "ellipse";
+        f: boolean;
+    }, {
+        w: number;
+        t: "sh";
+        id: string;
+        c: string;
+        p: [number, number, number, number];
+        k: "line" | "rect" | "ellipse";
+        f: boolean;
+    }>, z.ZodObject<{
+        t: z.ZodLiteral<"f">;
+        id: z.ZodString;
+        c: z.ZodString;
+        x: z.ZodNumber;
+        y: z.ZodNumber;
+    }, "strip", z.ZodTypeAny, {
+        t: "f";
+        id: string;
+        c: string;
+        x: number;
+        y: number;
+    }, {
+        t: "f";
+        id: string;
+        c: string;
+        x: number;
+        y: number;
+    }>, z.ZodObject<{
+        t: z.ZodLiteral<"u">;
+    }, "strip", z.ZodTypeAny, {
+        t: "u";
+    }, {
+        t: "u";
+    }>, z.ZodObject<{
+        t: z.ZodLiteral<"clear">;
+    }, "strip", z.ZodTypeAny, {
+        t: "clear";
+    }, {
+        t: "clear";
+    }>]>, "many">;
+}, "strip", z.ZodTypeAny, {
+    type: "draw";
+    ops: ({
+        w: number;
+        t: "s";
+        id: string;
+        c: string;
+        p: number[];
+        e?: boolean | undefined;
+    } | {
+        t: "a";
+        id: string;
+        p: number[];
+    } | {
+        w: number;
+        t: "sh";
+        id: string;
+        c: string;
+        p: [number, number, number, number];
+        k: "line" | "rect" | "ellipse";
+        f: boolean;
+    } | {
+        t: "f";
+        id: string;
+        c: string;
+        x: number;
+        y: number;
+    } | {
+        t: "u";
+    } | {
+        t: "clear";
+    })[];
+}, {
+    type: "draw";
+    ops: ({
+        w: number;
+        t: "s";
+        id: string;
+        c: string;
+        p: number[];
+        e?: boolean | undefined;
+    } | {
+        t: "a";
+        id: string;
+        p: number[];
+    } | {
+        w: number;
+        t: "sh";
+        id: string;
+        c: string;
+        p: [number, number, number, number];
+        k: "line" | "rect" | "ellipse";
+        f: boolean;
+    } | {
+        t: "f";
+        id: string;
+        c: string;
+        x: number;
+        y: number;
+    } | {
+        t: "u";
+    } | {
+        t: "clear";
+    })[];
+}>, z.ZodObject<{
+    type: z.ZodLiteral<"done">;
+}, "strip", z.ZodTypeAny, {
+    type: "done";
+}, {
+    type: "done";
+}>, z.ZodObject<{
+    type: z.ZodLiteral<"like">;
+    book: z.ZodNumber;
+    entry: z.ZodNumber;
+}, "strip", z.ZodTypeAny, {
+    type: "like";
+    book: number;
+    entry: number;
+}, {
+    type: "like";
+    book: number;
+    entry: number;
+}>, z.ZodObject<{
+    type: z.ZodLiteral<"next">;
+}, "strip", z.ZodTypeAny, {
+    type: "next";
+}, {
+    type: "next";
+}>]>;
+export type TelephoneAction = z.infer<typeof telephoneActionSchema>;
+export declare const spiesSettingsSchema: z.ZodObject<{
+    games: z.ZodNumber;
+    clueSeconds: z.ZodNumber;
+    guessSeconds: z.ZodNumber;
+    category: z.ZodEnum<["misto", "animais", "comidas", "objetos", "lugares", "profissoes", "acoes", "anime", "games", "musica", "futebol", "personalizado"]>;
+    customWords: z.ZodEffects<z.ZodDefault<z.ZodArray<z.ZodString, "many">>, string[], string[] | undefined>;
+}, "strip", z.ZodTypeAny, {
+    category: "misto" | "anime" | "games" | "musica" | "futebol" | "personalizado" | "animais" | "comidas" | "objetos" | "lugares" | "profissoes" | "acoes";
+    games: number;
+    customWords: string[];
+    guessSeconds: number;
+    clueSeconds: number;
+}, {
+    category: "misto" | "anime" | "games" | "musica" | "futebol" | "personalizado" | "animais" | "comidas" | "objetos" | "lugares" | "profissoes" | "acoes";
+    games: number;
+    guessSeconds: number;
+    clueSeconds: number;
+    customWords?: string[] | undefined;
+}>;
+export type SpiesSettings = z.infer<typeof spiesSettingsSchema>;
+export declare const spiesActionSchema: z.ZodDiscriminatedUnion<"type", [z.ZodObject<{
+    type: z.ZodLiteral<"clue">;
+    word: z.ZodString;
+    count: z.ZodNumber;
+}, "strip", z.ZodTypeAny, {
+    type: "clue";
+    word: string;
+    count: number;
+}, {
+    type: "clue";
+    word: string;
+    count: number;
+}>, z.ZodObject<{
+    type: z.ZodLiteral<"reveal">;
+    card: z.ZodNumber;
+}, "strip", z.ZodTypeAny, {
+    type: "reveal";
+    card: number;
+}, {
+    type: "reveal";
+    card: number;
+}>, z.ZodObject<{
+    type: z.ZodLiteral<"pass">;
+}, "strip", z.ZodTypeAny, {
+    type: "pass";
+}, {
+    type: "pass";
+}>]>;
+export type SpiesAction = z.infer<typeof spiesActionSchema>;

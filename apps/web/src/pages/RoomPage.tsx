@@ -7,6 +7,10 @@ import {
   type ImpostorView,
   type MatchResult,
   type MatchReward,
+  type SpiesSettings,
+  type SpiesView,
+  type TelephoneSettings,
+  type TelephoneView,
   type CheckersSettings,
   type CheckersView,
   type HangmanSettings,
@@ -52,6 +56,9 @@ import {
 import { HangmanGame } from '../games/classic/HangmanGame';
 import { TicTacToeGame } from '../games/classic/TicTacToeGame';
 import { MostLikelyGame } from '../games/party/MostLikelyGame';
+import { SpiesGame } from '../games/spies/SpiesGame';
+import { TelephoneGame } from '../games/telephone/TelephoneGame';
+import { SpiesSettingsForm, TelephoneSettingsForm } from '../games/telephone/TelephoneSettingsForm';
 import {
   MostLikelySettingsForm,
   TruthDareSettingsForm,
@@ -245,6 +252,12 @@ function GameScreen({
       return <TicTacToeGame view={game as TicTacToeView} room={room} myId={myId} />;
     case 'checkers':
       return <CheckersGame view={game as CheckersView} room={room} myId={myId} />;
+    case 'telephone':
+      return (
+        <TelephoneGame view={game as TelephoneView} room={room} myId={myId} subscribe={subscribe} />
+      );
+    case 'spies':
+      return <SpiesGame view={game as SpiesView} room={room} myId={myId} />;
     default:
       return null;
   }
@@ -447,6 +460,18 @@ function Lobby({ room, amHost }: { room: PublicRoom; amHost: boolean }) {
       {room.settings.gameId === 'checkers' && (
         <CheckersSettingsForm
           settings={room.gameSettings as unknown as CheckersSettings}
+          editable={amHost}
+        />
+      )}
+      {room.settings.gameId === 'telephone' && (
+        <TelephoneSettingsForm
+          settings={room.gameSettings as unknown as TelephoneSettings}
+          editable={amHost}
+        />
+      )}
+      {room.settings.gameId === 'spies' && (
+        <SpiesSettingsForm
+          settings={room.gameSettings as unknown as SpiesSettings}
           editable={amHost}
         />
       )}

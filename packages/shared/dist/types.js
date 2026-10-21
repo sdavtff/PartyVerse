@@ -105,6 +105,23 @@ export const GAME_CATALOG = [
         maxPlayers: 2,
         available: true,
         color: 'brown',
+    }, {
+        id: 'telephone',
+        name: 'Telefone Sem Fio',
+        tagline: 'Escreve, desenha, adivinha… e no fim todo mundo vê o que virou.',
+        minPlayers: 3,
+        maxPlayers: 16,
+        available: true,
+        color: 'pink',
+    },
+    {
+        id: 'spies',
+        name: 'Espiões',
+        tagline: 'Dois times, 25 palavras e um mestre que só pode dar uma dica.',
+        minPlayers: 4,
+        maxPlayers: 16,
+        available: true,
+        color: 'red',
     },
 ];
 export const EVENTS = {

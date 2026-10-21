@@ -246,6 +246,44 @@ export const GAME_GUIDES: GameGuide[] = [
     tips: ['Toque na peça e veja os pontinhos verdes: são os destinos possíveis.'],
     bestWith: '2 jogadores (+ torcida)',
   },
+  {
+    id: 'telephone',
+    slug: 'telefone-sem-fio',
+    intro:
+      'O telefone sem fio com desenhos: uma frase vira desenho, que vira outra frase, que vira outro desenho… e no fim todo mundo ri do resultado.',
+    steps: [
+      'Cada pessoa escreve uma frase (ou pede uma ideia 🎲).',
+      'Os cadernos giram: você recebe a frase de alguém e desenha.',
+      'No passo seguinte, outra pessoa vê só o desenho e descreve o que acha que é.',
+      'Escrever e desenhar se alternam até cada caderno passar por todos.',
+      'No fim, os cadernos aparecem página por página. Curta as melhores!',
+    ],
+    scoring: ['Página entregue: 5 pontos.', 'Cada ❤️ recebido: 10 pontos.'],
+    tips: ['Frases absurdas rendem as melhores revelações.', 'Desenhe rápido: o tempo voa!'],
+    bestWith: '4 a 12 pessoas',
+  },
+  {
+    id: 'spies',
+    slug: 'espioes',
+    intro:
+      'Dois times de espiões disputam 25 cartas. Só o mestre de cada time sabe quais são as suas — e ele só pode dar uma palavra de dica por vez.',
+    steps: [
+      'Os jogadores são divididos em 🔴 e 🔵; cada time tem um mestre 🕶️ (troca a cada partida).',
+      'O mestre vê a cor de todas as cartas e dá uma dica: uma palavra + um número (ex.: "MAR 2").',
+      'O time escolhe as cartas. Pode chutar até o número da dica + 1.',
+      'Carta neutra ou do adversário encerra a vez. A carta do assassino 💀 faz o time perder.',
+      'Ganha o time que revelar todas as suas cartas primeiro.',
+    ],
+    scoring: [
+      'Carta do seu time revelada por você: 1 ponto.',
+      'Time vencedor: 5 pontos para cada integrante.',
+    ],
+    tips: [
+      'A dica não pode ser (nem conter) uma palavra da mesa.',
+      'Dica "∞" deixa o time chutar até errar.',
+    ],
+    bestWith: '4 a 10 pessoas, em chamada de voz',
+  },
 ];
 
 export const guideBySlug = (slug: string) => GAME_GUIDES.find((g) => g.slug === slug);

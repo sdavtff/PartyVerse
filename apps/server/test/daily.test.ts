@@ -208,17 +208,34 @@ describe('desafio guardado no banco', () => {
       return orig(d, c);
     };
     const svc = new DailyService(new MemoryDailyRepository(() => undefined), store, { model: 'x' });
-    const a = await svc.challenge('2026-11-10');
+    const a = await svc.challenge('2026-10-10');
     expect(store.rows.size).toBe(0);
     fail = false;
     const realNow = Date.now;
     Date.now = () => realNow() + 61_000;
     try {
-      const b = await svc.challenge('2026-11-10');
+      const b = await svc.challenge('2026-10-10');
       expect(b).toEqual(a);
-      expect(store.rows.get('2026-11-10')).toEqual(a);
+      expect(store.rows.get('2026-10-10')).toEqual(a);
     } finally {
       Date.now = realNow;
     }
+  });
+});
+
+describe('dia seguinte', () => {
+  it('amanhã só fica guardado quando vem da IA', async () => {
+    const { DailyService, dayKey: dk } = await import('../src/modules/daily/daily.service.js');
+    const { MemoryChallengeStore, MemoryDailyRepository } =
+      await import('../src/modules/daily/daily.repository.js');
+    const store = new MemoryChallengeStore();
+    const svc = new DailyService(new MemoryDailyRepository(() => undefined), store, { model: 'x' });
+    const tomorrow = new Date(Date.parse(`${dk()}T12:00:00Z`) + 86400_000)
+      .toISOString()
+      .slice(0, 10);
+    expect((await svc.challenge(tomorrow)).source).toBe('banco');
+    expect(store.rows.has(tomorrow)).toBe(false);
+    await svc.challenge(dk());
+    expect(store.rows.has(dk())).toBe(true);
   });
 });

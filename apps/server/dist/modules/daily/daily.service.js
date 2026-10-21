@@ -142,6 +142,9 @@ export class DailyService {
             this.pending.set(day, p);
         }
         const c = await p;
+        // dia futuro feito pelo banco reserva não fica fixo: a IA ainda pode gerar até ele começar
+        if (c.source === 'banco' && day > dayKey())
+            return c;
         this.cache.set(day, c);
         if (this.cache.size > 5)
             this.cache.delete(this.cache.keys().next().value);
@@ -153,6 +156,8 @@ export class DailyService {
             return stored;
         const avoid = await this.store.recentQuestions(day, 14).catch(() => []);
         const fresh = await generateChallenge(day, this.ai, avoid);
+        if (fresh.source === 'banco' && day > dayKey())
+            return fresh;
         try {
             // se outra instância salvou antes, vale a que já estava salva
             return await this.store.saveIfMissing(day, fresh);

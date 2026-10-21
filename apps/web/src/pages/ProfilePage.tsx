@@ -1,11 +1,12 @@
 import { GAME_CATALOG } from '@partyverse/shared';
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { Avatar } from '../components/Avatar';
 import { AvatarEditor } from '../components/AvatarEditor';
 import { Button } from '../components/Button';
 import { useToast } from '../components/Toast';
 import { PushToggle } from '../components/PushToggle';
+import { AppDownloadCard } from '../components/InstallButton';
 import { api, type Identity } from '../lib/api';
 import { usePrefs } from '../lib/prefs';
 import { useSession } from '../lib/session';
@@ -50,6 +51,17 @@ export function ProfilePage() {
       .then(setHistory)
       .catch(() => undefined);
   }, []);
+
+  // vindo de "Configurações" (/perfil#config): rola até lá depois que os cartões de cima carregam
+  const { hash } = useLocation();
+  useEffect(() => {
+    if (hash !== '#config') return;
+    const t = setTimeout(
+      () => document.getElementById('config')?.scrollIntoView({ behavior: 'smooth' }),
+      400,
+    );
+    return () => clearTimeout(t);
+  }, [hash, progress, stats]);
 
   if (!user)
     return (
@@ -179,15 +191,16 @@ export function ProfilePage() {
           )}
         </section>
 
-        <section className="card p-6" aria-labelledby="prefs-title">
+        <section id="config" className="card scroll-mt-24 p-6" aria-labelledby="prefs-title">
           <h2 id="prefs-title" className="text-xl font-extrabold">
-            Preferências
+            Configurações
           </h2>
           <div className="mt-4 space-y-2">
             {pref('sound', 'Efeitos sonoros')}
             {pref('reducedMotion', 'Reduzir animações')}
           </div>
           {!user.isGuest && <PushToggle />}
+          <AppDownloadCard />
           {user.isGuest && (
             <p className="mt-2 text-xs text-ink-400">
               Como convidado, as preferências ficam salvas só neste navegador.

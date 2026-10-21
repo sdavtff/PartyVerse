@@ -359,7 +359,11 @@ function MoreSheet({
       >
         <div className="mx-auto mb-4 h-1.5 w-12 rounded-full bg-ink-600" aria-hidden />
         <div className="grid grid-cols-3 gap-2">
-          {[...nav, { to: '/perfil', label: 'Perfil', icon: 'profile' as IconName }].map((n) => (
+          {[
+            ...nav,
+            { to: '/perfil', label: 'Perfil', icon: 'profile' as IconName },
+            { to: '/perfil#config', label: 'Configurações', icon: 'admin' as IconName },
+          ].map((n) => (
             <NavLink
               key={n.to}
               to={n.to}

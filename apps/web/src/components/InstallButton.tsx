@@ -46,3 +46,28 @@ export function AndroidAppLink({ className = '' }: { className?: string }) {
     </a>
   );
 }
+
+/** Cartão "App Android" nas configurações do perfil: baixar o APK ou ver que já está no app. */
+export function AppDownloadCard() {
+  const inApp = isNativeApp();
+  return (
+    <div className="mt-4 rounded-2xl border border-ink-700/70 bg-ink-950/50 p-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="min-w-0">
+          <p className="font-bold text-white">📱 App Android</p>
+          <p className="mt-1 max-w-md text-sm text-ink-300">
+            {inApp
+              ? 'Você já está usando o app. As novidades do site aparecem aqui sozinhas; baixe de novo só se avisarmos de uma versão nova do app.'
+              : 'Instale o PartyVerse no celular: abre em tela cheia, com ícone próprio e chat de voz. O Android pode pedir para permitir "instalar apps desconhecidos".'}
+          </p>
+        </div>
+        <a
+          href={APK_URL}
+          className="btn-violet inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold"
+        >
+          <Icon name="download" size={18} /> {inApp ? 'Baixar de novo' : 'Baixar APK'}
+        </a>
+      </div>
+    </div>
+  );
+}

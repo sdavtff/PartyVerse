@@ -467,7 +467,7 @@ export function createApp({
   api.get(
     '/daily/quiz',
     requireAuth,
-    wrap(async (_req, res) => res.json(needDaily().quizQuestions())),
+    wrap(async (_req, res) => res.json(await needDaily().quizQuestions())),
   );
   api.post(
     '/daily/quiz',

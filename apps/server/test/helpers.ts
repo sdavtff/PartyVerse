@@ -9,7 +9,7 @@ import { MemoryMailer, type Mailer } from '../src/modules/mail/mailer.js';
 
 export async function startTestServer(
   overrides: Record<string, unknown> = {},
-  opts: { google?: GoogleAuth; mailer?: Mailer } = {},
+  opts: { google?: GoogleAuth; mailer?: Mailer; aiFetch?: typeof fetch } = {},
 ) {
   const env = loadEnv({
     NODE_ENV: 'test',
@@ -21,7 +21,13 @@ export async function startTestServer(
   const users = new MemoryUserRepository();
   const matches = new MemoryMatchRepository();
   const mailer = opts.mailer ?? new MemoryMailer();
-  const srv = buildServer(env, { users, matches, google: opts.google, mailer });
+  const srv = buildServer(env, {
+    users,
+    matches,
+    google: opts.google,
+    mailer,
+    aiFetch: opts.aiFetch,
+  });
   await new Promise<void>((r) => srv.httpServer.listen(0, r));
   const url = `http://localhost:${(srv.httpServer.address() as AddressInfo).port}`;
   const sockets: Socket[] = [];

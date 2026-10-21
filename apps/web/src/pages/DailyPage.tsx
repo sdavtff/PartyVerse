@@ -13,6 +13,7 @@ import { usePageTitle } from '../lib/usePageTitle';
 interface Question {
   text: string;
   options: string[];
+  topic?: string;
 }
 interface QuizDone {
   score: number;
@@ -25,10 +26,13 @@ interface StopDone {
   score: number;
   points: Record<string, number>;
   players: number;
+  letter?: string;
+  categories?: string[];
 }
 interface Status {
   day: string;
   streak: number;
+  source?: 'ia' | 'banco';
   quiz: { size: number; seconds: number; done: QuizDone | null };
   stop: { letter: string; categories: string[]; seconds: number; done: StopDone | null };
 }
@@ -102,6 +106,11 @@ export function DailyPage() {
         Todo dia, um Quiz e uma Adedonha novos — iguais para todo mundo. Uma tentativa só, ranking
         do dia e XP para a sua conta. Renova à meia-noite (horário de Brasília).
       </p>
+      {status?.source === 'ia' && (
+        <p className="mr-2 mt-4 inline-flex items-center gap-2 rounded-full bg-pop-violet/15 px-4 py-1.5 font-bold text-pop-violet">
+          🤖 Perguntas de hoje criadas por IA
+        </p>
+      )}
       {status && status.streak > 0 && (
         <p className="mt-4 inline-flex items-center gap-2 rounded-full bg-pop-amber/15 px-4 py-1.5 font-bold text-pop-amber">
           🔥 {status.streak} {status.streak === 1 ? 'dia seguido' : 'dias seguidos'}
@@ -158,12 +167,16 @@ export function DailyPage() {
           {status?.stop.done ? (
             <div className="mt-4 space-y-2">
               <p className="font-bold">
-                Letra <span className="text-lime-400">{status.stop.letter}</span> · você fez{' '}
-                <span className="text-lime-400">{status.stop.done.score}</span> pontos (entre{' '}
-                {status.stop.done.players} {status.stop.done.players === 1 ? 'pessoa' : 'pessoas'})
+                Letra{' '}
+                <span className="text-lime-400">
+                  {status.stop.done.letter ?? status.stop.letter}
+                </span>{' '}
+                · você fez <span className="text-lime-400">{status.stop.done.score}</span> pontos
+                (entre {status.stop.done.players}{' '}
+                {status.stop.done.players === 1 ? 'pessoa' : 'pessoas'})
               </p>
               <ul className="grid grid-cols-2 gap-1.5 text-sm">
-                {status.stop.categories.map((c) => (
+                {(status.stop.done.categories ?? status.stop.categories).map((c) => (
                   <li key={c} className="rounded-xl bg-ink-900 px-3 py-1.5">
                     <span className="text-xs text-ink-400">{c}</span>
                     <span className="flex justify-between gap-2 font-bold">
@@ -362,6 +375,7 @@ function DailyQuiz({
           <div className="min-w-0 flex-1">
             <p className="text-sm text-ink-400">
               Quiz do dia · pergunta {i + 1} de {qs.length}
+              {q.topic && <> · {q.topic}</>}
             </p>
             <h1 className="mt-1 text-2xl font-extrabold">{q.text}</h1>
           </div>

@@ -4,6 +4,11 @@ Plataforma web de minijogos multiplayer em tempo real. **Versão 0.6:** página 
 
 > **Publicar na Hostinger:** veja [DEPLOY-HOSTINGER.md](DEPLOY-HOSTINGER.md).
 
+## Novidades da 0.6.1
+
+- **Desafio do dia com IA** (OpenRouter, `OPENROUTER_API_KEY`): perguntas e categorias novas todo dia, guardadas no banco (iguais para todos, mesmo se o servidor reiniciar), sem repetir as dos dias anteriores.
+- **Banco reserva exclusivo do desafio** (148 perguntas que não aparecem no Quiz normal + 48 categorias de Adedonha), em rodízio sem repetição, usado quando não há IA.
+
 ## Novidades da 0.6
 
 - **3 jogos novos**: Quem é Mais Provável, Verdade ou Desafio (versão leve, a turma vota se valeu) e Duas Verdades e Uma Mentira.

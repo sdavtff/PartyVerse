@@ -1,4 +1,5 @@
 import type { PrismaClient } from '../../db/prisma.js';
+import type { Challenge } from './generator.js';
 
 export interface DailyRow {
   userId: string;
@@ -94,5 +95,63 @@ export class MemoryDailyRepository implements DailyRepository {
     return [...new Set(this.rows.filter((r) => r.userId === userId).map((r) => r.day))]
       .sort()
       .reverse();
+  }
+}
+
+// ---------- conteúdo de cada dia ----------
+
+/** Guarda o desafio de cada dia, para que seja o mesmo para todos (e só gere uma vez). */
+export interface ChallengeStore {
+  get(day: string): Promise<Challenge | null>;
+  /** Salva se ainda não existir; devolve o que ficou guardado. */
+  saveIfMissing(day: string, c: Challenge): Promise<Challenge>;
+  /** Textos das perguntas dos últimos dias (para a IA não repetir). */
+  recentQuestions(before: string, days: number): Promise<string[]>;
+}
+
+const asChallenge = (source: string, data: unknown): Challenge => ({
+  ...(data as Omit<Challenge, 'source'>),
+  source: source === 'ia' ? 'ia' : 'banco',
+});
+
+export class PrismaChallengeStore implements ChallengeStore {
+  constructor(private db: PrismaClient) {}
+  async get(day: string) {
+    const r = await this.db.dailyChallenge.findUnique({ where: { day } });
+    return r ? asChallenge(r.source, r.data) : null;
+  }
+  async saveIfMissing(day: string, c: Challenge) {
+    const { source, ...data } = c;
+    await this.db.dailyChallenge.createMany({
+      data: [{ day, source, data: data as object }],
+      skipDuplicates: true,
+    });
+    return (await this.get(day)) ?? c;
+  }
+  async recentQuestions(before: string, days: number) {
+    const rs = await this.db.dailyChallenge.findMany({
+      where: { day: { lt: before } },
+      orderBy: { day: 'desc' },
+      take: days,
+    });
+    return rs.flatMap((r) => asChallenge(r.source, r.data).quiz.map((q) => q.text));
+  }
+}
+
+export class MemoryChallengeStore implements ChallengeStore {
+  rows = new Map<string, Challenge>();
+  async get(day: string) {
+    return this.rows.get(day) ?? null;
+  }
+  async saveIfMissing(day: string, c: Challenge) {
+    if (!this.rows.has(day)) this.rows.set(day, c);
+    return this.rows.get(day)!;
+  }
+  async recentQuestions(before: string, days: number) {
+    return [...this.rows.entries()]
+      .filter(([d]) => d < before)
+      .sort((a, b) => b[0].localeCompare(a[0]))
+      .slice(0, days)
+      .flatMap(([, c]) => c.quiz.map((q) => q.text));
   }
 }

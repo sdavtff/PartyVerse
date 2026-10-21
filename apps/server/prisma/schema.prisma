@@ -130,3 +130,11 @@ model ModerationLog {
 
   @@index([roomCode])
 }
+
+/// Conteúdo do Desafio do dia: perguntas do Quiz e letra/categorias da Adedonha
+model DailyChallenge {
+  day       String   @id
+  source    String
+  data      Json
+  createdAt DateTime @default(now())
+}

@@ -2,11 +2,19 @@ import { STOP_LETTERS } from '../../games/stop/stop.game.js';
 import { startsWithLetter } from '../../games/stop/stop.scoring.js';
 import { QUIZ_QUESTIONS } from '../../games/quiz/quiz.questions.js';
 import { AppError } from '../../lib/errors.js';
+import { logger } from '../../lib/logger.js';
 import { normalize } from '../../lib/text.js';
-export const DAILY_QUIZ_SIZE = 10;
+import { DAILY_QUIZ_SIZE, generateChallenge, seeded, seededShuffle, } from './generator.js';
+export { DAILY_QUIZ_SIZE, seeded };
 export const DAILY_QUIZ_SECONDS = 15;
 export const DAILY_STOP_SECONDS = 90;
-const STOP_POOL = [
+/** Dia do desafio no horário de Brasília (UTC-3), ex.: "2026-10-19". */
+export function dayKey(at = Date.now()) {
+    return new Date(at - 3 * 3600_000).toISOString().slice(0, 10);
+}
+const nextDay = (day) => new Date(Date.parse(`${day}T12:00:00Z`) + 86400_000).toISOString().slice(0, 10);
+// ---------- formato antigo (resultados de antes da mudança continuam corretos) ----------
+const LEGACY_STOP_POOL = [
     'Nome',
     'Animal',
     'Cidade',
@@ -22,36 +30,7 @@ const STOP_POOL = [
     'Esporte',
     'Instrumento',
 ];
-const STOP_CATEGORIES = 6;
-/** Dia do desafio no horário de Brasília (UTC-3), ex.: "2026-10-19". */
-export function dayKey(at = Date.now()) {
-    return new Date(at - 3 * 3600_000).toISOString().slice(0, 10);
-}
-/** Gerador pseudoaleatório com semente: todo mundo recebe o mesmo desafio no mesmo dia. */
-export function seeded(seed) {
-    let h = 1779033703 ^ seed.length;
-    for (let i = 0; i < seed.length; i++) {
-        h = Math.imul(h ^ seed.charCodeAt(i), 3432918353);
-        h = (h << 13) | (h >>> 19);
-    }
-    let a = h >>> 0;
-    return () => {
-        a = (a + 0x6d2b79f5) | 0;
-        let t = Math.imul(a ^ (a >>> 15), 1 | a);
-        t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-    };
-}
-function seededShuffle(xs, rnd) {
-    const a = [...xs];
-    for (let i = a.length - 1; i > 0; i--) {
-        const j = Math.floor(rnd() * (i + 1));
-        [a[i], a[j]] = [a[j], a[i]];
-    }
-    return a;
-}
-/** Perguntas do Quiz do dia, com as opções embaralhadas (a certa fica guardada no servidor). */
-export function dailyQuiz(day) {
+export function legacyQuiz(day) {
     const rnd = seeded(`quiz:${day}`);
     return seededShuffle(QUIZ_QUESTIONS, rnd)
         .slice(0, DAILY_QUIZ_SIZE)
@@ -60,36 +39,43 @@ export function dailyQuiz(day) {
         return { text: q.q, options, correct: options.indexOf(q.a) };
     });
 }
-export function dailyStop(day) {
+export function legacyStop(day) {
     const rnd = seeded(`stop:${day}`);
     return {
         letter: STOP_LETTERS[Math.floor(rnd() * STOP_LETTERS.length)],
-        categories: seededShuffle(STOP_POOL, rnd).slice(0, STOP_CATEGORIES),
+        categories: seededShuffle(LEGACY_STOP_POOL, rnd).slice(0, 6),
     };
 }
 /**
  * Pontua a Adedonha do dia pela raridade: resposta que só você deu vale 10;
  * repetida vale menos quanto mais gente deu a mesma (mínimo 2). Inválida = 0.
+ * Cada resultado guarda a letra e as categorias com que foi jogado.
  */
-export function scoreStopDay(rows, letter, categories) {
+export function scoreStopDay(rows, fallback) {
+    const setup = (d) => ({
+        letter: d.letter ?? fallback.letter,
+        categories: d.categories ?? fallback.categories,
+    });
+    const valid = (a, letter) => !!a && normalize(a).length >= 2 && startsWithLetter(a, letter);
     const counts = new Map();
-    const valid = (a) => !!a && normalize(a).length >= 2 && startsWithLetter(a, letter);
     for (const r of rows) {
-        const ans = r.data.answers ?? {};
+        const d = r.data;
+        const { letter, categories } = setup(d);
         for (const c of categories)
-            if (valid(ans[c])) {
-                const k = `${c}|${normalize(ans[c])}`;
+            if (valid(d.answers?.[c], letter)) {
+                const k = `${c}|${normalize(d.answers[c])}`;
                 counts.set(k, (counts.get(k) ?? 0) + 1);
             }
     }
     const out = new Map();
     for (const r of rows) {
-        const ans = r.data.answers ?? {};
+        const d = r.data;
+        const { letter, categories } = setup(d);
         const points = {};
         let score = 0;
         for (const c of categories) {
-            const a = ans[c];
-            if (!valid(a))
+            const a = d.answers?.[c];
+            if (!valid(a, letter))
                 points[c] = 0;
             else {
                 const n = counts.get(`${c}|${normalize(a)}`) ?? 1;
@@ -103,11 +89,82 @@ export function scoreStopDay(rows, letter, categories) {
 }
 export class DailyService {
     repo;
-    constructor(repo) {
+    store;
+    ai;
+    cache = new Map();
+    pending = new Map();
+    /** dias gerados mas ainda não guardados no banco (ex.: banco ainda conectando) */
+    unsaved = new Map();
+    timer = null;
+    constructor(repo, store, ai) {
         this.repo = repo;
+        this.store = store;
+        this.ai = ai;
+    }
+    /** Gera hoje e amanhã com antecedência (ninguém espera a IA) e repete a cada 30 min. */
+    startWarmup() {
+        const run = () => {
+            const today = dayKey();
+            void this.challenge(today)
+                .then(() => this.challenge(nextDay(today)))
+                .catch(() => undefined);
+        };
+        run();
+        this.timer = setInterval(run, 30 * 60_000);
+        this.timer.unref?.();
+    }
+    stop() {
+        if (this.timer)
+            clearInterval(this.timer);
+    }
+    /** O desafio de um dia: do cache, do banco de dados ou gerado agora (uma vez só). */
+    async challenge(day = dayKey()) {
+        const hit = this.cache.get(day);
+        if (hit) {
+            const triedAt = this.unsaved.get(day);
+            if (triedAt === undefined || Date.now() - triedAt < 60_000)
+                return hit;
+            // tenta guardar de novo; se outra cópia já estava salva, ela vale para todos
+            this.unsaved.set(day, Date.now());
+            try {
+                const stored = await this.store.saveIfMissing(day, hit);
+                this.unsaved.delete(day);
+                this.cache.set(day, stored);
+                return stored;
+            }
+            catch {
+                return hit;
+            }
+        }
+        let p = this.pending.get(day);
+        if (!p) {
+            p = this.load(day).finally(() => this.pending.delete(day));
+            this.pending.set(day, p);
+        }
+        const c = await p;
+        this.cache.set(day, c);
+        if (this.cache.size > 5)
+            this.cache.delete(this.cache.keys().next().value);
+        return c;
+    }
+    async load(day) {
+        const stored = await this.store.get(day).catch(() => null);
+        if (stored)
+            return stored;
+        const avoid = await this.store.recentQuestions(day, 14).catch(() => []);
+        const fresh = await generateChallenge(day, this.ai, avoid);
+        try {
+            // se outra instância salvou antes, vale a que já estava salva
+            return await this.store.saveIfMissing(day, fresh);
+        }
+        catch (err) {
+            logger.warn({ err: String(err) }, 'não deu para guardar o desafio do dia (tento de novo)');
+            this.unsaved.set(day, Date.now());
+            return fresh;
+        }
     }
     async status(userId, day = dayKey()) {
-        const stop = dailyStop(day);
+        const c = await this.challenge(day);
         const [quizDone, stopDone, streak] = userId
             ? await Promise.all([
                 this.repo.get(userId, day, 'quiz'),
@@ -118,59 +175,66 @@ export class DailyService {
         return {
             day,
             streak,
+            source: c.source,
             quiz: {
-                size: DAILY_QUIZ_SIZE,
+                size: c.quiz.length,
                 seconds: DAILY_QUIZ_SECONDS,
                 done: quizDone ? this.quizResult(day, quizDone) : null,
             },
             stop: {
-                ...stop,
+                ...c.stop,
                 seconds: DAILY_STOP_SECONDS,
                 done: stopDone ? await this.stopResult(day, userId) : null,
             },
         };
     }
     /** Perguntas sem a resposta certa. */
-    quizQuestions(day = dayKey()) {
-        return dailyQuiz(day).map(({ text, options }) => ({ text, options }));
+    async quizQuestions(day = dayKey()) {
+        const c = await this.challenge(day);
+        return c.quiz.map(({ text, options, topic }) => ({ text, options, topic }));
     }
     quizResult(day, row) {
-        const qs = dailyQuiz(day);
-        const answers = row.data.answers ?? [];
-        return {
-            score: row.score,
-            answers,
-            solution: qs.map((q) => q.correct),
-            questions: qs.map(({ text, options }) => ({ text, options })),
-        };
+        const d = row.data;
+        const legacy = d.questions ? null : legacyQuiz(day);
+        const questions = d.questions ?? legacy.map(({ text, options }) => ({ text, options }));
+        const solution = d.solution ?? legacy.map((q) => q.correct);
+        return { score: row.score, answers: d.answers ?? [], solution, questions };
     }
     async submitQuiz(userId, answers, day = dayKey()) {
-        const qs = dailyQuiz(day);
-        if (answers.length !== qs.length)
+        const c = await this.challenge(day);
+        if (answers.length !== c.quiz.length)
             throw new AppError('VALIDATION', 'Respostas incompletas');
-        const correct = answers.filter((a, i) => a === qs[i].correct).length;
-        const saved = await this.repo.save(userId, day, 'quiz', correct * 100, { answers });
+        const correct = answers.filter((a, i) => a === c.quiz[i].correct).length;
+        const data = {
+            answers,
+            questions: c.quiz.map(({ text, options }) => ({ text, options })),
+            solution: c.quiz.map((q) => q.correct),
+        };
+        const saved = await this.repo.save(userId, day, 'quiz', correct * 100, data);
         if (!saved)
             throw new AppError('INVALID_STATE', 'Você já fez o Quiz do dia. Volte amanhã!', 409);
         return this.quizResult(day, (await this.repo.get(userId, day, 'quiz')));
     }
     async submitStop(userId, answers, day = dayKey()) {
-        const { categories } = dailyStop(day);
+        const { letter, categories } = (await this.challenge(day)).stop;
         const clean = {};
         for (const c of categories)
             clean[c] = (answers[c] ?? '').trim().slice(0, 40);
-        const saved = await this.repo.save(userId, day, 'stop', 0, { answers: clean });
+        const data = { answers: clean, letter, categories };
+        const saved = await this.repo.save(userId, day, 'stop', 0, data);
         if (!saved)
             throw new AppError('INVALID_STATE', 'Você já fez a Adedonha do dia. Volte amanhã!', 409);
         return this.stopResult(day, userId);
     }
     async stopResult(day, userId) {
-        const { letter, categories } = dailyStop(day);
         const rows = await this.repo.listDay(day, 'stop');
-        const scored = scoreStopDay(rows, letter, categories);
+        const scored = scoreStopDay(rows, legacyStop(day));
         const mine = rows.find((r) => r.userId === userId);
+        const d = mine?.data;
         return {
-            answers: mine?.data?.answers ?? {},
+            answers: d?.answers ?? {},
+            letter: d?.letter ?? legacyStop(day).letter,
+            categories: d?.categories ?? legacyStop(day).categories,
             ...(scored.get(userId) ?? { score: 0, points: {} }),
             players: rows.length,
         };
@@ -179,8 +243,7 @@ export class DailyService {
         const rows = await this.repo.listDay(day, game);
         let list = rows.map((r) => ({ ...r }));
         if (game === 'stop') {
-            const { letter, categories } = dailyStop(day);
-            const scored = scoreStopDay(rows, letter, categories);
+            const scored = scoreStopDay(rows, legacyStop(day));
             list = list
                 .map((r) => ({ ...r, score: scored.get(r.userId)?.score ?? 0 }))
                 .sort((a, b) => b.score - a.score || a.createdAt.localeCompare(b.createdAt));
@@ -195,11 +258,12 @@ export class DailyService {
         });
     }
     async counts(day = dayKey()) {
-        const [quiz, stop] = await Promise.all([
+        const [quiz, stop, c] = await Promise.all([
             this.repo.listDay(day, 'quiz'),
             this.repo.listDay(day, 'stop'),
+            this.challenge(day).catch(() => null),
         ]);
-        return { day, quiz: quiz.length, stop: stop.length };
+        return { day, quiz: quiz.length, stop: stop.length, source: c?.source ?? null };
     }
     /** Sequência de dias seguidos com algum desafio feito. */
     async streak(userId, today = dayKey()) {

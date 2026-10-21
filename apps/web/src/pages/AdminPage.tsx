@@ -13,7 +13,7 @@ interface Stats {
   accountsOnline: number;
   users: { total: number; recent: number } | null;
   matches: { total: number; recent: number; byGame: Record<string, number> } | null;
-  daily: { quiz: number; stop: number } | null;
+  daily: { quiz: number; stop: number; source?: 'ia' | 'banco' | null } | null;
   db: string;
   mail: boolean;
   uptimeMin: number;
@@ -165,7 +165,7 @@ export function AdminPage() {
           <Stat
             label="Desafio de hoje"
             value={(stats.daily?.quiz ?? 0) + (stats.daily?.stop ?? 0)}
-            sub={`${stats.daily?.quiz ?? 0} quiz · ${stats.daily?.stop ?? 0} adedonha`}
+            sub={`${stats.daily?.quiz ?? 0} quiz · ${stats.daily?.stop ?? 0} adedonha · ${stats.daily?.source === 'ia' ? '🤖 feito por IA' : 'banco reserva'}`}
           />
           <Stat label="Banco" value={stats.db === 'ok' ? '✅' : stats.db} />
           <Stat

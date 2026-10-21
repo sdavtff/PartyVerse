@@ -164,3 +164,19 @@ fechar) e busca de contas (dá para suspender e liberar). Conta suspensa não en
 
 Nada a configurar: o site já é um app instalável (PWA). No Android/Chrome aparece "Instalar
 app" no menu; no iPhone, Compartilhar → "Adicionar à Tela de Início".
+
+## Desafio do dia com IA (OpenRouter)
+
+Com a chave configurada, o Quiz do dia e a Adedonha do dia são criados por IA uma vez por dia
+(o servidor já prepara o de hoje e o de amanhã com antecedência). O desafio fica guardado no
+banco, então é o mesmo para todo mundo e não muda se o servidor reiniciar. As perguntas de dias
+anteriores são enviadas à IA para ela não repetir.
+
+| Nome | Valor |
+|---|---|
+| `OPENROUTER_API_KEY` | sua chave da OpenRouter (`sk-or-v1-...`) |
+| `OPENROUTER_MODEL` | (opcional) padrão: `minimax/minimax-m3.1-flash:free` |
+
+Sem a chave (ou se a IA falhar), o site usa um banco reserva só do desafio — perguntas diferentes
+das do Quiz normal, em rodízio, sem repetir até todas saírem. No painel **/admin**, o quadro
+"Desafio de hoje" mostra se o conteúdo do dia veio da IA ou do banco reserva.

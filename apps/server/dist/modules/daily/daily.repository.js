@@ -78,3 +78,51 @@ export class MemoryDailyRepository {
             .reverse();
     }
 }
+const asChallenge = (source, data) => ({
+    ...data,
+    source: source === 'ia' ? 'ia' : 'banco',
+});
+export class PrismaChallengeStore {
+    db;
+    constructor(db) {
+        this.db = db;
+    }
+    async get(day) {
+        const r = await this.db.dailyChallenge.findUnique({ where: { day } });
+        return r ? asChallenge(r.source, r.data) : null;
+    }
+    async saveIfMissing(day, c) {
+        const { source, ...data } = c;
+        await this.db.dailyChallenge.createMany({
+            data: [{ day, source, data: data }],
+            skipDuplicates: true,
+        });
+        return (await this.get(day)) ?? c;
+    }
+    async recentQuestions(before, days) {
+        const rs = await this.db.dailyChallenge.findMany({
+            where: { day: { lt: before } },
+            orderBy: { day: 'desc' },
+            take: days,
+        });
+        return rs.flatMap((r) => asChallenge(r.source, r.data).quiz.map((q) => q.text));
+    }
+}
+export class MemoryChallengeStore {
+    rows = new Map();
+    async get(day) {
+        return this.rows.get(day) ?? null;
+    }
+    async saveIfMissing(day, c) {
+        if (!this.rows.has(day))
+            this.rows.set(day, c);
+        return this.rows.get(day);
+    }
+    async recentQuestions(before, days) {
+        return [...this.rows.entries()]
+            .filter(([d]) => d < before)
+            .sort((a, b) => b[0].localeCompare(a[0]))
+            .slice(0, days)
+            .flatMap(([, c]) => c.quiz.map((q) => q.text));
+    }
+}

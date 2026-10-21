@@ -37,6 +37,9 @@ const envSchema = z.object({
         .enum(['true', 'false', '1', '0'])
         .default('true')
         .transform((v) => v === 'true' || v === '1'),
+    /** OpenRouter — desafio do dia com IA (opcional: sem chave usa o banco fixo) */
+    OPENROUTER_API_KEY: z.string().optional(),
+    OPENROUTER_MODEL: z.string().default('minimax/minimax-m3.1-flash:free'),
 });
 export function loadEnv(overrides = {}) {
     // variáveis vazias (comuns em painéis de hospedagem) contam como não definidas

@@ -26,6 +26,10 @@ function describeDb(url) {
 const { httpServer, close } = buildServer(env);
 httpServer.listen(env.PORT, () => {
     console.log(`[PartyVerse] ouvindo na porta ${env.PORT} (${env.NODE_ENV})`);
+    if (env.OPENROUTER_API_KEY)
+        console.log(`[PartyVerse] desafio do dia com IA (${env.OPENROUTER_MODEL})`);
+    else
+        console.warn('[PartyVerse] OPENROUTER_API_KEY ausente: desafio do dia usa o banco reserva');
     if (!env.DATABASE_URL)
         console.warn('[PartyVerse] DATABASE_URL ausente: contas e histórico desativados (só convidados).');
     else if (env.AUTO_MIGRATE)

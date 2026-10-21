@@ -11,7 +11,7 @@ import { MemoryMatchRepository, PrismaMatchRepository, } from './modules/matches
 import { MemoryUserRepository, PrismaUserRepository, } from './modules/users/users.repository.js';
 import { MemoryFriendsRepository, PrismaFriendsRepository, } from './modules/social/friends.repository.js';
 import { Presence } from './modules/social/presence.js';
-import { MemoryDailyRepository, PrismaDailyRepository, } from './modules/daily/daily.repository.js';
+import { MemoryChallengeStore, MemoryDailyRepository, PrismaChallengeStore, PrismaDailyRepository, } from './modules/daily/daily.repository.js';
 import { DailyService } from './modules/daily/daily.service.js';
 import { BanList } from './modules/admin/bans.js';
 import { SmtpMailer } from './modules/mail/mailer.js';
@@ -35,7 +35,9 @@ export function buildServer(env, opts = {}) {
     const dailyRepo = prisma
         ? new PrismaDailyRepository(prisma)
         : new MemoryDailyRepository((id) => users instanceof MemoryUserRepository ? users.users.get(id) : undefined);
-    const daily = new DailyService(dailyRepo);
+    const daily = new DailyService(dailyRepo, prisma ? new PrismaChallengeStore(prisma) : new MemoryChallengeStore(), { apiKey: env.OPENROUTER_API_KEY, model: env.OPENROUTER_MODEL, fetchFn: opts.aiFetch });
+    if (env.NODE_ENV !== 'test')
+        daily.startWarmup();
     const mailer = opts.mailer ?? new SmtpMailer(env);
     const resets = prisma
         ? new PrismaResetRepository(prisma)
@@ -90,10 +92,24 @@ export function buildServer(env, opts = {}) {
     attachGateway(io, rooms, tokens, presence, bans);
     const close = async () => {
         clearInterval(banTimer);
+        daily.stop();
         rooms.shutdown();
         io.close();
         await new Promise((r) => httpServer.close(() => r()));
         await prisma?.$disconnect();
     };
-    return { httpServer, io, rooms, tokens, app, close, progress, presence, friends, bans, mailer };
+    return {
+        httpServer,
+        io,
+        rooms,
+        tokens,
+        app,
+        close,
+        progress,
+        presence,
+        friends,
+        bans,
+        mailer,
+        daily,
+    };
 }

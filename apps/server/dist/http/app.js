@@ -329,7 +329,7 @@ export function createApp({ env, tokens, users, matches, rooms, google: googleDe
         const id = req.identity.isGuest ? null : req.identity.id;
         res.json(await needDaily().status(id));
     }));
-    api.get('/daily/quiz', requireAuth, wrap(async (_req, res) => res.json(needDaily().quizQuestions())));
+    api.get('/daily/quiz', requireAuth, wrap(async (_req, res) => res.json(await needDaily().quizQuestions())));
     api.post('/daily/quiz', requireAuth, wrap(async (req, res) => {
         const userId = dailyAccount(req);
         const { answers } = z

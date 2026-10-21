@@ -29,7 +29,9 @@ import {
 } from './modules/social/friends.repository.js';
 import { Presence } from './modules/social/presence.js';
 import {
+  MemoryChallengeStore,
   MemoryDailyRepository,
+  PrismaChallengeStore,
   PrismaDailyRepository,
   type DailyRepository,
 } from './modules/daily/daily.repository.js';
@@ -44,6 +46,8 @@ import {
 import { RoomManager } from './rooms/RoomManager.js';
 
 export interface BuildOptions {
+  /** para testes: substitui o fetch usado na geração por IA */
+  aiFetch?: typeof fetch;
   mailer?: Mailer;
   friends?: FriendsRepository;
   progress?: ProgressRepository;
@@ -77,7 +81,12 @@ export function buildServer(env: Env, opts: BuildOptions = {}) {
     : new MemoryDailyRepository((id) =>
         users instanceof MemoryUserRepository ? users.users.get(id) : undefined,
       );
-  const daily = new DailyService(dailyRepo);
+  const daily = new DailyService(
+    dailyRepo,
+    prisma ? new PrismaChallengeStore(prisma) : new MemoryChallengeStore(),
+    { apiKey: env.OPENROUTER_API_KEY, model: env.OPENROUTER_MODEL, fetchFn: opts.aiFetch },
+  );
+  if (env.NODE_ENV !== 'test') daily.startWarmup();
   const mailer = opts.mailer ?? new SmtpMailer(env);
   const resets: ResetRepository = prisma
     ? new PrismaResetRepository(prisma)
@@ -140,10 +149,24 @@ export function buildServer(env: Env, opts: BuildOptions = {}) {
 
   const close = async () => {
     clearInterval(banTimer);
+    daily.stop();
     rooms.shutdown();
     io.close();
     await new Promise<void>((r) => httpServer.close(() => r()));
     await prisma?.$disconnect();
   };
-  return { httpServer, io, rooms, tokens, app, close, progress, presence, friends, bans, mailer };
+  return {
+    httpServer,
+    io,
+    rooms,
+    tokens,
+    app,
+    close,
+    progress,
+    presence,
+    friends,
+    bans,
+    mailer,
+    daily,
+  };
 }

@@ -47,7 +47,8 @@ export const ModelName = {
     UserStats: 'UserStats',
     Match: 'Match',
     MatchParticipant: 'MatchParticipant',
-    ModerationLog: 'ModerationLog'
+    ModerationLog: 'ModerationLog',
+    DailyChallenge: 'DailyChallenge'
 };
 /*
  * Enums
@@ -134,6 +135,12 @@ export const ModerationLogScalarFieldEnum = {
     targetId: 'targetId',
     actorName: 'actorName',
     reason: 'reason',
+    createdAt: 'createdAt'
+};
+export const DailyChallengeScalarFieldEnum = {
+    day: 'day',
+    source: 'source',
+    data: 'data',
     createdAt: 'createdAt'
 };
 export const SortOrder = {

@@ -16,10 +16,12 @@ export default {
         /** texto principal: branco no tema escuro, quase preto no claro */
         white: 'rgb(var(--fg) / <alpha-value>)',
         /** sempre escuro (texto sobre botões coloridos, contornos) */
-        night: '#0f0b17',
+        night: '#0c0a16',
         /** sempre branco (quadro de desenho, botão do Google) */
         paper: '#ffffff',
-        lime: { 300: '#dcff6b', 400: '#c6f432', 500: '#a8d61a' },
+        /** cor de destaque (o nome ficou de versões antigas): violeta neon */
+        lime: { 300: '#c4b1ff', 400: '#a585ff', 500: '#8b5cf6' },
+        violet: { 400: '#a585ff', 500: '#8b5cf6', 600: '#7c3aed', 700: '#6d28d9' },
         pop: {
           pink: '#ff5fa2',
           sky: '#5cc8ff',
@@ -32,12 +34,13 @@ export default {
         },
       },
       fontFamily: {
-        display: ['"Bricolage Grotesque"', 'system-ui', 'sans-serif'],
-        sans: ['"DM Sans"', 'system-ui', 'sans-serif'],
+        display: ['"Chakra Petch"', 'system-ui', 'sans-serif'],
+        sans: ['Manrope', 'system-ui', 'sans-serif'],
       },
       boxShadow: {
-        chunky: '0 4px 0 0 rgba(0,0,0,0.45)',
-        'chunky-sm': '0 2px 0 0 rgba(0,0,0,0.45)',
+        chunky: '0 10px 30px -14px rgba(0,0,0,0.7)',
+        'chunky-sm': '0 6px 16px -10px rgba(0,0,0,0.7)',
+        glow: '0 0 0 1px rgba(165,133,255,0.35), 0 10px 30px -10px rgba(139,92,246,0.55)',
       },
       keyframes: {
         pop: {

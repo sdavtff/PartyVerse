@@ -193,3 +193,23 @@ das do Quiz normal, em rodízio, sem repetir até todas saírem. No painel **/ad
   meio-dia): precisam do banco de dados. Cada pessoa ativa em **Perfil → Notificações**. As
   chaves de envio (VAPID) são criadas sozinhas no primeiro uso e ficam salvas no banco — não
   precisa fazer nada. No iPhone, a pessoa precisa instalar o site na tela de início primeiro.
+
+## App Android (.apk)
+
+O app fica em `mobile/` e é só uma "casca" do site: abre https://meu-assistente-ai.online em
+tela cheia, com ícone próprio, microfone liberado para o chat de voz e uma tela de "sem conexão".
+Como ele carrega o site, **toda atualização do site já aparece no app** — não precisa gerar outro APK.
+
+- **Onde baixar:** https://github.com/sdavtff/PartyVerse/releases/latest/download/PartyVerse.apk
+  (no celular Android, o site também mostra "Baixar o app Android" no menu **Mais**).
+- **Como é gerado:** o GitHub Actions (aba *Actions* → "App Android (APK)") compila sozinho quando
+  algo em `mobile/` muda. Para gerar de novo manualmente, abra o fluxo e toque em *Run workflow*.
+- **Instalar:** o Android pede para permitir "instalar apps desconhecidos" no navegador. É normal
+  para apps fora da Play Store.
+- **Login com Google** não aparece dentro do app (o Google bloqueia login em apps desse tipo);
+  use e-mail e senha. Notificações push também ficam só no site/PWA por enquanto.
+- **Publicar na Play Store (opcional):** crie uma chave própria (`keytool -genkeypair ...`) e cadastre
+  em Settings → Secrets → Actions: `ANDROID_KEYSTORE_BASE64` (o arquivo em base64),
+  `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS` e `ANDROID_KEY_PASSWORD`. Sem isso, o APK usa a
+  chave de teste do repositório (serve para instalar direto, não para a loja). Se trocar a chave,
+  quem já tem o app precisa desinstalar antes de instalar o novo.

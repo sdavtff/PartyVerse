@@ -26,7 +26,7 @@ const GLYPHS: Record<GameId, JSX.Element> = {
       textAnchor="middle"
       fontSize="30"
       fontWeight="800"
-      fontFamily="Bricolage Grotesque, sans-serif"
+      fontFamily="Chakra Petch, sans-serif"
       fill="#0f0b17"
     >
       A
@@ -57,7 +57,7 @@ const GLYPHS: Record<GameId, JSX.Element> = {
       textAnchor="middle"
       fontSize="32"
       fontWeight="800"
-      fontFamily="Bricolage Grotesque, sans-serif"
+      fontFamily="Chakra Petch, sans-serif"
       fill="#0f0b17"
     >
       ?
@@ -150,17 +150,29 @@ export function GameIcon({ id, small }: { id: GameId; small?: boolean }) {
       aria-hidden
       className="shrink-0 transition group-hover:animate-wobble"
     >
+      <defs>
+        <linearGradient id={`gi-${id}`} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#fff" stopOpacity=".35" />
+          <stop offset=".5" stopColor="#fff" stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      <rect x="4" y="4" width="56" height="56" rx="16" fill={ACCENTS[id]} />
+      <rect x="4" y="4" width="56" height="56" rx="16" fill={`url(#gi-${id})`} />
       <rect
-        x="4"
-        y="4"
-        width="56"
-        height="56"
-        rx="18"
-        fill={ACCENTS[id]}
-        stroke="#0f0b17"
-        strokeWidth="4"
+        x="4.75"
+        y="4.75"
+        width="54.5"
+        height="54.5"
+        rx="15.25"
+        fill="none"
+        stroke="#fff"
+        strokeOpacity=".25"
+        strokeWidth="1.5"
       />
       {GLYPHS[id]}
     </svg>
   );
 }
+
+/** Só o desenho do jogo (64×64), para compor capas maiores. */
+export const gameGlyph = (id: GameId) => GLYPHS[id];

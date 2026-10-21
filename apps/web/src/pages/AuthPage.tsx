@@ -6,6 +6,7 @@ import { Button } from '../components/Button';
 import { useToast } from '../components/Toast';
 import { api } from '../lib/api';
 import { useSession } from '../lib/session';
+import { isNativeApp } from '../lib/platform';
 import { usePageTitle } from '../lib/usePageTitle';
 
 type Mode = 'login' | 'register' | 'guest';
@@ -272,7 +273,7 @@ export function AuthPage() {
               : 'Jogue agora mesmo, sem cadastro.'}
         </p>
 
-        {mode !== 'guest' && health?.google && (
+        {mode !== 'guest' && health?.google && !isNativeApp() && (
           <>
             <a
               href={googleHref}

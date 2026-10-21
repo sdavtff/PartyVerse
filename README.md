@@ -4,6 +4,12 @@ Plataforma web de minijogos multiplayer em tempo real. **Versão 0.6:** página 
 
 > **Publicar na Hostinger:** veja [DEPLOY-HOSTINGER.md](DEPLOY-HOSTINGER.md).
 
+## Novidades da 0.8
+
+- **Visual novo** no estilo painel de jogo: tema violeta escuro, menu lateral com ícones e nível, banner do jogo em destaque, anel do desafio do dia, metas, conquistas e salas ao vivo com capas ilustradas.
+- **Cara de app no celular**: barra de abas embaixo (Início, Jogos, Desafio, Ranking, Mais), saudação com moedas, cartão de nível e sequência da semana.
+- **App Android (.apk)** em `mobile/` (Capacitor). O GitHub Actions gera o APK a cada mudança em `mobile/` e publica em *Releases*: https://github.com/sdavtff/PartyVerse/releases/latest/download/PartyVerse.apk
+
 ## Novidades da 0.7
 
 - **IA nas salas** (com `OPENROUTER_API_KEY`): o anfitrião escreve um tema e a IA cria perguntas do Quiz, palavras do Rabisco/Mímica/Palavra Secreta, locais do Impostor e frases de Quem é Mais Provável e Verdade ou Desafio. Ninguém vê as respostas antes.

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { disablePush, enablePush, pushState, type PushState } from '../lib/push';
 import { useHealth } from '../lib/health';
+import { isNativeApp } from '../lib/platform';
 import { Button } from './Button';
 import { useToast } from './Toast';
 
@@ -23,7 +24,7 @@ export function PushToggle() {
   useEffect(() => {
     void pushState().then(setState);
   }, []);
-  if (health && !health.push) return null;
+  if ((health && !health.push) || isNativeApp()) return null;
   const run = (fn: () => Promise<PushState>) => {
     setBusy(true);
     fn()

@@ -5,26 +5,28 @@
 @layer base {
   :root {
     color-scheme: dark;
-    --ink-950: 15 11 23;
-    --ink-900: 22 18 31;
-    --ink-800: 33 26 46;
-    --ink-700: 45 36 64;
-    --ink-600: 61 50 87;
-    --ink-400: 140 128 168;
-    --ink-200: 214 207 230;
+    --ink-950: 8 7 15;
+    --ink-900: 11 10 20;
+    --ink-800: 20 17 34;
+    --ink-700: 34 29 56;
+    --ink-600: 54 46 86;
+    --ink-400: 141 133 176;
+    --ink-200: 212 207 234;
     --fg: 255 255 255;
+    --panel: 18 15 31;
   }
   /* tema claro: o mesmo layout com a paleta invertida */
   :root[data-theme='light'] {
     color-scheme: light;
-    --ink-950: 236 231 245;
-    --ink-900: 247 244 252;
+    --ink-950: 233 228 246;
+    --ink-900: 245 242 252;
     --ink-800: 255 255 255;
-    --ink-700: 226 219 238;
-    --ink-600: 205 195 224;
-    --ink-400: 106 95 136;
-    --ink-200: 61 52 84;
-    --fg: 22 18 31;
+    --ink-700: 229 222 245;
+    --ink-600: 205 194 232;
+    --ink-400: 104 94 138;
+    --ink-200: 58 49 84;
+    --fg: 20 16 34;
+    --panel: 255 255 255;
   }
   body {
     @apply bg-ink-900 font-sans text-ink-200 antialiased;
@@ -32,19 +34,23 @@
   h1,
   h2,
   h3 {
-    @apply font-display text-white;
+    @apply font-display font-bold tracking-tight text-white;
   }
   :focus-visible {
     @apply outline outline-2 outline-offset-2 outline-lime-400;
   }
-  /* fundo com confete discreto */
+  /* fundo: brilhos violeta difusos, como num painel de jogo */
   .bg-confetti {
+    background-color: rgb(var(--ink-900));
     background-image:
-      radial-gradient(circle at 12% 18%, rgba(255, 95, 162, 0.18) 0 6px, transparent 7px),
-      radial-gradient(circle at 82% 12%, rgba(92, 200, 255, 0.18) 0 5px, transparent 6px),
-      radial-gradient(circle at 70% 78%, rgba(198, 244, 50, 0.16) 0 7px, transparent 8px),
-      radial-gradient(circle at 22% 84%, rgba(255, 194, 61, 0.16) 0 5px, transparent 6px);
-    background-size: 420px 420px;
+      radial-gradient(60rem 40rem at 85% -10%, rgba(139, 92, 246, 0.16), transparent 60%),
+      radial-gradient(50rem 36rem at -10% 110%, rgba(109, 40, 217, 0.14), transparent 60%);
+    background-attachment: fixed;
+  }
+  :root[data-theme='light'] .bg-confetti {
+    background-image:
+      radial-gradient(60rem 40rem at 85% -10%, rgba(139, 92, 246, 0.12), transparent 60%),
+      radial-gradient(50rem 36rem at -10% 110%, rgba(109, 40, 217, 0.08), transparent 60%);
   }
   @media (prefers-reduced-motion: reduce) {
     *,
@@ -66,11 +72,40 @@
 
 @layer components {
   .card {
-    @apply rounded-3xl border-2 border-ink-700 bg-ink-800 shadow-chunky;
+    @apply rounded-2xl border border-ink-700/80 shadow-chunky;
+    background:
+      linear-gradient(180deg, rgb(255 255 255 / 0.025), transparent 40%),
+      rgb(var(--panel) / 0.92);
+  }
+  .card-glow {
+    @apply card;
+    box-shadow:
+      0 0 0 1px rgb(165 133 255 / 0.18),
+      0 20px 50px -30px rgb(139 92 246 / 0.6);
   }
   .input {
-    @apply w-full rounded-2xl border-2 border-ink-600 bg-ink-950 px-4 py-3 text-white placeholder:text-ink-400
-           transition focus:border-lime-400 focus:outline-none disabled:opacity-50;
+    @apply w-full rounded-xl border border-ink-600 bg-ink-950/70 px-4 py-3 text-white placeholder:text-ink-400
+           transition focus:border-lime-400 focus:outline-none focus:ring-2 focus:ring-lime-400/25 disabled:opacity-50;
+  }
+  /* rótulo pequeno em caixa alta (títulos de seção do painel) */
+  .eyebrow {
+    @apply font-display text-xs font-semibold uppercase tracking-[0.14em] text-ink-400;
+  }
+  .btn-violet {
+    @apply text-white;
+    background: linear-gradient(135deg, #9b74ff, #6d28d9);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.25),
+      0 10px 24px -10px rgb(124 58 237 / 0.8);
+  }
+  .btn-violet:hover {
+    background: linear-gradient(135deg, #ab88ff, #7c3aed);
+  }
+  .scrollbar-none {
+    scrollbar-width: none;
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
   }
   .label {
     @apply mb-1.5 block text-sm font-bold text-ink-200;
@@ -225,7 +260,7 @@
 /* tema claro: cores de destaque mais escuras para ler bem sobre fundo branco */
 :root[data-theme='light'] .text-lime-400,
 :root[data-theme='light'] .hover\:text-lime-400:hover {
-  color: #4a7300;
+  color: #6d28d9;
 }
 :root[data-theme='light'] .text-pop-amber {
   color: #9a6200;
@@ -253,8 +288,17 @@
   color: #6447d4;
 }
 :root[data-theme='light'] .shadow-chunky {
-  box-shadow: 0 4px 0 0 rgba(45, 36, 64, 0.16);
+  box-shadow: 0 10px 30px -16px rgba(45, 36, 64, 0.3);
 }
 :root[data-theme='light'] .shadow-chunky-sm {
-  box-shadow: 0 2px 0 0 rgba(45, 36, 64, 0.16);
+  box-shadow: 0 6px 16px -10px rgba(45, 36, 64, 0.3);
+}
+
+/* destaque sólido (botões, selos e barras "lime" das versões antigas) vira o gradiente violeta */
+.bg-lime-400 {
+  background-image: linear-gradient(135deg, #9b74ff, #6d28d9);
+}
+.bg-lime-400.text-night,
+.bg-lime-400 .text-night {
+  color: #fff;
 }

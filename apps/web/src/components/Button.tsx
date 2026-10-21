@@ -2,8 +2,8 @@ import type { ButtonHTMLAttributes } from 'react';
 
 type Variant = 'primary' | 'secondary' | 'ghost' | 'danger';
 const styles: Record<Variant, string> = {
-  primary: 'bg-lime-400 text-night hover:bg-lime-300 shadow-chunky',
-  secondary: 'bg-ink-700 text-white hover:bg-ink-600 shadow-chunky',
+  primary: 'btn-violet',
+  secondary: 'border border-ink-600 bg-ink-700/70 text-white hover:bg-ink-600',
   ghost: 'bg-transparent text-ink-200 hover:bg-ink-700',
   danger: 'bg-pop-rose text-night hover:brightness-110 shadow-chunky',
 };
@@ -16,10 +16,10 @@ export function Button({
 }: ButtonHTMLAttributes<HTMLButtonElement> & { variant?: Variant; size?: 'sm' | 'md' | 'lg' }) {
   const sz =
     size === 'sm'
-      ? 'px-3 py-1.5 text-sm rounded-xl'
+      ? 'px-3 py-1.5 text-sm rounded-lg'
       : size === 'lg'
-        ? 'px-6 py-3.5 text-lg rounded-2xl'
-        : 'px-4 py-2.5 rounded-2xl';
+        ? 'px-6 py-3.5 text-lg rounded-xl'
+        : 'px-4 py-2.5 rounded-xl';
   return (
     <button
       {...props}

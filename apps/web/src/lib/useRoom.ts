@@ -8,6 +8,7 @@ import {
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { syncClock } from './clock';
 import { emitAck, getSocket } from './socket';
+import { refreshMyProfile } from './me';
 
 export type ConnStatus =
   'connecting' | 'online' | 'reconnecting' | 'failed' | 'kicked' | 'replaced' | 'password';
@@ -77,7 +78,10 @@ export function useRoom(code: string) {
       setResult(r);
       setReward(null);
     };
-    const onReward = (r: MatchReward) => setReward(r);
+    const onReward = (r: MatchReward) => {
+      setReward(r);
+      refreshMyProfile();
+    };
     const onKicked = () => {
       left.current = true;
       setStatus('kicked');

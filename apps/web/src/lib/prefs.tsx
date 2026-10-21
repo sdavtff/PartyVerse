@@ -17,7 +17,7 @@ export function applyTheme(theme: Prefs['theme']) {
   document.documentElement.dataset.theme = theme;
   document
     .querySelector('meta[name="theme-color"]')
-    ?.setAttribute('content', theme === 'light' ? '#f7f4fc' : '#16121f');
+    ?.setAttribute('content', theme === 'light' ? '#f7f4fc' : '#0b0a14');
 }
 
 function readLocal(): Prefs {

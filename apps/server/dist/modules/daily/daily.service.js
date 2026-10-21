@@ -171,16 +171,24 @@ export class DailyService {
     }
     async status(userId, day = dayKey()) {
         const c = await this.challenge(day);
-        const [quizDone, stopDone, streak] = userId
+        const [quizDone, stopDone, streak, termoRow, days] = userId
             ? await Promise.all([
                 this.repo.get(userId, day, 'quiz'),
                 this.repo.get(userId, day, 'stop'),
                 this.streak(userId, day),
+                this.repo.get(userId, day, 'termo'),
+                this.repo.days(userId),
             ])
-            : [null, null, 0];
+            : [null, null, 0, null, []];
+        const weekAgo = new Date(new Date(`${day}T12:00:00Z`).getTime() - 13 * 86400_000)
+            .toISOString()
+            .slice(0, 10);
         return {
             day,
             streak,
+            /** dias com desafio feito nas últimas duas semanas (para a faixa da semana) */
+            recentDays: days.filter((d) => d >= weekAgo && d <= day),
+            termoDone: Boolean(termoRow?.data?.done),
             source: c.source,
             quiz: {
                 size: c.quiz.length,

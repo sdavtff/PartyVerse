@@ -2,3 +2,5 @@ dist
 node_modules
 apps/server/src/generated
 *.md
+mobile/android
+mobile/www

@@ -1,0 +1,87 @@
+# Gera o app Android (.apk) e publica em "Releases" do GitHub.
+# Roda sozinho quando algo em mobile/ muda, ou manualmente na aba Actions ("Run workflow").
+# O site continua sendo publicado pela Hostinger; este fluxo só cria o arquivo do app.
+name: App Android (APK)
+
+on:
+  push:
+    branches: [main]
+    paths: ['mobile/**', '.github/workflows/android.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: android-apk
+  cancel-in-progress: true
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: gradle
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Dependências e sincronização do Capacitor
+        run: |
+          npm ci
+          npx cap sync android
+
+      # Opcional: chave de assinatura própria (Settings → Secrets → Actions).
+      # Sem ela, o APK usa a chave de teste do repositório.
+      - name: Chave de assinatura (se configurada)
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          if [ -n "$KEYSTORE_B64" ]; then
+            echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/release.keystore"
+            echo "ANDROID_KEYSTORE_FILE=$RUNNER_TEMP/release.keystore" >> "$GITHUB_ENV"
+          fi
+
+      - name: Compilar o APK
+        working-directory: mobile/android
+        env:
+          VERSION_CODE: ${{ github.run_number }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleRelease --no-daemon --stacktrace
+          cp app/build/outputs/apk/release/app-release.apk "$GITHUB_WORKSPACE/PartyVerse.apk"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: PartyVerse-apk
+          path: PartyVerse.apk
+
+      - name: Publicar na página de Releases
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: app-v0.7.${{ github.run_number }}
+          name: PartyVerse para Android 0.7.${{ github.run_number }}
+          make_latest: true
+          body: |
+            App Android do PartyVerse. Baixe o **PartyVerse.apk** abaixo e abra no celular
+            (o Android pode pedir para permitir "instalar apps desconhecidos" do navegador).
+            O app abre o site https://meu-assistente-ai.online, então as novidades do site
+            aparecem nele sem precisar baixar de novo.
+          files: PartyVerse.apk

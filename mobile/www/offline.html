@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>PartyVerse — sem conexão</title>
+    <style>
+      :root { color-scheme: dark; }
+      body {
+        margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 24px;
+        box-sizing: border-box; font-family: system-ui, sans-serif; color: #d4cfea;
+        background: radial-gradient(40rem 30rem at 80% -10%, rgba(139,92,246,.25), transparent 60%), #0b0a14;
+        text-align: center;
+      }
+      h1 { color: #fff; font-size: 22px; margin: 18px 0 8px; }
+      p { margin: 0 auto; max-width: 300px; line-height: 1.5; color: #8d85b0; }
+      button {
+        margin-top: 24px; border: 0; border-radius: 14px; padding: 14px 28px; font-size: 16px;
+        font-weight: 700; color: #fff; background: linear-gradient(135deg, #9b74ff, #6d28d9);
+        box-shadow: 0 10px 24px -10px rgba(124,58,237,.8);
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <svg width="72" height="72" viewBox="0 0 64 64" aria-hidden="true">
+        <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#c4b1ff"/><stop offset=".55" stop-color="#8b5cf6"/><stop offset="1" stop-color="#5b21b6"/></linearGradient></defs>
+        <path d="M32 3l25 14v30L32 61 7 47V17z" fill="url(#g)"/>
+        <path d="M32 11l18 10v22L32 53 14 43V21z" fill="#0c0a16" opacity=".9"/>
+        <circle cx="25" cy="30" r="3.6" fill="#c4b1ff"/><circle cx="39" cy="30" r="3.6" fill="#c4b1ff"/>
+        <path d="M24 40q8-6 16 0" stroke="#c4b1ff" stroke-width="3.6" fill="none" stroke-linecap="round"/>
+      </svg>
+      <h1>Sem conexão</h1>
+      <p>O PartyVerse precisa de internet para jogar com a galera. Confira o Wi-Fi ou os dados móveis.</p>
+      <button onclick="location.href='https://meu-assistente-ai.online'">Tentar de novo</button>
+    </main>
+  </body>
+</html>

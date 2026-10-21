@@ -1,0 +1,23 @@
+{
+  "appId": "online.meuassistenteai.partyverse",
+  "appName": "PartyVerse",
+  "webDir": "www",
+  "backgroundColor": "#0b0a14",
+  "appendUserAgent": "PartyVerseApp",
+  "server": {
+    "url": "https://meu-assistente-ai.online",
+    "errorPath": "offline.html",
+    "androidScheme": "https"
+  },
+  "android": {
+    "allowMixedContent": false,
+    "backgroundColor": "#0b0a14"
+  },
+  "plugins": {
+    "SystemBars": {
+      "insetsHandling": "css",
+      "initialViewportFitValueHint": "cover",
+      "style": "DARK"
+    }
+  }
+}

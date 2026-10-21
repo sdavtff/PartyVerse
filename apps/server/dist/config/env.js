@@ -42,6 +42,13 @@ const envSchema = z.object({
     OPENROUTER_MODEL: z.string().default('minimax/minimax-m3.1-flash:free'),
     /** (avançado) outro endereço compatível com a API da OpenRouter */
     OPENROUTER_BASE_URL: z.string().url().optional(),
+    /** Notificações push (opcional: sem elas, as chaves são geradas e guardadas no banco) */
+    VAPID_PUBLIC_KEY: z.string().optional(),
+    VAPID_PRIVATE_KEY: z.string().optional(),
+    /** Chat de voz: servidor TURN para redes que bloqueiam conexão direta (opcional) */
+    TURN_URL: z.string().optional(),
+    TURN_USERNAME: z.string().optional(),
+    TURN_PASSWORD: z.string().optional(),
 });
 export function loadEnv(overrides = {}) {
     // variáveis vazias (comuns em painéis de hospedagem) contam como não definidas

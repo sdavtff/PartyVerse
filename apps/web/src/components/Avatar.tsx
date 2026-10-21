@@ -273,6 +273,38 @@ function Character({ p }: { p: AvatarParts }) {
   );
 }
 
+/** Avatar dos bots: um robozinho na cor do número. */
+function Robot({ color }: { color: string }) {
+  return (
+    <>
+      <line x1="50" y1="8" x2="50" y2="22" stroke={INK} strokeWidth="5" strokeLinecap="round" />
+      <circle cx="50" cy="9" r="6" fill="#ff5d8f" stroke={INK} strokeWidth="4" />
+      <rect
+        x="14"
+        y="22"
+        width="72"
+        height="62"
+        rx="18"
+        fill={color}
+        stroke={INK}
+        strokeWidth="5"
+      />
+      <rect x="6" y="44" width="10" height="20" rx="4" fill={color} stroke={INK} strokeWidth="4" />
+      <rect x="84" y="44" width="10" height="20" rx="4" fill={color} stroke={INK} strokeWidth="4" />
+      <rect x="24" y="36" width="52" height="24" rx="10" fill={INK} />
+      <circle cx="38" cy="48" r="6" fill="#b8f34a" />
+      <circle cx="62" cy="48" r="6" fill="#b8f34a" />
+      <path
+        d="M36 70h28"
+        stroke={INK}
+        strokeWidth="5"
+        strokeLinecap="round"
+        strokeDasharray="1 8"
+      />
+    </>
+  );
+}
+
 export function Avatar({
   avatar,
   size = 40,
@@ -299,7 +331,9 @@ export function Avatar({
       aria-label={label ?? 'avatar'}
       className={`shrink-0 transition ${dim ? 'opacity-40 grayscale' : ''}`}
     >
-      {parts ? (
+      {shape === 'bot' ? (
+        <Robot color={color!} />
+      ) : parts ? (
         <Character p={parts} />
       ) : (
         <>

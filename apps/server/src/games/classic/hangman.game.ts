@@ -15,6 +15,8 @@ const ROUND_END_SECONDS = 5;
 export const HANGMAN_POINTS = { letter: 10, solveBonus: 30, perHidden: 10 };
 
 /** Letra sem acento (a palavra "maçã" se resolve com c e a). */
+/** letras mais comuns do português primeiro (usado pelo bot) */
+const BOT_LETTERS = 'aeosrinmdtculpvgqbfhjxzkwy';
 const base = (ch: string) => normalize(ch).replace(/[^a-z]/g, '');
 
 export interface HangmanState {
@@ -195,6 +197,19 @@ export const hangmanGame: GameModule<HangmanState, HangmanSettings, HangmanActio
       }
       return startWord(s, ctx);
     }
+  },
+
+  bot(s, botId) {
+    if (s.phase !== 'playing' || current(s) !== botId) return null;
+    const tried = new Set([...s.guessed, ...s.wrong]);
+    const left = BOT_LETTERS.split('').filter((l) => !tried.has(l));
+    if (!left.length) return null;
+    // quase sempre segue a frequência do português; às vezes arrisca uma letra qualquer
+    const letter =
+      Math.random() < 0.8
+        ? left[Math.floor(Math.random() * Math.min(3, left.length))]!
+        : left[Math.floor(Math.random() * left.length)]!;
+    return { action: { type: 'letter', letter }, delayMs: 1200 + Math.random() * 1800 };
   },
 
   calculateScores: (s) => ({ ...s.totals }),

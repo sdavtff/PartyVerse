@@ -21,6 +21,8 @@ import { BanList } from './modules/admin/bans.js';
 import { SmtpMailer } from './modules/mail/mailer.js';
 import { MemoryResetRepository, PrismaResetRepository, } from './modules/auth/reset.repository.js';
 import { RoomManager } from './rooms/RoomManager.js';
+import { MemoryPushRepository, PrismaPushRepository, PushService, } from './modules/push/push.service.js';
+import { dayKey } from './modules/daily/daily.service.js';
 /** Monta HTTP + Socket.IO. Separado de index.ts para ser usado nos testes. */
 export function buildServer(env, opts = {}) {
     const prisma = env.DATABASE_URL && opts.users === undefined ? getPrisma(env.DATABASE_URL) : null;
@@ -68,6 +70,16 @@ export function buildServer(env, opts = {}) {
     const resets = prisma
         ? new PrismaResetRepository(prisma)
         : new MemoryResetRepository();
+    const push = new PushService(prisma ? new PrismaPushRepository(prisma) : new MemoryPushRepository(), {
+        publicKey: env.VAPID_PUBLIC_KEY,
+        privateKey: env.VAPID_PRIVATE_KEY,
+        subject: env.PUBLIC_URL?.startsWith('https://')
+            ? env.PUBLIC_URL
+            : 'mailto:contato@partyverse.app',
+        sender: opts.pushSender,
+    });
+    if (env.NODE_ENV !== 'test' && users)
+        push.start(() => dayKey());
     const bans = new BanList();
     const loadBans = () => users
         ?.bannedIds()
@@ -115,6 +127,7 @@ export function buildServer(env, opts = {}) {
         reports,
         tournament,
         clans,
+        push,
         disconnectUser: (userId) => {
             for (const sid of presence.socketsOf(userId))
                 io.sockets.sockets.get(sid)?.disconnect(true);
@@ -125,6 +138,7 @@ export function buildServer(env, opts = {}) {
         clearInterval(banTimer);
         daily.stop();
         tournament.stop();
+        push.stop();
         rooms.shutdown();
         io.close();
         await new Promise((r) => httpServer.close(() => r()));
@@ -147,5 +161,6 @@ export function buildServer(env, opts = {}) {
         reports,
         tournament,
         clans,
+        push,
     };
 }

@@ -34,6 +34,7 @@ export const GAME_CATALOG = [
         maxPlayers: 16,
         available: true,
         color: 'sky',
+        bots: true,
     },
     {
         id: 'secretword',
@@ -88,6 +89,7 @@ export const GAME_CATALOG = [
         maxPlayers: 12,
         available: true,
         color: 'yellow',
+        bots: true,
     },
     {
         id: 'tictactoe',
@@ -97,6 +99,7 @@ export const GAME_CATALOG = [
         maxPlayers: 2,
         available: true,
         color: 'cyan',
+        bots: true,
     },
     {
         id: 'checkers',
@@ -106,6 +109,7 @@ export const GAME_CATALOG = [
         maxPlayers: 2,
         available: true,
         color: 'brown',
+        bots: true,
     },
     {
         id: 'telephone',
@@ -138,6 +142,12 @@ export const EVENTS = {
     ROOM_END: 'room:end',
     ROOM_BACK_TO_LOBBY: 'room:backToLobby',
     ROOM_SPECTATE: 'room:spectate',
+    ROOM_ADD_BOT: 'room:addBot',
+    VOICE_JOIN: 'voice:join',
+    VOICE_LEAVE: 'voice:leave',
+    VOICE_MUTE: 'voice:mute',
+    /** cliente <-> servidor: oferta/resposta/candidatos WebRTC repassados a um jogador */
+    VOICE_SIGNAL: 'voice:signal',
     CHAT_SEND: 'chat:send',
     GAME_ACTION: 'game:action',
     // servidor -> cliente

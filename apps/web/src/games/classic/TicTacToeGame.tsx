@@ -63,13 +63,15 @@ export function TicTacToeGame({
             {watching && ' · você está assistindo'}
           </p>
           <h2 className="text-2xl font-extrabold">
-            {view.phase === 'game-end'
-              ? view.winner === 'draw'
-                ? 'Deu velha! 🤝'
-                : `${nick(view.winner === 'X' ? view.x : view.o)} venceu!`
-              : myTurn
-                ? 'Sua vez!'
-                : `Vez de ${nick(turnPlayer)}`}
+            {view.phase === 'finished' && !view.winner
+              ? 'Fim da partida'
+              : view.phase !== 'playing'
+                ? view.winner === 'draw'
+                  ? 'Deu velha! 🤝'
+                  : `${nick(view.winner === 'X' ? view.x : view.o)} venceu!`
+                : myTurn
+                  ? 'Sua vez!'
+                  : `Vez de ${nick(turnPlayer)}`}
           </h2>
         </div>
         {view.phase === 'playing' && <Clock left={left} accent="text-pop-sky" />}

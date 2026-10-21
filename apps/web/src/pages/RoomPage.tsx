@@ -75,6 +75,7 @@ import { useSession } from '../lib/session';
 import { emitAck } from '../lib/socket';
 import { sfx } from '../lib/sound';
 import { useRoom } from '../lib/useRoom';
+import { VoiceChat } from '../components/VoiceChat';
 
 export function RoomPage() {
   const { code = '' } = useParams();
@@ -207,6 +208,7 @@ function RoomInner({ code }: { code: string }) {
         <aside className="flex flex-col gap-5">
           <ReactionBar />
           <PlayerList room={room} myId={myId} showScores={room.phase !== 'lobby'} />
+          <VoiceChat room={room} myId={myId} />
           <div className="h-[24rem] lg:flex-1">
             <ChatPanel messages={chat} myId={myId} disabled={status !== 'online'} />
           </div>
@@ -322,6 +324,9 @@ function Lobby({ room, amHost }: { room: PublicRoom; amHost: boolean }) {
   const saveRoom = (r: Partial<PublicRoom['settings']>) =>
     emitAck(EVENTS.ROOM_UPDATE_SETTINGS, { room: r }).catch((e) => toast(e.message, 'error'));
 
+  const addBot = () =>
+    emitAck(EVENTS.ROOM_ADD_BOT).catch((e) => toast((e as Error).message, 'error'));
+
   const start = async () => {
     setStarting(true);
     try {
@@ -373,6 +378,23 @@ function Lobby({ room, amHost }: { room: PublicRoom; amHost: boolean }) {
             : 'Espectadores acompanham a partida sem jogar.'}
         </span>
       </div>
+      {amHost && meta.bots && (
+        <div className="-mt-3 flex flex-wrap items-center gap-2 text-sm">
+          <button
+            type="button"
+            onClick={addBot}
+            disabled={online >= room.settings.maxPlayers}
+            className="rounded-xl bg-ink-700 px-3 py-1.5 font-bold text-ink-200 transition hover:text-white disabled:opacity-40"
+          >
+            🤖 Colocar bot
+          </button>
+          <span className="text-ink-400">
+            {online < meta.minPlayers
+              ? 'Sem ninguém para jogar agora? Jogue contra o computador.'
+              : 'Bots completam a mesa (dá para tirar no ✕ da lista).'}
+          </span>
+        </div>
+      )}
 
       {amHost && (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">

@@ -22,9 +22,14 @@ export function InviteFriends({ onClose, roomCode }: { onClose: () => void; room
 
   const invite = async (f: FriendEntry) => {
     try {
-      await friendsApi.invite(f.user.id);
+      const r = await friendsApi.invite(f.user.id);
       setSent((s) => new Set(s).add(f.user.id));
-      toast(`Convite enviado para ${f.user.nickname}!`, 'success');
+      toast(
+        r.via === 'push'
+          ? `${f.user.nickname} está fora do site: mandamos uma notificação!`
+          : `Convite enviado para ${f.user.nickname}!`,
+        'success',
+      );
     } catch (e) {
       toast((e as Error).message, 'error');
     }
@@ -94,11 +99,14 @@ export function InviteFriends({ onClose, roomCode }: { onClose: () => void; room
                     </span>
                   </span>
                   <button
-                    disabled={!f.online || here || sent.has(f.user.id)}
+                    disabled={here || sent.has(f.user.id)}
+                    title={
+                      f.online ? undefined : 'Envia uma notificação, se seu amigo tiver ativado'
+                    }
                     onClick={() => invite(f)}
                     className="rounded-xl bg-lime-400 px-3 py-1.5 text-sm font-bold text-night hover:bg-lime-300 disabled:bg-ink-700 disabled:text-ink-400"
                   >
-                    {sent.has(f.user.id) ? 'Enviado ✓' : 'Convidar'}
+                    {sent.has(f.user.id) ? 'Enviado ✓' : f.online ? 'Convidar' : '🔔 Avisar'}
                   </button>
                 </li>
               );

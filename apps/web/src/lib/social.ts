@@ -19,7 +19,8 @@ export const friendsApi = {
   relation: (id: string) => api<{ status: FriendStatus | null }>(`/friends/relation/${id}`),
   add: (id: string) => api<{ status: FriendStatus }>(`/friends/${id}`, { method: 'POST' }),
   remove: (id: string) => api<{ status: null }>(`/friends/${id}`, { method: 'DELETE' }),
-  invite: (id: string) => api<{ ok: true }>(`/friends/${id}/invite`, { method: 'POST' }),
+  invite: (id: string) =>
+    api<{ ok: true; via?: 'online' | 'push' }>(`/friends/${id}/invite`, { method: 'POST' }),
   search: (q: string) => api<FriendUser[]>(`/users?q=${encodeURIComponent(q)}`),
 };
 

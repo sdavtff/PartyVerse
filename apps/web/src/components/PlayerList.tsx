@@ -155,10 +155,25 @@ export function PlayerList({
                   {p.id === myId && (
                     <span className="text-xs font-medium text-ink-400">(você)</span>
                   )}
+                  {p.voice && (
+                    <span
+                      className={`text-sm ${p.voice === 'muted' ? 'opacity-60' : ''}`}
+                      title={p.voice === 'muted' ? 'no chat de voz (mudo)' : 'no chat de voz'}
+                      aria-label={p.voice === 'muted' ? 'no chat de voz, mudo' : 'no chat de voz'}
+                    >
+                      {p.voice === 'muted' ? '🔇' : '🎙️'}
+                    </span>
+                  )}
                 </p>
                 <p className="text-xs text-ink-400">
                   {p.isHost && <span className="text-pop-amber">★ anfitrião · </span>}
-                  {p.status === 'online' ? (p.isGuest ? 'convidado' : 'jogador') : 'reconectando…'}
+                  {p.isBot
+                    ? '🤖 bot'
+                    : p.status === 'online'
+                      ? p.isGuest
+                        ? 'convidado'
+                        : 'jogador'
+                      : 'reconectando…'}
                 </p>
               </div>
               {showScores && (
@@ -174,7 +189,7 @@ export function PlayerList({
                   )}
                 </span>
               )}
-              {!amHost && p.id !== myId && (
+              {!amHost && p.id !== myId && !p.isBot && (
                 <button
                   className="rounded-lg px-2 py-1 text-xs font-bold text-ink-400 opacity-100 transition hover:bg-ink-700 hover:text-pop-rose sm:opacity-0 sm:group-focus-within:opacity-100 sm:group-hover:opacity-100"
                   onClick={() => setReporting({ id: p.id, nickname: p.nickname })}
@@ -189,7 +204,7 @@ export function PlayerList({
                 <div className="flex w-[5.5rem] justify-end gap-1 opacity-100 transition sm:opacity-0 sm:group-focus-within:opacity-100 sm:group-hover:opacity-100">
                   <button
                     className="rounded-lg px-2 py-1 text-xs font-bold text-pop-amber hover:bg-ink-700 disabled:opacity-40"
-                    disabled={p.status !== 'online'}
+                    disabled={p.status !== 'online' || p.isBot}
                     onClick={() =>
                       act(EVENTS.ROOM_TRANSFER_HOST, p.id, `${p.nickname} agora é o anfitrião`)
                     }
@@ -197,19 +212,22 @@ export function PlayerList({
                   >
                     ★
                   </button>
-                  <button
-                    className="rounded-lg px-2 py-1 text-xs font-bold text-ink-400 hover:bg-ink-700 hover:text-pop-rose"
-                    onClick={() => setReporting({ id: p.id, nickname: p.nickname })}
-                    title="Denunciar"
-                    aria-label={`Denunciar ${p.nickname}`}
-                  >
-                    ⚑
-                  </button>
+                  {!p.isBot && (
+                    <button
+                      className="rounded-lg px-2 py-1 text-xs font-bold text-ink-400 hover:bg-ink-700 hover:text-pop-rose"
+                      onClick={() => setReporting({ id: p.id, nickname: p.nickname })}
+                      title="Denunciar"
+                      aria-label={`Denunciar ${p.nickname}`}
+                    >
+                      ⚑
+                    </button>
+                  )}
                   <button
                     className="rounded-lg px-2 py-1 text-xs font-bold text-pop-rose hover:bg-ink-700"
+                    aria-label={`Remover ${p.nickname}`}
                     onClick={() =>
-                      confirm(`Remover ${p.nickname} da sala?`) &&
-                      act(EVENTS.ROOM_KICK, p.id, `${p.nickname} foi removido`)
+                      (p.isBot || confirm(`Remover ${p.nickname} da sala?`)) &&
+                      act(EVENTS.ROOM_KICK, p.id, `${p.nickname} saiu da sala`)
                     }
                     title="Remover da sala"
                   >

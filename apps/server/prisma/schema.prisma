@@ -33,6 +33,7 @@ model User {
   daily        DailyResult[]
   items        UserItem[]
   clan         ClanMember?
+  pushSubs     PushSubscription[]
 }
 
 model UserAchievement {
@@ -205,4 +206,24 @@ model ClanMember {
   joinedAt DateTime @default(now())
 
   @@index([clanId])
+}
+
+/// Aparelhos inscritos em notificações push
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+/// Configurações internas (ex.: chaves VAPID geradas no primeiro uso)
+model AppSetting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
 }

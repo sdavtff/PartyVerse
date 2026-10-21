@@ -172,6 +172,109 @@ export declare const spectateSchema: z.ZodObject<{
 }, {
     on: boolean;
 }>;
+export declare const voiceMuteSchema: z.ZodObject<{
+    muted: z.ZodBoolean;
+}, "strip", z.ZodTypeAny, {
+    muted: boolean;
+}, {
+    muted: boolean;
+}>;
+/** Sinalização WebRTC do chat de voz (o servidor só repassa, não interpreta). */
+export declare const voiceSignalSchema: z.ZodObject<{
+    to: z.ZodString;
+    data: z.ZodUnion<[z.ZodObject<{
+        type: z.ZodEnum<["offer", "answer"]>;
+        sdp: z.ZodString;
+    }, "strip", z.ZodTypeAny, {
+        type: "offer" | "answer";
+        sdp: string;
+    }, {
+        type: "offer" | "answer";
+        sdp: string;
+    }>, z.ZodObject<{
+        type: z.ZodLiteral<"ice">;
+        candidate: z.ZodObject<{
+            candidate: z.ZodString;
+            sdpMid: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+            sdpMLineIndex: z.ZodOptional<z.ZodNullable<z.ZodNumber>>;
+        }, "strip", z.ZodTypeAny, {
+            candidate: string;
+            sdpMid?: string | null | undefined;
+            sdpMLineIndex?: number | null | undefined;
+        }, {
+            candidate: string;
+            sdpMid?: string | null | undefined;
+            sdpMLineIndex?: number | null | undefined;
+        }>;
+    }, "strip", z.ZodTypeAny, {
+        type: "ice";
+        candidate: {
+            candidate: string;
+            sdpMid?: string | null | undefined;
+            sdpMLineIndex?: number | null | undefined;
+        };
+    }, {
+        type: "ice";
+        candidate: {
+            candidate: string;
+            sdpMid?: string | null | undefined;
+            sdpMLineIndex?: number | null | undefined;
+        };
+    }>]>;
+}, "strip", z.ZodTypeAny, {
+    to: string;
+    data: {
+        type: "offer" | "answer";
+        sdp: string;
+    } | {
+        type: "ice";
+        candidate: {
+            candidate: string;
+            sdpMid?: string | null | undefined;
+            sdpMLineIndex?: number | null | undefined;
+        };
+    };
+}, {
+    to: string;
+    data: {
+        type: "offer" | "answer";
+        sdp: string;
+    } | {
+        type: "ice";
+        candidate: {
+            candidate: string;
+            sdpMid?: string | null | undefined;
+            sdpMLineIndex?: number | null | undefined;
+        };
+    };
+}>;
+export type VoiceSignal = z.infer<typeof voiceSignalSchema>;
+/** Inscrição de notificações push (formato do PushSubscription.toJSON()). */
+export declare const pushSubscribeSchema: z.ZodObject<{
+    endpoint: z.ZodString;
+    keys: z.ZodObject<{
+        p256dh: z.ZodString;
+        auth: z.ZodString;
+    }, "strip", z.ZodTypeAny, {
+        p256dh: string;
+        auth: string;
+    }, {
+        p256dh: string;
+        auth: string;
+    }>;
+}, "strip", z.ZodTypeAny, {
+    keys: {
+        p256dh: string;
+        auth: string;
+    };
+    endpoint: string;
+}, {
+    keys: {
+        p256dh: string;
+        auth: string;
+    };
+    endpoint: string;
+}>;
 export declare const kickSchema: z.ZodObject<{
     playerId: z.ZodString;
 }, "strip", z.ZodTypeAny, {

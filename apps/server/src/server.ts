@@ -60,6 +60,13 @@ import {
   type ResetRepository,
 } from './modules/auth/reset.repository.js';
 import { RoomManager } from './rooms/RoomManager.js';
+import {
+  MemoryPushRepository,
+  PrismaPushRepository,
+  PushService,
+  type PushSender,
+} from './modules/push/push.service.js';
+import { dayKey } from './modules/daily/daily.service.js';
 
 export interface BuildOptions {
   /** para testes: substitui o fetch usado na geração por IA */
@@ -70,6 +77,8 @@ export interface BuildOptions {
   users?: UserRepository | null;
   matches?: MatchRepository;
   google?: GoogleAuth;
+  /** para testes: captura as notificações em vez de enviar */
+  pushSender?: PushSender;
 }
 
 /** Monta HTTP + Socket.IO. Separado de index.ts para ser usado nos testes. */
@@ -134,6 +143,18 @@ export function buildServer(env: Env, opts: BuildOptions = {}) {
   const resets: ResetRepository = prisma
     ? new PrismaResetRepository(prisma)
     : new MemoryResetRepository();
+  const push = new PushService(
+    prisma ? new PrismaPushRepository(prisma) : new MemoryPushRepository(),
+    {
+      publicKey: env.VAPID_PUBLIC_KEY,
+      privateKey: env.VAPID_PRIVATE_KEY,
+      subject: env.PUBLIC_URL?.startsWith('https://')
+        ? env.PUBLIC_URL
+        : 'mailto:contato@partyverse.app',
+      sender: opts.pushSender,
+    },
+  );
+  if (env.NODE_ENV !== 'test' && users) push.start(() => dayKey());
   const bans = new BanList();
   const loadBans = () =>
     users
@@ -189,6 +210,7 @@ export function buildServer(env: Env, opts: BuildOptions = {}) {
     reports,
     tournament,
     clans,
+    push,
     disconnectUser: (userId) => {
       for (const sid of presence.socketsOf(userId)) io.sockets.sockets.get(sid)?.disconnect(true);
     },
@@ -199,6 +221,7 @@ export function buildServer(env: Env, opts: BuildOptions = {}) {
     clearInterval(banTimer);
     daily.stop();
     tournament.stop();
+    push.stop();
     rooms.shutdown();
     io.close();
     await new Promise<void>((r) => httpServer.close(() => r()));
@@ -221,5 +244,6 @@ export function buildServer(env: Env, opts: BuildOptions = {}) {
     reports,
     tournament,
     clans,
+    push,
   };
 }

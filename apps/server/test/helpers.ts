@@ -6,10 +6,16 @@ import { MemoryUserRepository } from '../src/modules/users/users.repository.js';
 import { buildServer } from '../src/server.js';
 import type { GoogleAuth } from '../src/modules/auth/google.js';
 import { MemoryMailer, type Mailer } from '../src/modules/mail/mailer.js';
+import type { PushSender } from '../src/modules/push/push.service.js';
 
 export async function startTestServer(
   overrides: Record<string, unknown> = {},
-  opts: { google?: GoogleAuth; mailer?: Mailer; aiFetch?: typeof fetch } = {},
+  opts: {
+    google?: GoogleAuth;
+    mailer?: Mailer;
+    aiFetch?: typeof fetch;
+    pushSender?: PushSender;
+  } = {},
 ) {
   const env = loadEnv({
     NODE_ENV: 'test',
@@ -21,12 +27,20 @@ export async function startTestServer(
   const users = new MemoryUserRepository();
   const matches = new MemoryMatchRepository();
   const mailer = opts.mailer ?? new MemoryMailer();
+  /** notificações push "enviadas" (capturadas) */
+  const pushed: { endpoint: string; payload: { title: string; body: string; url: string } }[] = [];
+  const pushSender: PushSender =
+    opts.pushSender ??
+    (async (sub, payload) => {
+      pushed.push({ endpoint: sub.endpoint, payload: JSON.parse(payload) });
+    });
   const srv = buildServer(env, {
     users,
     matches,
     google: opts.google,
     mailer,
     aiFetch: opts.aiFetch,
+    pushSender,
   });
   await new Promise<void>((r) => srv.httpServer.listen(0, r));
   const url = `http://localhost:${(srv.httpServer.address() as AddressInfo).port}`;
@@ -54,7 +68,7 @@ export async function startTestServer(
     for (const s of sockets) s.disconnect();
     await srv.close();
   };
-  return { ...srv, url, users, matches, player, close, mailer: mailer as MemoryMailer };
+  return { ...srv, url, users, matches, player, close, mailer: mailer as MemoryMailer, pushed };
 }
 
 export function emit<T = unknown>(

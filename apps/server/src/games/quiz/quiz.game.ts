@@ -200,6 +200,23 @@ export const quizGame: GameModule<QuizState, QuizSettings, QuizAction> = {
   highlights: (s) =>
     Object.fromEntries(s.players.map((p) => [p, { maxStreak: s.maxStreaks[p] ?? 0 }])),
 
+  bot(s, botId) {
+    if (s.phase !== 'question' || s.answers[botId] || !s.players.includes(botId)) return null;
+    const q = s.questions[s.index];
+    if (!q) return null;
+    // acerta ~60% das vezes; erra escolhendo outra alternativa
+    const wrong = [0, 1, 2, 3].filter((o) => o !== q.correct && o < q.options.length);
+    const option =
+      Math.random() < 0.6 || !wrong.length
+        ? q.correct
+        : wrong[Math.floor(Math.random() * wrong.length)]!;
+    const secs = s.settings.secondsPerQuestion;
+    return {
+      action: { type: 'answer', option },
+      delayMs: Math.round(secs * 1000 * (0.2 + Math.random() * 0.5)),
+    };
+  },
+
   isParticipant: (s, playerId) => s.players.includes(playerId),
 
   onPlayerLeft(s, _playerId, ctx) {

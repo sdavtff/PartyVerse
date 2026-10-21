@@ -5,6 +5,7 @@ import { Avatar } from '../components/Avatar';
 import { AvatarEditor } from '../components/AvatarEditor';
 import { Button } from '../components/Button';
 import { useToast } from '../components/Toast';
+import { PushToggle } from '../components/PushToggle';
 import { api, type Identity } from '../lib/api';
 import { usePrefs } from '../lib/prefs';
 import { useSession } from '../lib/session';
@@ -186,6 +187,7 @@ export function ProfilePage() {
             {pref('sound', 'Efeitos sonoros')}
             {pref('reducedMotion', 'Reduzir animações')}
           </div>
+          {!user.isGuest && <PushToggle />}
           {user.isGuest && (
             <p className="mt-2 text-xs text-ink-400">
               Como convidado, as preferências ficam salvas só neste navegador.

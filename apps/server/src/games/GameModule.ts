@@ -68,6 +68,11 @@ export interface GameModule<State, Settings, Action> {
   onPlayerLeft?(state: State, playerId: string, ctx: GameContext): void;
   /** Jogos de adivinhação podem consumir mensagens do chat (ex.: palpites). */
   onChat?(state: State, playerId: string, text: string, ctx: GameContext): { consumed: boolean };
+  /**
+   * Jogadas do bot (opcional: só jogos que aceitam bots). Retorna a ação que o bot faria
+   * agora (e em quanto tempo, para parecer gente) ou null se não for a vez dele.
+   */
+  bot?(state: State, botId: string): { action: unknown; delayMs: number } | null;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

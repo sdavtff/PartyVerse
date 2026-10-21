@@ -6,6 +6,7 @@ import {
   shopItem,
   aiGenerateSchema,
   reportSchema,
+  pushSubscribeSchema,
   type AiKind,
   type GameId,
   avatarMinLevel,
@@ -48,8 +49,10 @@ import { TOKEN_COOKIE, TokenService, type Identity } from '../modules/auth/token
 import type { MatchRepository } from '../modules/matches/match.repository.js';
 import type { UserRepository } from '../modules/users/users.repository.js';
 import type { RoomManager } from '../rooms/RoomManager.js';
+import type { PushService } from '../modules/push/push.service.js';
 
 export interface AppDeps {
+  push?: PushService;
   tournament?: TournamentService;
   clans?: ClansRepository;
   ai?: AiService;
@@ -96,6 +99,7 @@ export function createApp({
   reports,
   tournament,
   clans,
+  push,
 }: AppDeps) {
   const app = express();
   const auth = new AuthService(users);
@@ -183,6 +187,14 @@ export function createApp({
       google: google.enabled,
       mail: Boolean(mailer?.enabled),
       ai: Boolean(ai?.enabled),
+      push: Boolean(push && users),
+      // chat de voz: STUN público + TURN opcional (redes que bloqueiam conexão direta)
+      iceServers: [
+        { urls: ['stun:stun.l.google.com:19302', 'stun:stun.cloudflare.com:3478'] },
+        ...(env.TURN_URL
+          ? [{ urls: env.TURN_URL, username: env.TURN_USERNAME, credential: env.TURN_PASSWORD }]
+          : []),
+      ],
     }),
   );
   api.get('/games', (_req, res) => res.json(GAME_CATALOG));
@@ -733,6 +745,15 @@ export function createApp({
         await progress?.unlock(req.identity!.id, 'first_friend');
         await progress?.unlock(target, 'first_friend');
       } else {
+        if (status === 'outgoing' && !presence?.isOnline(target))
+          void push
+            ?.notify(target, {
+              title: 'Pedido de amizade',
+              body: `${req.identity!.nickname} quer ser seu amigo no PartyVerse`,
+              url: '/amigos',
+              tag: `friend-${req.identity!.id}`,
+            })
+            .catch(() => 0);
         presence?.emitToUser(target, EVENTS.INVITE, {
           kind: 'friend-request',
           from: {
@@ -773,8 +794,23 @@ export function createApp({
         },
         room: { code: room.code, name: room.settings.name, gameId: room.settings.gameId },
       });
-      if (!delivered) throw new AppError('INVALID_STATE', 'Seu amigo não está online agora', 409);
-      res.json({ ok: true });
+      if (delivered) return res.json({ ok: true, via: 'online' });
+      // fora do site: tenta pela notificação no celular/computador
+      const pushed = await (
+        push?.notify(target, {
+          title: `${req.identity!.nickname} chamou você para jogar`,
+          body: `Sala "${room.settings.name}" — toque para entrar`,
+          url: `/sala/${room.code}`,
+          tag: `invite-${room.code}`,
+        }) ?? Promise.resolve(0)
+      ).catch(() => 0);
+      if (!pushed)
+        throw new AppError(
+          'INVALID_STATE',
+          'Seu amigo não está online e não ativou as notificações',
+          409,
+        );
+      res.json({ ok: true, via: 'push' });
     }),
   );
   api.get(
@@ -802,6 +838,48 @@ export function createApp({
         clan: clans ? await clanBadge(u.id) : null,
         history: (await matches.historyFor(u.id, 8)).map((h) => ({ ...h, matchId: undefined })),
       });
+    }),
+  );
+
+  // ---------- notificações push ----------
+  const needPush = () => {
+    if (!push || !users) throw new AppError('INTERNAL', 'Notificações indisponíveis', 503);
+    return push;
+  };
+  api.get(
+    '/push/key',
+    wrap(async (_req, res) => res.json({ publicKey: await needPush().publicKey() })),
+  );
+  api.post(
+    '/push/subscribe',
+    requireAuth,
+    wrap(async (req, res) => {
+      if (req.identity!.isGuest)
+        throw new AppError('UNAUTHORIZED', 'Crie uma conta para receber notificações', 401);
+      await needPush().subscribe(req.identity!.id, pushSubscribeSchema.parse(req.body));
+      res.json({ ok: true });
+    }),
+  );
+  api.delete(
+    '/push/subscribe',
+    requireAuth,
+    wrap(async (req, res) => {
+      const { endpoint } = z.object({ endpoint: z.string().max(1000) }).parse(req.body);
+      await needPush().unsubscribe(req.identity!.id, endpoint);
+      res.json({ ok: true });
+    }),
+  );
+  api.post(
+    '/push/test',
+    requireAuth,
+    wrap(async (req, res) => {
+      const sent = await needPush().notify(req.identity!.id, {
+        title: 'Notificações ligadas 🎉',
+        body: 'É assim que você vai saber de convites e do desafio do dia.',
+        url: '/perfil',
+        tag: 'test',
+      });
+      res.json({ sent });
     }),
   );
 

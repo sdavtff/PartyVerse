@@ -41,6 +41,26 @@ export interface CheckersState {
   totals: Record<string, number>;
 }
 
+/** Bot de 1 lance: evita entregar peças, gosta de promover; um pouco de sorte no meio. */
+export function botMove(board: Board, turn: Color, moves: Move[]): Move {
+  const opp: Color = turn === 'w' ? 'b' : 'w';
+  let best = moves[0]!;
+  let bestScore = -Infinity;
+  for (const m of moves) {
+    const after = applyMove(board, m);
+    const reply = legalMoves(after, opp);
+    const loss = reply.reduce((mx, r) => Math.max(mx, r.captured.length), 0);
+    const end = m.path.at(-1)!;
+    const promoted = board[m.path[0]!] !== after[end];
+    const score = m.captured.length * 3 - loss * 3 + (promoted ? 2 : 0) + Math.random() * 1.5;
+    if (score > bestScore) {
+      bestScore = score;
+      best = m;
+    }
+  }
+  return best;
+}
+
 /** Quem joga de brancas alterna a cada partida (brancas começam). */
 const whiteOf = (s: CheckersState) => s.duo[(s.game - 1) % 2]!;
 const blackOf = (s: CheckersState) => s.duo[s.game % 2]!;
@@ -169,6 +189,14 @@ export const checkersGame: GameModule<CheckersState, CheckersSettings, CheckersA
       }
       newGame(s, ctx);
     }
+  },
+
+  bot(s, botId) {
+    if (s.phase !== 'playing' || playerOf(s, s.turn) !== botId || !s.moves.length) return null;
+    return {
+      action: { type: 'move', path: botMove(s.board, s.turn, s.moves).path },
+      delayMs: 900 + Math.random() * 1500,
+    };
   },
 
   calculateScores: (s) => ({ ...s.totals }),

@@ -81,7 +81,9 @@ export const ModelName = {
     UserItem: 'UserItem',
     WeeklyAward: 'WeeklyAward',
     Clan: 'Clan',
-    ClanMember: 'ClanMember'
+    ClanMember: 'ClanMember',
+    PushSubscription: 'PushSubscription',
+    AppSetting: 'AppSetting'
 };
 /**
  * Enums
@@ -220,6 +222,19 @@ export const ClanMemberScalarFieldEnum = {
     userId: 'userId',
     role: 'role',
     joinedAt: 'joinedAt'
+};
+export const PushSubscriptionScalarFieldEnum = {
+    id: 'id',
+    userId: 'userId',
+    endpoint: 'endpoint',
+    p256dh: 'p256dh',
+    auth: 'auth',
+    createdAt: 'createdAt'
+};
+export const AppSettingScalarFieldEnum = {
+    key: 'key',
+    value: 'value',
+    updatedAt: 'updatedAt'
 };
 export const SortOrder = {
     asc: 'asc',

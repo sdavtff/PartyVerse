@@ -45,6 +45,27 @@ export interface TicTacToeState {
   totals: Record<string, number>;
 }
 
+/** Bot: ganha se der, bloqueia, centro, cantos; às vezes se distrai (para dar chance). */
+export function botCell(board: TicTacToeView['board'], me: 'X' | 'O'): number {
+  const free = board.map((v, i) => (v ? -1 : i)).filter((i) => i >= 0);
+  const other = me === 'X' ? 'O' : 'X';
+  const wins = (mark: 'X' | 'O') =>
+    free.find((c) => {
+      const b = [...board];
+      b[c] = mark;
+      return winnerOf(b)?.winner === mark;
+    });
+  if (Math.random() < 0.15) return free[randomInt(free.length)]!;
+  const win = wins(me);
+  if (win !== undefined) return win;
+  const block = wins(other);
+  if (block !== undefined) return block;
+  if (free.includes(4)) return 4;
+  const corners = [0, 2, 6, 8].filter((c) => free.includes(c));
+  if (corners.length) return corners[randomInt(corners.length)]!;
+  return free[randomInt(free.length)]!;
+}
+
 /** Quem é X alterna a cada partida. */
 const xOf = (s: TicTacToeState) => s.duo[(s.game - 1) % 2]!;
 const oOf = (s: TicTacToeState) => s.duo[s.game % 2]!;
@@ -149,6 +170,14 @@ export const ticTacToeGame: GameModule<TicTacToeState, TicTacToeSettings, TicTac
       }
       newGame(s, ctx);
     }
+  },
+
+  bot(s, botId) {
+    if (s.phase !== 'playing' || playerOf(s, s.turn) !== botId) return null;
+    return {
+      action: { type: 'mark', cell: botCell(s.board, s.turn) },
+      delayMs: 700 + Math.random() * 1000,
+    };
   },
 
   calculateScores: (s) => ({ ...s.totals }),

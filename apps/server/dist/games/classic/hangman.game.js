@@ -6,6 +6,8 @@ import { maxBy, shuffle } from '../party/util.js';
 const ROUND_END_SECONDS = 5;
 export const HANGMAN_POINTS = { letter: 10, solveBonus: 30, perHidden: 10 };
 /** Letra sem acento (a palavra "maçã" se resolve com c e a). */
+/** letras mais comuns do português primeiro (usado pelo bot) */
+const BOT_LETTERS = 'aeosrinmdtculpvgqbfhjxzkwy';
 const base = (ch) => normalize(ch).replace(/[^a-z]/g, '');
 const current = (s) => s.players[s.turnIdx % s.players.length];
 const letters = (w) => [...new Set(w.split('').map(base).filter(Boolean))];
@@ -160,6 +162,19 @@ export const hangmanGame = {
             }
             return startWord(s, ctx);
         }
+    },
+    bot(s, botId) {
+        if (s.phase !== 'playing' || current(s) !== botId)
+            return null;
+        const tried = new Set([...s.guessed, ...s.wrong]);
+        const left = BOT_LETTERS.split('').filter((l) => !tried.has(l));
+        if (!left.length)
+            return null;
+        // quase sempre segue a frequência do português; às vezes arrisca uma letra qualquer
+        const letter = Math.random() < 0.8
+            ? left[Math.floor(Math.random() * Math.min(3, left.length))]
+            : left[Math.floor(Math.random() * left.length)];
+        return { action: { type: 'letter', letter }, delayMs: 1200 + Math.random() * 1800 };
     },
     calculateScores: (s) => ({ ...s.totals }),
     determineWinners: (s) => maxBy(s.totals, s.players),

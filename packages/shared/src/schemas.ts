@@ -100,6 +100,28 @@ export const chatSchema = z.union([
 export const REACTIONS = ['😂', '👏', '🔥', '😮', '😡', '❤️'] as const;
 export const reactionSchema = z.object({ emoji: z.enum(REACTIONS) });
 export const spectateSchema = z.object({ on: z.boolean() });
+export const voiceMuteSchema = z.object({ muted: z.boolean() });
+/** Sinalização WebRTC do chat de voz (o servidor só repassa, não interpreta). */
+export const voiceSignalSchema = z.object({
+  to: z.string().min(1).max(64),
+  data: z.union([
+    z.object({ type: z.enum(['offer', 'answer']), sdp: z.string().max(20_000) }),
+    z.object({
+      type: z.literal('ice'),
+      candidate: z.object({
+        candidate: z.string().max(1000),
+        sdpMid: z.string().max(64).nullable().optional(),
+        sdpMLineIndex: z.number().int().min(0).max(64).nullable().optional(),
+      }),
+    }),
+  ]),
+});
+export type VoiceSignal = z.infer<typeof voiceSignalSchema>;
+/** Inscrição de notificações push (formato do PushSubscription.toJSON()). */
+export const pushSubscribeSchema = z.object({
+  endpoint: z.string().url().max(1000),
+  keys: z.object({ p256dh: z.string().min(10).max(200), auth: z.string().min(8).max(100) }),
+});
 export const kickSchema = z.object({ playerId: z.string().min(1).max(64) });
 export const transferHostSchema = kickSchema;
 export const updateSettingsSchema = z.object({

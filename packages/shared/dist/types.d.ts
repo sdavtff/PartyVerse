@@ -10,6 +10,10 @@ export interface PublicPlayer {
     score: number;
     /** só assistindo (não entra na próxima partida) */
     spectator: boolean;
+    /** jogador controlado pelo computador */
+    isBot?: boolean;
+    /** no chat de voz: 'on' (falando) ou 'muted' (microfone desligado) */
+    voice?: 'on' | 'muted' | null;
 }
 export interface ChatMessage {
     id: string;
@@ -52,6 +56,8 @@ export interface GameMeta {
     maxPlayers: number;
     available: boolean;
     color: string;
+    /** aceita bots (jogadores do computador) */
+    bots?: boolean;
 }
 export declare const GAME_CATALOG: GameMeta[];
 export interface ServerError {
@@ -396,6 +402,12 @@ export declare const EVENTS: {
     readonly ROOM_END: "room:end";
     readonly ROOM_BACK_TO_LOBBY: "room:backToLobby";
     readonly ROOM_SPECTATE: "room:spectate";
+    readonly ROOM_ADD_BOT: "room:addBot";
+    readonly VOICE_JOIN: "voice:join";
+    readonly VOICE_LEAVE: "voice:leave";
+    readonly VOICE_MUTE: "voice:mute";
+    /** cliente <-> servidor: oferta/resposta/candidatos WebRTC repassados a um jogador */
+    readonly VOICE_SIGNAL: "voice:signal";
     readonly CHAT_SEND: "chat:send";
     readonly GAME_ACTION: "game:action";
     readonly ROOM_STATE: "room:state";

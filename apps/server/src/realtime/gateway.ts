@@ -9,6 +9,8 @@ import {
   spectateSchema,
   transferHostSchema,
   updateSettingsSchema,
+  voiceMuteSchema,
+  voiceSignalSchema,
   type Ack,
 } from '@partyverse/shared';
 import type { Server, Socket } from 'socket.io';
@@ -58,6 +60,8 @@ const limits = {
   chat: new RateLimiter(5, 1),
   // generoso para o desenho (traços chegam em lotes de ~60 ms)
   game: new RateLimiter(60, 30),
+  // sinalização WebRTC: rajadas de candidatos ICE ao conectar
+  voice: new RateLimiter(80, 20),
   room: new RateLimiter(10, 1),
 };
 
@@ -186,6 +190,20 @@ export function attachGateway(
     on(EVENTS.REACTION, 'chat', reactionSchema, ({ emoji }) => currentRoom().react(me().id, emoji));
     on(EVENTS.ROOM_SPECTATE, 'room', spectateSchema, ({ on: value }) =>
       currentRoom().setSpectator(me().id, value),
+    );
+
+    on(EVENTS.ROOM_ADD_BOT, 'room', joinRoomSchema.partial(), () => currentRoom().addBot(me().id));
+    on(EVENTS.VOICE_JOIN, 'voice', joinRoomSchema.partial(), () =>
+      currentRoom().voiceJoin(me().id),
+    );
+    on(EVENTS.VOICE_LEAVE, 'voice', joinRoomSchema.partial(), () =>
+      currentRoom().voiceLeave(me().id),
+    );
+    on(EVENTS.VOICE_MUTE, 'voice', voiceMuteSchema, ({ muted }) =>
+      currentRoom().voiceMute(me().id, muted),
+    );
+    on(EVENTS.VOICE_SIGNAL, 'voice', voiceSignalSchema, ({ to, data }) =>
+      currentRoom().voiceSignal(me().id, to, data),
     );
 
     socket.on('disconnect', () => {

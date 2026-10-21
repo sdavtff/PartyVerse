@@ -180,3 +180,16 @@ anteriores são enviadas à IA para ela não repetir.
 Sem a chave (ou se a IA falhar), o site usa um banco reserva só do desafio — perguntas diferentes
 das do Quiz normal, em rodízio, sem repetir até todas saírem. No painel **/admin**, o quadro
 "Desafio de hoje" mostra se o conteúdo do dia veio da IA ou do banco reserva.
+
+## Bots, chat de voz e notificações
+
+- **Bots**: no lobby do Quiz, Forca, Jogo da Velha e Damas o anfitrião toca em **🤖 Colocar bot**.
+  Nada para configurar.
+- **Chat de voz**: até 8 pessoas por sala, ligadas direto entre si (o servidor não ouve o áudio).
+  Funciona sem configuração na maioria das redes. Se alguém de rede corporativa/4G restrita não
+  conseguir ouvir os outros, cadastre um servidor TURN (ex.: o plano grátis da Metered ou
+  Cloudflare Calls) nas variáveis `TURN_URL`, `TURN_USERNAME` e `TURN_PASSWORD`.
+- **Notificações push** (convites de amigos, pedidos de amizade e lembrete do desafio do dia ao
+  meio-dia): precisam do banco de dados. Cada pessoa ativa em **Perfil → Notificações**. As
+  chaves de envio (VAPID) são criadas sozinhas no primeiro uso e ficam salvas no banco — não
+  precisa fazer nada. No iPhone, a pessoa precisa instalar o site na tela de início primeiro.

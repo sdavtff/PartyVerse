@@ -9,6 +9,8 @@ export interface Health {
   google: boolean;
   mail?: boolean;
   ai?: boolean;
+  push?: boolean;
+  iceServers?: RTCIceServer[];
 }
 
 let cached: Promise<Health | null> | null = null;

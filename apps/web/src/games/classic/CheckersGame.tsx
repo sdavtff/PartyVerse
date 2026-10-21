@@ -85,15 +85,17 @@ export function CheckersGame({
             {!view.participants.includes(myId) && ' · você está assistindo'}
           </p>
           <h2 className="text-2xl font-extrabold">
-            {view.phase === 'game-end'
-              ? view.winner === 'draw'
-                ? 'Empate!'
-                : `${nick(view.winner === 'w' ? view.white : view.black)} venceu!`
-              : myTurn
-                ? mustCapture
-                  ? 'Sua vez — capture!'
-                  : 'Sua vez!'
-                : `Vez de ${nick(turnPlayer)}`}
+            {view.phase === 'finished' && !view.winner
+              ? 'Fim da partida'
+              : view.phase !== 'playing'
+                ? view.winner === 'draw'
+                  ? 'Empate!'
+                  : `${nick(view.winner === 'w' ? view.white : view.black)} venceu!`
+                : myTurn
+                  ? mustCapture
+                    ? 'Sua vez — capture!'
+                    : 'Sua vez!'
+                  : `Vez de ${nick(turnPlayer)}`}
           </h2>
           {view.reason && <p className="text-sm text-ink-200">{view.reason}</p>}
         </div>

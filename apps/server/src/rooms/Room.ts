@@ -24,6 +24,8 @@ export interface RoomPlayer extends Identity {
   socketId: string | null;
   graceTimer: NodeJS.Timeout | null;
   recentActionIds: string[];
+  /** jogador do computador (sem conexão) */
+  bot?: boolean;
 }
 
 /** Saída da sala; implementada pelo gateway Socket.IO (ou por fakes em testes). */
@@ -52,6 +54,18 @@ export interface RoomOptions {
 
 const CHAT_HISTORY = 50;
 const MAX_SPECTATORS = 50;
+/** chat de voz é ponto a ponto (malha): acima disso a conexão de cada um sofre */
+export const MAX_VOICE = 8;
+const BOT_NAMES = [
+  'Robô Zé',
+  'Robô Lia',
+  'Robô Caju',
+  'Robô Pipoca',
+  'Robô Tico',
+  'Robô Nina',
+  'Robô Biju',
+  'Robô Fubá',
+];
 
 export class Room {
   readonly players = new Map<string, RoomPlayer>();
@@ -64,6 +78,8 @@ export class Room {
   lastActivity: number;
   readonly createdAt: number;
   private chatLog: ChatMessage[] = [];
+  /** quem está no chat de voz (id -> microfone desligado?) */
+  readonly voice = new Map<string, boolean>();
   private game: AnyGameModule | null = null;
   private gameState: unknown = null;
   private matchStartedAt = 0;
@@ -125,6 +141,7 @@ export class Room {
         existing.socketId && existing.socketId !== socketId ? existing.socketId : null;
       if (existing.graceTimer) clearTimeout(existing.graceTimer);
       const wasAway = existing.status !== 'online';
+      this.voice.delete(identity.id); // a página nova entra na voz de novo se quiser
       Object.assign(existing, {
         socketId,
         status: 'online',
@@ -175,6 +192,7 @@ export class Room {
     if (!p || p.socketId !== socketId) return; // socket antigo (já substituído)
     p.status = 'reconnecting';
     p.socketId = null;
+    this.voice.delete(playerId);
     p.graceTimer = setTimeout(() => this.remove(playerId, 'timeout'), this.opts.reconnectGraceMs);
     p.graceTimer.unref?.();
     this.systemMessage(`${p.nickname} perdeu a conexão…`);
@@ -192,6 +210,7 @@ export class Room {
     if (p.graceTimer) clearTimeout(p.graceTimer);
     if (p.socketId) this.transport.disconnectFromRoom(p.socketId, this.code);
     this.players.delete(playerId);
+    this.voice.delete(playerId);
     const verb =
       reason === 'kicked'
         ? 'foi removido pelo anfitrião'
@@ -199,7 +218,9 @@ export class Room {
           ? 'não voltou e saiu'
           : 'saiu';
     this.systemMessage(`${p.nickname} ${verb}`);
-    if (this.players.size === 0) {
+    // só bots sobraram: a sala acaba
+    if (![...this.players.values()].some((x) => !x.bot)) {
+      this.players.clear();
       this.destroy();
       this.hooks.onEmpty(this);
       return;
@@ -214,7 +235,9 @@ export class Room {
    * o jogador online mais antigo; se ninguém estiver online, para o mais antigo da sala.
    */
   private reassignHost() {
-    const candidates = [...this.players.values()].sort((a, b) => a.joinedAt - b.joinedAt);
+    const candidates = [...this.players.values()]
+      .filter((p) => !p.bot)
+      .sort((a, b) => a.joinedAt - b.joinedAt);
     const next = candidates.find((c) => c.status === 'online') ?? candidates[0];
     if (next) {
       this.hostId = next.id;
@@ -293,7 +316,7 @@ export class Room {
   transferHost(actorId: string, targetId: string) {
     this.requireHost(actorId);
     const target = this.players.get(targetId);
-    if (!target || target.status !== 'online')
+    if (!target || target.status !== 'online' || target.bot)
       throw new AppError('VALIDATION', 'Escolha um jogador conectado');
     this.hostId = targetId;
     this.systemMessage(`${target.nickname} agora é o anfitrião`);
@@ -318,6 +341,7 @@ export class Room {
       if (next.gameId !== this.settings.gameId)
         this.gameSettings = getGameModule(next.gameId).defaultSettings();
       this.settings = next;
+      if (!getGameModule(next.gameId).bot) this.removeBots();
     }
     if (game) {
       const mod = getGameModule(this.settings.gameId);
@@ -371,6 +395,101 @@ export class Room {
     this.touch();
     this.broadcastState();
     this.transport.toRoom(this.code, EVENTS.GAME_STATE, null);
+  }
+
+  /** Anfitrião coloca um jogador do computador (só nos jogos que aceitam). */
+  addBot(actorId: string) {
+    this.requireHost(actorId);
+    if (this.phase === 'playing') throw invalidState('Espere a partida acabar');
+    const mod = getGameModule(this.settings.gameId);
+    if (!mod.bot) throw new AppError('VALIDATION', 'Este jogo não tem bots');
+    if (this.activeCount >= this.settings.maxPlayers)
+      throw new AppError('ROOM_FULL', 'A sala está cheia', 409);
+    const used = new Set([...this.players.values()].map((p) => p.nickname));
+    const nickname = BOT_NAMES.find((n) => !used.has(n));
+    if (!nickname) throw new AppError('VALIDATION', 'Bots demais nesta sala');
+    const id = `bot-${uid().slice(0, 10)}`;
+    const avatar = `bot-${BOT_NAMES.indexOf(nickname) + 1}`;
+    this.players.set(id, {
+      id,
+      nickname,
+      avatar,
+      isGuest: true,
+      spectator: false,
+      status: 'online',
+      joinedAt: this.now(),
+      socketId: null,
+      graceTimer: null,
+      recentActionIds: [],
+      bot: true,
+    });
+    this.known.set(id, { nickname, avatar, isGuest: true });
+    this.touch();
+    this.systemMessage(`🤖 ${nickname} entrou para jogar`);
+    this.broadcastState();
+    return { id };
+  }
+
+  private removeBots() {
+    for (const p of [...this.players.values()]) if (p.bot) this.players.delete(p.id);
+  }
+
+  /** Bots decidem a jogada com um atraso "humano"; reavaliam quando o estado muda. */
+  private scheduleBots() {
+    if (this.phase !== 'playing' || !this.game?.bot) return;
+    for (const p of this.players.values()) {
+      if (!p.bot) continue;
+      const key = `bot:${p.id}`;
+      if (this.timers.has(key)) continue;
+      const plan = this.game.bot(this.gameState, p.id);
+      if (!plan) continue;
+      const t = setTimeout(
+        () => {
+          this.timers.delete(key);
+          if (this.phase !== 'playing' || !this.game?.bot || !this.players.has(p.id)) return;
+          const now = this.game.bot(this.gameState, p.id);
+          if (now) {
+            try {
+              this.gameAction(p.id, now.action);
+            } catch {
+              /* jogada recusada: tenta de novo na próxima mudança */
+            }
+          }
+          this.scheduleBots();
+        },
+        Math.max(150, plan.delayMs),
+      );
+      t.unref?.();
+      this.timers.set(key, t);
+    }
+  }
+
+  // ---------- chat de voz (o servidor só repassa a sinalização WebRTC) ----------
+
+  voiceJoin(playerId: string) {
+    const p = this.players.get(playerId);
+    if (!p || p.bot) throw forbidden('Você não está nesta sala');
+    if (!this.voice.has(playerId) && this.voice.size >= MAX_VOICE)
+      throw new AppError('ROOM_FULL', `O chat de voz aceita até ${MAX_VOICE} pessoas`, 409);
+    if (!this.voice.has(playerId)) this.voice.set(playerId, false);
+    this.broadcastState();
+    return { peers: [...this.voice.keys()].filter((id) => id !== playerId) };
+  }
+
+  voiceLeave(playerId: string) {
+    if (this.voice.delete(playerId)) this.broadcastState();
+  }
+
+  voiceMute(playerId: string, muted: boolean) {
+    if (!this.voice.has(playerId)) return;
+    this.voice.set(playerId, muted);
+    this.broadcastState();
+  }
+
+  voiceSignal(from: string, to: string, data: unknown) {
+    if (!this.voice.has(from) || !this.voice.has(to) || from === to)
+      throw invalidState('Essa pessoa não está no chat de voz');
+    this.sendToPlayer(to, EVENTS.VOICE_SIGNAL, { from, data });
   }
 
   /** Alterna "só assistir". */
@@ -515,6 +634,8 @@ export class Room {
           isGuest: p.isGuest,
           score: scores[p.id] ?? 0,
           spectator: p.spectator,
+          ...(p.bot ? { isBot: true } : {}),
+          voice: this.voice.has(p.id) ? (this.voice.get(p.id) ? 'muted' : 'on') : null,
         })),
     };
   }
@@ -538,6 +659,7 @@ export class Room {
       if (p.socketId) this.transport.toPlayer(p.socketId, EVENTS.GAME_STATE, this.viewOf(p.id));
     }
     this.broadcastState(); // placar no painel de jogadores
+    this.scheduleBots();
   }
 
   /** Visão do jogo para um jogador + relógio do servidor (o cliente corrige a diferença de horário). */

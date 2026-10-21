@@ -1,10 +1,15 @@
-/* global self, caches, location, fetch, Response, URL */
+/* global self, caches, location, fetch, Response, URL, clients */
 /* PartyVerse — service worker: permite instalar como app e abre rápido / sem internet. */
-const CACHE = 'pv-v1';
+const CACHE = 'pv-v2';
 const SHELL = ['/', '/favicon.svg', '/icon-192.png', '/manifest.webmanifest', '/theme.js'];
 
 self.addEventListener('install', (e) => {
-  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
+  e.waitUntil(
+    caches
+      .open(CACHE)
+      .then((c) => c.addAll(SHELL))
+      .then(() => self.skipWaiting()),
+  );
 });
 
 self.addEventListener('activate', (e) => {
@@ -53,4 +58,41 @@ self.addEventListener('fetch', (e) => {
       ),
     );
   }
+});
+
+// ---------- notificações push (convites, pedidos de amizade, desafio do dia) ----------
+self.addEventListener('push', (e) => {
+  let msg = { title: 'PartyVerse', body: '', url: '/' };
+  try {
+    msg = { ...msg, ...e.data.json() };
+  } catch {
+    /* mensagem sem JSON: usa o padrão */
+  }
+  e.waitUntil(
+    self.registration.showNotification(msg.title, {
+      body: msg.body,
+      icon: '/icon-192.png',
+      badge: '/icon-192.png',
+      tag: msg.tag,
+      renotify: Boolean(msg.tag),
+      data: { url: msg.url },
+    }),
+  );
+});
+
+self.addEventListener('notificationclick', (e) => {
+  e.notification.close();
+  const target = new URL((e.notification.data && e.notification.data.url) || '/', location.origin)
+    .href;
+  e.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
+      // reaproveita uma aba aberta do site; senão abre uma nova
+      for (const c of list) {
+        if (new URL(c.url).origin === location.origin && 'focus' in c) {
+          return c.focus().then((w) => (w && 'navigate' in w ? w.navigate(target) : undefined));
+        }
+      }
+      return clients.openWindow(target);
+    }),
+  );
 });

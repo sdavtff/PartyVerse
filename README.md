@@ -4,7 +4,7 @@ Plataforma web de minijogos multiplayer em tempo real. **Versão 0.6:** página 
 
 > **Publicar na Hostinger:** veja [DEPLOY-HOSTINGER.md](DEPLOY-HOSTINGER.md).
 
-## Novidades da 0.7 (em andamento)
+## Novidades da 0.7
 
 - **IA nas salas** (com `OPENROUTER_API_KEY`): o anfitrião escreve um tema e a IA cria perguntas do Quiz, palavras do Rabisco/Mímica/Palavra Secreta, locais do Impostor e frases de Quem é Mais Provável e Verdade ou Desafio. Ninguém vê as respostas antes.
 - **Juiz IA na Adedonha**: marca respostas suspeitas na revisão (vale como um voto; a turma decide).
@@ -18,6 +18,9 @@ Plataforma web de minijogos multiplayer em tempo real. **Versão 0.6:** página 
 - **Torneio da semana** (aba no `/ranking`): de segunda a domingo; os 3 primeiros ganham moedas e itens exclusivos.
 - **Clãs** (`/clas`): crie ou entre num clã com tag, veja o ranking dos clãs e a etiqueta do clã no perfil.
 - **Compartilhar desenho** do Rabisco e do Telefone Sem Fio (baixar imagem ou enviar pelo WhatsApp).
+- **Bots** (🤖 Colocar bot no lobby) no Quiz, Forca, Jogo da Velha e Damas: dá para jogar sozinho contra o computador.
+- **Chat de voz** na sala (até 8 pessoas, direto entre os navegadores), com mudo e indicador de quem está falando.
+- **Notificações push** (Perfil → Notificações): convite de amigo mesmo com o site fechado, pedido de amizade e lembrete do desafio do dia.
 
 ## Novidades da 0.6.1
 
